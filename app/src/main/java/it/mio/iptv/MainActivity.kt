@@ -119,6 +119,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var seekFlash: TextView
 
     private lateinit var homeView: View
+    private lateinit var homeCards: LinearLayout
     private lateinit var userView: LinearLayout
     private lateinit var adminView: View
     private lateinit var listPanel: LinearLayout
@@ -149,7 +150,9 @@ class MainActivity : AppCompatActivity() {
     private var currentUrl = ""
     private var triedHls = false
     private var fullscreen = false
-    private var featuredMode = false
+    private var userSection: String? = null   // sezione aperta dall'utente (null = Completa)
+    private var adminEditing: String? = null  // sezione di cui l'admin sta gestendo le categorie (null = elenco sezioni)
+    private val adminSection get() = adminEditing ?: Sections.DEFAULT_ID
     private var inPip = false
     private var loadGen = 0
     private var adminTab = 0
@@ -176,6 +179,10 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 when {
                     fullscreen -> setFullscreen(false)
+                    currentView === adminView && adminTab == 1 && adminEditing != null -> {
+                        adminEditing = null
+                        refreshAdmin()
+                    }
                     currentView !== homeView -> goHome()
                     else -> finish()
                 }
@@ -322,7 +329,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Home: In evidenza / Completa / Admin ----------
+    // ---------- Home: sezioni / Completa / Impostazioni ----------
 
     private fun buildHome() {
         // Barra fissa in alto con il nome dell'app (fuori dalle sezioni)
@@ -337,10 +344,8 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(24), dp(8), dp(24), dp(24))
-            addView(homeCard(R.drawable.ic_star, "In evidenza", "I canali scelti dall'admin") { showUser(true) })
-            addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(false) })
-            addView(homeCard(R.drawable.ic_edit, "Admin", "Playlist, categorie e canali") { showAdmin() })
         }
+        homeCards = cards
         homeView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(bar, LinearLayout.LayoutParams(MATCH, WRAP))
@@ -350,12 +355,26 @@ class MainActivity : AppCompatActivity() {
                 addView(cards, ViewGroup.LayoutParams(MATCH, WRAP))
             }, lp(0, 1f))
         }
+        refreshHome()
+    }
+
+    // Le card della home: le sezioni create dall'admin, poi Completa e Impostazioni
+    private fun refreshHome() {
+        homeCards.removeAllViews()
+        Sections.load(prefs).forEach { sec ->
+            homeCards.addView(
+                homeCard(Sections.iconRes(sec.icon), sec.name, "I canali scelti dall'admin") { showUser(sec.id) }
+            )
+        }
+        homeCards.addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
+        homeCards.addView(homeCard(R.drawable.ic_edit, "Impostazioni", "Playlist e sezioni della home") { showAdmin() })
     }
 
     private fun goHome() {
         player.stop()
         if (fullscreen) setFullscreen(false)
         currentChannel = null
+        refreshHome()
         show(homeView)
     }
 
@@ -689,8 +708,8 @@ class MainActivity : AppCompatActivity() {
         if (currentChannel?.url == ch.url) setFullscreen(true) else playChannel(ch)
     }
 
-    private fun showUser(featured: Boolean) {
-        featuredMode = featured
+    private fun showUser(section: String?) {
+        userSection = section
         loadGen++
         currentChannel = null
         nowTitle.text = "Scegli un canale"
@@ -702,18 +721,19 @@ class MainActivity : AppCompatActivity() {
         setChannels(emptyList())   // via subito i canali dell'altra sezione
         listStatus.text = ""
         applyUserLayout()
-        if (featured) loadFeatured() else loadAllChannels()
+        if (section != null) loadFeatured(section) else loadAllChannels()
         show(userView)
     }
 
     // "In evidenza": solo i canali scelti dall'admin, nelle sue categorie e nel suo ordine
-    private fun loadFeatured() {
-        val cats = Featured.load(prefs)
+    private fun loadFeatured(section: String) {
+        val cats = Featured.load(prefs, section)
         val all = cats.flatMap { it.channels }
+        val name = Sections.load(prefs).firstOrNull { it.id == section }?.name ?: "In evidenza"
         setChannels(all, cats.filter { it.channels.isNotEmpty() }.map { it.name })
         listStatus.text =
-            if (all.isEmpty()) "Nessun canale in evidenza: l'admin può aggiungerli dalla sezione Admin."
-            else "In evidenza · ${all.size} canali"
+            if (all.isEmpty()) "Nessun canale in $name: aggiungili da Impostazioni › Admin."
+            else "$name · ${all.size} canali"
     }
 
     // Carica le playlist in background: mostra subito quanto è già salvato (memoria/disco),
@@ -753,7 +773,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadAllChannels() {
         val gen = loadGen
         if (loadPlaylists().isEmpty()) {
-            listStatus.text = "Nessuna playlist: aggiungila dalla sezione Admin."
+            listStatus.text = "Nessuna playlist: aggiungila da Impostazioni."
             return
         }
         listStatus.text = "Caricamento canali…"
@@ -868,16 +888,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun buildAdmin() {
         adminToolbar = MaterialToolbar(this).apply {
-            title = "Admin"
+            title = "Impostazioni"
             setNavigationIcon(R.drawable.ic_back)
             setNavigationIconTint(c(MR.attr.colorOnSurface))
             setTitleTextColor(c(MR.attr.colorOnSurface))
-            setNavigationOnClickListener { goHome() }
+            setNavigationOnClickListener { adminBack() }
         }
         adminTabs = TabLayout(this).apply {
             tabGravity = TabLayout.GRAVITY_FILL
             addTab(newTab().setText("Playlist"))
-            addTab(newTab().setText("In evidenza"))
+            addTab(newTab().setText("Admin"))
             addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
                     adminTab = tab?.position ?: 0
@@ -896,7 +916,13 @@ class MainActivity : AppCompatActivity() {
         fab = ExtendedFloatingActionButton(this).apply {
             text = "Aggiungi playlist"
             setIconResource(R.drawable.ic_add)
-            setOnClickListener { if (adminTab == 0) addPlaylistDialog() else categoryDialog(null) }
+            setOnClickListener {
+                when {
+                    adminTab == 0 -> addPlaylistDialog()
+                    adminEditing == null -> sectionDialog(null)
+                    else -> categoryDialog(null)
+                }
+            }
         }
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -922,6 +948,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAdmin() {
         applyAdminLayout()
+        adminEditing = null
         adminTabs.getTabAt(adminTab)?.select()
         refreshAdmin()
         show(adminView)
@@ -932,10 +959,120 @@ class MainActivity : AppCompatActivity() {
         if (adminTab == 0) {
             fab.text = "Aggiungi playlist"
             refreshPlaylists()
+        } else if (adminEditing == null) {
+            fab.text = "Nuova sezione"
+            refreshSections()
         } else {
             fab.text = "Nuova categoria"
             refreshFeatured()
         }
+    }
+
+    // Torna indietro: dalla gestione di una sezione all'elenco, altrimenti alla home
+    private fun adminBack() {
+        if (adminTab == 1 && adminEditing != null) {
+            adminEditing = null
+            refreshAdmin()
+        } else goHome()
+    }
+
+    // --- Tab Admin: elenco delle sezioni della home ---
+
+    private fun refreshSections() {
+        adminList.addView(tv("Sezioni della home", 20f, c(MR.attr.colorOnSurface), true).apply {
+            setPadding(dp(4), dp(4), 0, dp(4))
+        })
+        adminList.addView(
+            tv(
+                "Tocca una sezione per gestire categorie e canali. Tieni premuto per rinominarla o cambiarne l'icona.",
+                13f, c(MR.attr.colorOnSurfaceVariant)
+            ).apply { setPadding(dp(4), 0, dp(4), dp(8)) }
+        )
+        Sections.load(prefs).forEachIndexed { i, sec ->
+            val n = Featured.load(prefs, sec.id).sumOf { it.channels.size }
+            var del: (() -> Unit)? = null
+            if (sec.id != Sections.DEFAULT_ID) del = {
+                confirmDelete("La sezione \"${sec.name}\" e tutti i suoi canali") { deleteSection(sec.id) }
+            }
+            val card = itemCard(sec.name, "$n canali", false, { adminEditing = sec.id; refreshAdmin() }, del)
+            card.setOnLongClickListener {
+                sectionDialog(i)
+                true
+            }
+            adminList.addView(card)
+        }
+    }
+
+    private fun deleteSection(id: String) {
+        val l = Sections.load(prefs)
+        l.removeAll { it.id == id }
+        Sections.save(prefs, l)
+        Featured.delete(prefs, id)
+        refreshAdmin()
+    }
+
+    // Nome + icona. index == null: nuova sezione; altrimenti modifica
+    private fun sectionDialog(index: Int?) {
+        val list = Sections.load(prefs)
+        val cur = index?.let { list.getOrNull(it) }
+        val til = field("Nome sezione (es. Sport)")
+        if (cur != null) til.editText!!.setText(cur.name)
+        var icon = cur?.icon ?: Sections.ICONS.first().first
+        val label = tv("Icona", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(8)) }
+        val picker = iconPicker(icon) { icon = it }
+        showDialog(
+            MaterialAlertDialogBuilder(this)
+                .setTitle(if (cur == null) "Nuova sezione" else "Modifica sezione")
+                .setView(scroll(padBox(til, label, picker)))
+                .setPositiveButton(if (cur == null) "Aggiungi" else "Salva") { _, _ ->
+                    val n = til.editText!!.text.toString().trim()
+                    if (n.isEmpty()) toast("Scrivi un nome")
+                    else if (list.any { it.id != cur?.id && it.name.equals(n, ignoreCase = true) })
+                        toast("Esiste già una sezione con questo nome")
+                    else {
+                        if (cur == null) list.add(Section(Sections.newId(), n, icon))
+                        else list[index!!] = cur.copy(name = n, icon = icon)
+                        Sections.save(prefs, list)
+                        refreshAdmin()
+                    }
+                }
+                .setNegativeButton("Annulla", null)
+        )
+    }
+
+    // Griglia di icone: quella scelta è evidenziata
+    private fun iconPicker(selected: String, onPick: (String) -> Unit): View {
+        val grid = android.widget.GridLayout(this).apply { columnCount = 5 }
+        val cells = mutableListOf<Pair<String, ImageView>>()
+        fun paint(sel: String) {
+            cells.forEach { (key, v) ->
+                val on = key == sel
+                v.imageTintList = ColorStateList.valueOf(
+                    c(if (on) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurfaceVariant)
+                )
+                v.background = if (on) GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(c(MR.attr.colorPrimaryContainer))
+                } else selectable()
+            }
+        }
+        Sections.ICONS.forEach { (key, res) ->
+            val v = ImageView(this).apply {
+                setImageResource(res)
+                setPadding(dp(12), dp(12), dp(12), dp(12))
+                setOnClickListener {
+                    onPick(key)
+                    paint(key)
+                }
+            }
+            cells.add(key to v)
+            grid.addView(v, android.widget.GridLayout.LayoutParams().apply {
+                width = dp(52)
+                height = dp(52)
+            })
+        }
+        paint(selected)
+        return grid
     }
 
     // --- Tab Playlist ---
@@ -977,7 +1114,18 @@ class MainActivity : AppCompatActivity() {
     // --- Tab In evidenza: categorie e canali ---
 
     private fun refreshFeatured() {
-        val cats = Featured.load(prefs)
+        val cats = Featured.load(prefs, adminSection)
+        val secName = Sections.load(prefs).firstOrNull { it.id == adminSection }?.name ?: ""
+        adminList.addView(
+            outlinedBtn("‹ Sezioni") {
+                adminEditing = null
+                refreshAdmin()
+            },
+            LinearLayout.LayoutParams(WRAP, WRAP)
+        )
+        adminList.addView(tv(secName, 20f, c(MR.attr.colorOnSurface), true).apply {
+            setPadding(dp(4), dp(12), 0, dp(8))
+        })
         adminList.addView(LinearLayout(this).apply {
             addView(
                 outlinedBtn("Importa codice") { importDialog() },
@@ -1013,7 +1161,7 @@ class MainActivity : AppCompatActivity() {
             cat.channels.forEachIndexed { j, ch ->
                 val card = itemCard(ch.name, ch.rawName.takeIf { it != ch.name }, false, { renameChannelDialog(i, j) }) {
                     confirmDelete(ch.name) {
-                        Featured.edit(prefs) { l ->
+                        Featured.edit(prefs, adminSection) { l ->
                             l.getOrNull(i)?.let { cat0 ->
                                 l[i] = cat0.copy(channels = cat0.channels.filterIndexed { k, _ -> k != j })
                             }
@@ -1067,7 +1215,7 @@ class MainActivity : AppCompatActivity() {
                 3 -> categoryDialog(i)
                 4 -> exportDialog(listOf(cat), "Esporta \"${cat.name}\"")
                 5 -> confirmDelete("La categoria \"${cat.name}\" e i suoi ${cat.channels.size} canali") {
-                    Featured.edit(prefs) { l -> if (i < l.size) l.removeAt(i) }
+                    Featured.edit(prefs, adminSection) { l -> if (i < l.size) l.removeAt(i) }
                     refreshAdmin()
                 }
             }
@@ -1079,7 +1227,7 @@ class MainActivity : AppCompatActivity() {
     // Sposta la categoria di una posizione (l'ordine vale anche nella sezione "In evidenza")
     private fun moveCategory(i: Int, delta: Int) {
         val j = i + delta
-        Featured.edit(prefs) { l ->
+        Featured.edit(prefs, adminSection) { l ->
             if (i in l.indices && j in l.indices) {
                 val x = l.removeAt(i)
                 l.add(j, x)
@@ -1092,14 +1240,14 @@ class MainActivity : AppCompatActivity() {
     // index == null: nuova categoria; altrimenti rinomina
     private fun categoryDialog(index: Int?) {
         val til = field("Nome categoria (es. Canali TV)")
-        if (index != null) Featured.load(prefs).getOrNull(index)?.let { til.editText!!.setText(it.name) }
+        if (index != null) Featured.load(prefs, adminSection).getOrNull(index)?.let { til.editText!!.setText(it.name) }
         showDialog(
             MaterialAlertDialogBuilder(this)
                 .setTitle(if (index == null) "Nuova categoria" else "Rinomina categoria")
                 .setView(scroll(padBox(til)))
                 .setPositiveButton(if (index == null) "Crea" else "Salva") { _, _ ->
                     val n = til.editText!!.text.toString().trim()
-                    val l = Featured.load(prefs)
+                    val l = Featured.load(prefs, adminSection)
                     when {
                         n.isEmpty() -> toast("Scrivi un nome")
                         l.withIndex().any { (k, x) -> k != index && x.name.equals(n, ignoreCase = true) } ->
@@ -1107,7 +1255,7 @@ class MainActivity : AppCompatActivity() {
                         else -> {
                             if (index == null) l.add(FeaturedCategory(n, emptyList()))
                             else if (index < l.size) l[index] = l[index].copy(name = n)
-                            Featured.save(prefs, l)
+                            Featured.save(prefs, l, adminSection)
                         }
                     }
                     refreshAdmin()
@@ -1117,7 +1265,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renameChannelDialog(ci: Int, ji: Int) {
-        val ch = Featured.load(prefs).getOrNull(ci)?.channels?.getOrNull(ji) ?: return
+        val ch = Featured.load(prefs, adminSection).getOrNull(ci)?.channels?.getOrNull(ji) ?: return
         val til = field("Nome canale (se vuoto usa quello della playlist)")
         til.editText!!.setText(ch.name)
         showDialog(
@@ -1126,7 +1274,7 @@ class MainActivity : AppCompatActivity() {
                 .setView(scroll(padBox(til)))
                 .setPositiveButton("Salva") { _, _ ->
                     val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
-                    Featured.edit(prefs) { l ->
+                    Featured.edit(prefs, adminSection) { l ->
                         val cat = l.getOrNull(ci)
                         if (cat != null && ji < cat.channels.size) {
                             val chs = cat.channels.toMutableList()
@@ -1143,7 +1291,7 @@ class MainActivity : AppCompatActivity() {
 
     // Nome (facoltativo) + scelta del canale dalla playlist
     private fun addChannelDialog(ci: Int) {
-        if (Featured.load(prefs).getOrNull(ci) == null) return
+        if (Featured.load(prefs, adminSection).getOrNull(ci) == null) return
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val nameField = field("Nome canale (se vuoto usa quello della playlist)")
         val search = field("Cerca nella playlist")
@@ -1214,7 +1362,7 @@ class MainActivity : AppCompatActivity() {
                     toast("Scegli un canale dalla playlist")
                 } else {
                     val nm = nameField.editText!!.text.toString().trim().ifEmpty { p.name }
-                    Featured.edit(prefs) { l ->
+                    Featured.edit(prefs, adminSection) { l ->
                         val cat = l.getOrNull(ci)
                         if (cat != null) {
                             val logos = (p.logos + listOfNotNull(Logos.repoUrl(nm))).distinct()
@@ -1290,7 +1438,7 @@ class MainActivity : AppCompatActivity() {
                 toast("Codice non valido")
                 return
             }
-            Featured.edit(prefs) { l ->
+            Featured.edit(prefs, adminSection) { l ->
                 if (replace) {
                     l.clear()
                     l.addAll(imported)

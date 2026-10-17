@@ -61,21 +61,33 @@ object Featured {
         return out
     }
 
-    fun load(p: SharedPreferences): MutableList<FeaturedCategory> = try {
-        fromJson(JSONArray(p.getString(KEY, null) ?: "[]"))
+    /** Chiave di salvataggio: "In evidenza" usa quella di sempre, le altre sezioni la loro. */
+    private fun key(section: String) = if (section == Sections.DEFAULT_ID) KEY else "${KEY}_$section"
+
+    fun load(p: SharedPreferences, section: String = Sections.DEFAULT_ID): MutableList<FeaturedCategory> = try {
+        fromJson(JSONArray(p.getString(key(section), null) ?: "[]"))
     } catch (_: Exception) {
         mutableListOf()
     }
 
-    fun save(p: SharedPreferences, list: List<FeaturedCategory>) {
-        p.edit().putString(KEY, toJson(list).toString()).apply()
+    fun save(p: SharedPreferences, list: List<FeaturedCategory>, section: String = Sections.DEFAULT_ID) {
+        p.edit().putString(key(section), toJson(list).toString()).apply()
     }
 
     /** Legge, modifica e risalva in un colpo solo. */
-    fun edit(p: SharedPreferences, block: (MutableList<FeaturedCategory>) -> Unit) {
-        val l = load(p)
+    fun edit(
+        p: SharedPreferences,
+        section: String = Sections.DEFAULT_ID,
+        block: (MutableList<FeaturedCategory>) -> Unit
+    ) {
+        val l = load(p, section)
         block(l)
-        save(p, l)
+        save(p, l, section)
+    }
+
+    /** Cancella tutte le categorie e i canali di una sezione. */
+    fun delete(p: SharedPreferences, section: String) {
+        p.edit().remove(key(section)).apply()
     }
 
     /** Trasforma categorie e canali in un codice di testo (JSON compresso + Base64). */
