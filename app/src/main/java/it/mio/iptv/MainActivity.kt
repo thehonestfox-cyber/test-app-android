@@ -1,10 +1,13 @@
 package it.mio.iptv
 
 import android.app.PictureInPictureParams
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
@@ -25,10 +28,13 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -52,6 +58,7 @@ import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -118,6 +125,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rightColumn: LinearLayout
     private lateinit var infoRow: LinearLayout
     private lateinit var adminTabs: TabLayout
+    private lateinit var adminToolbar: MaterialToolbar
+    private lateinit var adminHeader: LinearLayout
+    private lateinit var adminScroll: ScrollView
+    private var scrollToCat = -1
     private lateinit var nowTitle: TextView
     private lateinit var nowSub: TextView
     private lateinit var errorText: TextView
@@ -181,6 +192,7 @@ class MainActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (currentView === userView) applyUserLayout()
+        if (currentView === adminView) applyAdminLayout()
     }
 
     // ---------- Utility UI ----------
@@ -226,7 +238,10 @@ class MainActivity : AppCompatActivity() {
     private fun field(hint: String): TextInputLayout {
         val til = TextInputLayout(this)
         til.hint = hint
-        til.addView(TextInputEditText(til.context).apply { setSingleLine() })
+        til.addView(TextInputEditText(til.context).apply {
+            setSingleLine()
+            imeOptions = EditorInfo.IME_ACTION_DONE or EditorInfo.IME_FLAG_NO_EXTRACT_UI
+        })
         return til
     }
 
@@ -820,8 +835,29 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- Schermata admin: playlist + categorie e canali in evidenza ----------
 
+    private fun scroll(v: View): View = ScrollView(this).apply { addView(v) }
+
+    // Contenitore con i margini dei dialog
+    private fun padBox(vararg views: View) = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(24), dp(8), dp(24), 0)
+        views.forEach { addView(it, LinearLayout.LayoutParams(MATCH, WRAP)) }
+    }
+
+    // Dialog che si ridimensiona con la tastiera (serve in orizzontale)
+    private fun showDialog(b: MaterialAlertDialogBuilder) = b.create().also {
+        it.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        it.show()
+    }
+
+    private fun outlinedBtn(label: String, onClick: () -> Unit) =
+        MaterialButton(this, null, MR.attr.materialButtonOutlinedStyle).apply {
+            text = label
+            setOnClickListener { onClick() }
+        }
+
     private fun buildAdmin() {
-        val toolbar = MaterialToolbar(this).apply {
+        adminToolbar = MaterialToolbar(this).apply {
             title = "Admin"
             setNavigationIcon(R.drawable.ic_back)
             setNavigationIconTint(c(MR.attr.colorOnSurface))
@@ -841,10 +877,12 @@ class MainActivity : AppCompatActivity() {
                 override fun onTabReselected(tab: TabLayout.Tab?) {}
             })
         }
+        adminHeader = LinearLayout(this)
         adminList = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(8), dp(16), dp(96))
         }
+        adminScroll = ScrollView(this).apply { addView(adminList) }
         fab = ExtendedFloatingActionButton(this).apply {
             text = "Aggiungi playlist"
             setIconResource(R.drawable.ic_add)
@@ -852,9 +890,8 @@ class MainActivity : AppCompatActivity() {
         }
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(toolbar)
-            addView(adminTabs, LinearLayout.LayoutParams(MATCH, WRAP))
-            addView(ScrollView(context).apply { addView(adminList) }, lp(0, 1f))
+            addView(adminHeader, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(adminScroll, lp(0, 1f))
         }
         adminView = FrameLayout(this).apply {
             addView(column, FrameLayout.LayoutParams(MATCH, MATCH))
@@ -862,9 +899,27 @@ class MainActivity : AppCompatActivity() {
                 setMargins(0, 0, dp(16), dp(16))
             })
         }
+        applyAdminLayout()
+    }
+
+    // Verticale: barra del titolo e schede una sopra l'altra.
+    // Orizzontale: sulla stessa riga, per lasciare più spazio alla lista.
+    private fun applyAdminLayout() {
+        val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        adminHeader.removeAllViews()
+        adminHeader.orientation = if (land) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+        adminHeader.gravity = Gravity.CENTER_VERTICAL
+        if (land) {
+            adminHeader.addView(adminToolbar, LinearLayout.LayoutParams(WRAP, dp(48)))
+            adminHeader.addView(adminTabs, LinearLayout.LayoutParams(0, WRAP, 1f))
+        } else {
+            adminHeader.addView(adminToolbar, LinearLayout.LayoutParams(MATCH, WRAP))
+            adminHeader.addView(adminTabs, LinearLayout.LayoutParams(MATCH, WRAP))
+        }
     }
 
     private fun showAdmin() {
+        applyAdminLayout()
         adminTabs.getTabAt(adminTab)?.select()
         refreshAdmin()
         show(adminView)
@@ -900,41 +955,53 @@ class MainActivity : AppCompatActivity() {
 
     private fun addPlaylistDialog() {
         val til = field("URL playlist M3U")
-        val box = LinearLayout(this).apply {
-            setPadding(dp(24), dp(8), dp(24), 0)
-            addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Aggiungi playlist")
-            .setView(box)
-            .setPositiveButton("Aggiungi") { _, _ ->
-                val u = til.editText!!.text.toString().trim()
-                if (u.startsWith("http")) {
-                    val l = loadPlaylists()
-                    if (!l.contains(u)) l.add(u)
-                    savePlaylists(l)
-                    refreshAdmin()
-                } else toast("Inserisci un URL che inizia con http")
-            }
-            .setNegativeButton("Annulla", null)
-            .show()
+        showDialog(
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Aggiungi playlist")
+                .setView(scroll(padBox(til)))
+                .setPositiveButton("Aggiungi") { _, _ ->
+                    val u = til.editText!!.text.toString().trim()
+                    if (u.startsWith("http")) {
+                        val l = loadPlaylists()
+                        if (!l.contains(u)) l.add(u)
+                        savePlaylists(l)
+                        refreshAdmin()
+                    } else toast("Inserisci un URL che inizia con http")
+                }
+                .setNegativeButton("Annulla", null)
+        )
     }
 
     // --- Tab In evidenza: categorie e canali ---
 
     private fun refreshFeatured() {
         val cats = Featured.load(prefs)
+        adminList.addView(LinearLayout(this).apply {
+            addView(
+                outlinedBtn("Importa codice") { importDialog() },
+                LinearLayout.LayoutParams(0, WRAP, 1f).apply { rightMargin = dp(8) }
+            )
+            addView(
+                outlinedBtn("Esporta tutto") {
+                    if (cats.isEmpty()) toast("Niente da esportare") else exportDialog(cats, "Esporta tutto")
+                },
+                LinearLayout.LayoutParams(0, WRAP, 1f)
+            )
+        })
         if (cats.isEmpty()) {
             adminList.addView(
                 tv(
-                    "Nessuna categoria. Creane una (es. \"Canali TV\") e poi aggiungi i canali scegliendoli dalla playlist.",
+                    "Nessuna categoria. Creane una (es. \"Canali TV\") e poi aggiungi i canali scegliendoli dalla playlist, oppure importa un codice.",
                     14f, c(MR.attr.colorOnSurfaceVariant)
-                ).apply { setPadding(dp(4), dp(8), dp(4), 0) }
+                ).apply { setPadding(dp(4), dp(16), dp(4), 0) }
             )
             return
         }
+        val headers = mutableListOf<View>()
         cats.forEachIndexed { i, cat ->
-            adminList.addView(categoryHeader(i, cat))
+            val h = categoryHeader(i, cat, cats.size)
+            headers.add(h)
+            adminList.addView(h)
             if (cat.channels.isEmpty()) {
                 adminList.addView(
                     tv("Nessun canale: tocca + per aggiungerne.", 13f, c(MR.attr.colorOnSurfaceVariant))
@@ -956,10 +1023,19 @@ class MainActivity : AppCompatActivity() {
                 adminList.addView(card)
             }
         }
+        // dopo uno spostamento, porta in vista la categoria spostata
+        val target = scrollToCat
+        scrollToCat = -1
+        if (target in headers.indices) {
+            val v = headers[target]
+            adminScroll.post { adminScroll.smoothScrollTo(0, (v.top - dp(8)).coerceAtLeast(0)) }
+        }
     }
 
-    private fun categoryHeader(i: Int, cat: FeaturedCategory): View {
+    private fun categoryHeader(i: Int, cat: FeaturedCategory, total: Int): View {
         val tint = c(MR.attr.colorOnSurfaceVariant)
+        val more = iconBtn(R.drawable.ic_more, tint, dp(10), null) {}
+        more.setOnClickListener { showCategoryMenu(more, i, cat, total) }
         return LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(20), 0, 0)
@@ -971,83 +1047,102 @@ class MainActivity : AppCompatActivity() {
                 iconBtn(R.drawable.ic_add, tint, dp(10), null) { addChannelDialog(i) },
                 LinearLayout.LayoutParams(dp(44), dp(44))
             )
-            addView(
-                iconBtn(R.drawable.ic_edit, tint, dp(10), null) { categoryDialog(i) },
-                LinearLayout.LayoutParams(dp(44), dp(44))
-            )
-            addView(
-                iconBtn(R.drawable.ic_delete, tint, dp(10), null) {
-                    confirmDelete("La categoria \"${cat.name}\" e i suoi ${cat.channels.size} canali") {
-                        Featured.edit(prefs) { l -> if (i < l.size) l.removeAt(i) }
-                        refreshAdmin()
-                    }
-                },
-                LinearLayout.LayoutParams(dp(44), dp(44))
-            )
+            addView(more, LinearLayout.LayoutParams(dp(44), dp(44)))
         }
+    }
+
+    private fun showCategoryMenu(anchor: View, i: Int, cat: FeaturedCategory, total: Int) {
+        val m = PopupMenu(this, anchor)
+        if (i > 0) m.menu.add(0, 1, 0, "Sposta su")
+        if (i < total - 1) m.menu.add(0, 2, 1, "Sposta giù")
+        m.menu.add(0, 3, 2, "Rinomina")
+        m.menu.add(0, 4, 3, "Esporta codice")
+        m.menu.add(0, 5, 4, "Elimina")
+        m.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> moveCategory(i, -1)
+                2 -> moveCategory(i, 1)
+                3 -> categoryDialog(i)
+                4 -> exportDialog(listOf(cat), "Esporta \"${cat.name}\"")
+                5 -> confirmDelete("La categoria \"${cat.name}\" e i suoi ${cat.channels.size} canali") {
+                    Featured.edit(prefs) { l -> if (i < l.size) l.removeAt(i) }
+                    refreshAdmin()
+                }
+            }
+            true
+        }
+        m.show()
+    }
+
+    // Sposta la categoria di una posizione (l'ordine vale anche nella sezione "In evidenza")
+    private fun moveCategory(i: Int, delta: Int) {
+        val j = i + delta
+        Featured.edit(prefs) { l ->
+            if (i in l.indices && j in l.indices) {
+                val x = l.removeAt(i)
+                l.add(j, x)
+            }
+        }
+        scrollToCat = j
+        refreshAdmin()
     }
 
     // index == null: nuova categoria; altrimenti rinomina
     private fun categoryDialog(index: Int?) {
         val til = field("Nome categoria (es. Canali TV)")
         if (index != null) Featured.load(prefs).getOrNull(index)?.let { til.editText!!.setText(it.name) }
-        val box = LinearLayout(this).apply {
-            setPadding(dp(24), dp(8), dp(24), 0)
-            addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(if (index == null) "Nuova categoria" else "Rinomina categoria")
-            .setView(box)
-            .setPositiveButton(if (index == null) "Crea" else "Salva") { _, _ ->
-                val n = til.editText!!.text.toString().trim()
-                val l = Featured.load(prefs)
-                when {
-                    n.isEmpty() -> toast("Scrivi un nome")
-                    l.withIndex().any { (k, x) -> k != index && x.name.equals(n, ignoreCase = true) } ->
-                        toast("Esiste già una categoria con questo nome")
-                    else -> {
-                        if (index == null) l.add(FeaturedCategory(n, emptyList()))
-                        else if (index < l.size) l[index] = l[index].copy(name = n)
-                        Featured.save(prefs, l)
+        showDialog(
+            MaterialAlertDialogBuilder(this)
+                .setTitle(if (index == null) "Nuova categoria" else "Rinomina categoria")
+                .setView(scroll(padBox(til)))
+                .setPositiveButton(if (index == null) "Crea" else "Salva") { _, _ ->
+                    val n = til.editText!!.text.toString().trim()
+                    val l = Featured.load(prefs)
+                    when {
+                        n.isEmpty() -> toast("Scrivi un nome")
+                        l.withIndex().any { (k, x) -> k != index && x.name.equals(n, ignoreCase = true) } ->
+                            toast("Esiste già una categoria con questo nome")
+                        else -> {
+                            if (index == null) l.add(FeaturedCategory(n, emptyList()))
+                            else if (index < l.size) l[index] = l[index].copy(name = n)
+                            Featured.save(prefs, l)
+                        }
                     }
+                    refreshAdmin()
                 }
-                refreshAdmin()
-            }
-            .setNegativeButton("Annulla", null)
-            .show()
+                .setNegativeButton("Annulla", null)
+        )
     }
 
     private fun renameChannelDialog(ci: Int, ji: Int) {
         val ch = Featured.load(prefs).getOrNull(ci)?.channels?.getOrNull(ji) ?: return
         val til = field("Nome canale (se vuoto usa quello della playlist)")
         til.editText!!.setText(ch.name)
-        val box = LinearLayout(this).apply {
-            setPadding(dp(24), dp(8), dp(24), 0)
-            addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Rinomina canale")
-            .setView(box)
-            .setPositiveButton("Salva") { _, _ ->
-                val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
-                Featured.edit(prefs) { l ->
-                    val cat = l.getOrNull(ci)
-                    if (cat != null && ji < cat.channels.size) {
-                        val chs = cat.channels.toMutableList()
-                        val old = chs[ji]
-                        chs[ji] = old.copy(name = n, logos = (old.logos + listOfNotNull(Logos.repoUrl(n))).distinct())
-                        l[ci] = cat.copy(channels = chs)
+        showDialog(
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Rinomina canale")
+                .setView(scroll(padBox(til)))
+                .setPositiveButton("Salva") { _, _ ->
+                    val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
+                    Featured.edit(prefs) { l ->
+                        val cat = l.getOrNull(ci)
+                        if (cat != null && ji < cat.channels.size) {
+                            val chs = cat.channels.toMutableList()
+                            val old = chs[ji]
+                            chs[ji] = old.copy(name = n, logos = (old.logos + listOfNotNull(Logos.repoUrl(n))).distinct())
+                            l[ci] = cat.copy(channels = chs)
+                        }
                     }
+                    refreshAdmin()
                 }
-                refreshAdmin()
-            }
-            .setNegativeButton("Annulla", null)
-            .show()
+                .setNegativeButton("Annulla", null)
+        )
     }
 
     // Nome (facoltativo) + scelta del canale dalla playlist
     private fun addChannelDialog(ci: Int) {
         if (Featured.load(prefs).getOrNull(ci) == null) return
+        val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val nameField = field("Nome canale (se vuoto usa quello della playlist)")
         val search = field("Cerca nella playlist")
         val status = tv("Caricamento canali…", 13f, c(MR.attr.colorOnSurfaceVariant))
@@ -1074,13 +1169,24 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(context)
             this.adapter = pickAdapter
         }
+        // In orizzontale nome e ricerca stanno affiancati, così resta spazio per la lista
+        val fieldsRow = LinearLayout(this).apply {
+            orientation = if (land) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            if (land) {
+                addView(nameField, LinearLayout.LayoutParams(0, WRAP, 1f).apply { rightMargin = dp(12) })
+                addView(search, LinearLayout.LayoutParams(0, WRAP, 1f))
+            } else {
+                addView(nameField, LinearLayout.LayoutParams(MATCH, WRAP))
+                addView(search, LinearLayout.LayoutParams(MATCH, WRAP))
+            }
+        }
+        val listH = (resources.displayMetrics.heightPixels * (if (land) 0.45f else 0.4f)).toInt()
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(8), dp(24), 0)
-            addView(nameField, LinearLayout.LayoutParams(MATCH, WRAP))
-            addView(search, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(fieldsRow, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(status)
-            addView(recycler, LinearLayout.LayoutParams(MATCH, dp(280)))
+            addView(recycler, LinearLayout.LayoutParams(MATCH, listH))
         }
         loadPlaylistChannels { all, errors, final ->
             list = all
@@ -1095,7 +1201,7 @@ class MainActivity : AppCompatActivity() {
         }
         val dlg = MaterialAlertDialogBuilder(this)
             .setTitle("Aggiungi canale")
-            .setView(box)
+            .setView(scroll(box))
             .setPositiveButton("Aggiungi", null)
             .setNegativeButton("Annulla", null)
             .create()
@@ -1119,7 +1225,89 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+        dlg.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dlg.show()
+    }
+
+    // --- Esporta / importa con un codice ---
+
+    private fun exportDialog(cats: List<FeaturedCategory>, title: String) {
+        val code = Featured.exportCode(cats)
+        val n = cats.sumOf { it.channels.size }
+        val til = field("Codice")
+        til.editText!!.apply {
+            setSingleLine(false)
+            maxLines = 6
+            setText(code)
+        }
+        val info = tv(
+            "${cats.size} categorie · $n canali. Copia il codice e incollalo in \"Importa codice\" su un altro dispositivo. Contiene gli indirizzi dei canali: condividilo solo con chi vuoi.",
+            13f, c(MR.attr.colorOnSurfaceVariant)
+        ).apply { setPadding(0, 0, 0, dp(8)) }
+        showDialog(
+            MaterialAlertDialogBuilder(this)
+                .setTitle(title)
+                .setView(scroll(padBox(info, til)))
+                .setPositiveButton("Copia") { _, _ ->
+                    val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                    cm.setPrimaryClip(ClipData.newPlainText("Codice IPTV", code))
+                    toast("Codice copiato")
+                }
+                .setNeutralButton("Condividi") { _, _ ->
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, code)
+                    }
+                    startActivity(Intent.createChooser(send, "Condividi codice"))
+                }
+                .setNegativeButton("Chiudi", null)
+        )
+    }
+
+    private fun importDialog() {
+        val til = field("Incolla il codice qui")
+        til.editText!!.apply {
+            setSingleLine(false)
+            maxLines = 6
+        }
+        // se negli appunti c'è già un codice, lo precompila
+        try {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = cm.primaryClip?.getItemAt(0)?.text?.toString()?.trim()
+            if (clip != null && clip.startsWith(Featured.PREFIX)) til.editText!!.setText(clip)
+        } catch (_: Exception) {
+        }
+        val info = tv(
+            "\"Aggiungi\" mantiene le categorie attuali (se una esiste già unisce i canali). \"Sostituisci tutto\" cancella quelle attuali.",
+            13f, c(MR.attr.colorOnSurfaceVariant)
+        ).apply { setPadding(0, 0, 0, dp(8)) }
+
+        fun doImport(replace: Boolean) {
+            val imported = Featured.importCode(til.editText!!.text.toString())
+            if (imported == null || imported.isEmpty()) {
+                toast("Codice non valido")
+                return
+            }
+            Featured.edit(prefs) { l ->
+                if (replace) {
+                    l.clear()
+                    l.addAll(imported)
+                } else Featured.merge(l, imported)
+            }
+            refreshAdmin()
+            toast("Importate ${imported.size} categorie")
+        }
+
+        showDialog(
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Importa codice")
+                .setView(scroll(padBox(info, til)))
+                .setPositiveButton("Aggiungi") { _, _ -> doImport(false) }
+                .setNeutralButton("Sostituisci tutto") { _, _ ->
+                    confirmDelete("Tutte le categorie attuali, sostituite con quelle del codice") { doImport(true) }
+                }
+                .setNegativeButton("Annulla", null)
+        )
     }
 
     // ---------- Dati salvati ----------

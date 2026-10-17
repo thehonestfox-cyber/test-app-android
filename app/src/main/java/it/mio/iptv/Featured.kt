@@ -1,44 +1,23 @@
 package it.mio.iptv
 
 import android.content.SharedPreferences
+import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 
 /** Categoria "In evidenza" creata dall'admin (es. "Canali TV") con i suoi canali. */
 data class FeaturedCategory(val name: String, val channels: List<Channel>)
 
-/** Salva/legge le categorie e i canali in evidenza nelle preferenze dell'app. */
+/** Salva/legge le categorie e i canali in evidenza; li esporta/importa come codice di testo. */
 object Featured {
     private const val KEY = "featured"
+    const val PREFIX = "IPTV1-"
 
-    fun load(p: SharedPreferences): MutableList<FeaturedCategory> {
-        val out = mutableListOf<FeaturedCategory>()
-        try {
-            val arr = JSONArray(p.getString(KEY, null) ?: "[]")
-            for (i in 0 until arr.length()) {
-                val o = arr.getJSONObject(i)
-                val cat = o.getString("name")
-                val chs = o.optJSONArray("channels") ?: JSONArray()
-                val list = (0 until chs.length()).map { j ->
-                    val c = chs.getJSONObject(j)
-                    val lg = c.optJSONArray("logos") ?: JSONArray()
-                    Channel(
-                        name = c.getString("name"),
-                        rawName = c.optString("rawName", c.getString("name")),
-                        quality = c.optString("quality", ""),
-                        category = cat,
-                        url = c.getString("url"),
-                        logos = List(lg.length()) { lg.getString(it) }
-                    )
-                }
-                out.add(FeaturedCategory(cat, list))
-            }
-        } catch (_: Exception) {
-        }
-        return out
-    }
-
-    fun save(p: SharedPreferences, list: List<FeaturedCategory>) {
+    private fun toJson(list: List<FeaturedCategory>): JSONArray {
         val arr = JSONArray()
         list.forEach { cat ->
             arr.put(JSONObject().apply {
@@ -56,7 +35,40 @@ object Featured {
                 })
             })
         }
-        p.edit().putString(KEY, arr.toString()).apply()
+        return arr
+    }
+
+    private fun fromJson(arr: JSONArray): MutableList<FeaturedCategory> {
+        val out = mutableListOf<FeaturedCategory>()
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            val cat = o.getString("name")
+            val chs = o.optJSONArray("channels") ?: JSONArray()
+            val list = (0 until chs.length()).map { j ->
+                val c = chs.getJSONObject(j)
+                val lg = c.optJSONArray("logos") ?: JSONArray()
+                Channel(
+                    name = c.getString("name"),
+                    rawName = c.optString("rawName", c.getString("name")),
+                    quality = c.optString("quality", ""),
+                    category = cat,
+                    url = c.getString("url"),
+                    logos = List(lg.length()) { lg.getString(it) }
+                )
+            }
+            out.add(FeaturedCategory(cat, list))
+        }
+        return out
+    }
+
+    fun load(p: SharedPreferences): MutableList<FeaturedCategory> = try {
+        fromJson(JSONArray(p.getString(KEY, null) ?: "[]"))
+    } catch (_: Exception) {
+        mutableListOf()
+    }
+
+    fun save(p: SharedPreferences, list: List<FeaturedCategory>) {
+        p.edit().putString(KEY, toJson(list).toString()).apply()
     }
 
     /** Legge, modifica e risalva in un colpo solo. */
@@ -64,5 +76,40 @@ object Featured {
         val l = load(p)
         block(l)
         save(p, l)
+    }
+
+    /** Trasforma categorie e canali in un codice di testo (JSON compresso + Base64). */
+    fun exportCode(list: List<FeaturedCategory>): String {
+        val raw = toJson(list).toString().toByteArray(Charsets.UTF_8)
+        val bos = ByteArrayOutputStream()
+        GZIPOutputStream(bos).use { it.write(raw) }
+        return PREFIX + Base64.encodeToString(
+            bos.toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+        )
+    }
+
+    /** Legge un codice; null se non è valido. */
+    fun importCode(code: String): List<FeaturedCategory>? = try {
+        val t = code.filter { !it.isWhitespace() }
+        if (!t.startsWith(PREFIX)) null
+        else {
+            val bytes = Base64.decode(t.removePrefix(PREFIX), Base64.URL_SAFE)
+            val text = GZIPInputStream(ByteArrayInputStream(bytes)).use { it.readBytes().toString(Charsets.UTF_8) }
+            fromJson(JSONArray(text)).filter { it.name.isNotBlank() }
+        }
+    } catch (_: Exception) {
+        null
+    }
+
+    /** Aggiunge le categorie importate: se il nome esiste già unisce i canali (senza doppioni). */
+    fun merge(into: MutableList<FeaturedCategory>, add: List<FeaturedCategory>) {
+        for (c in add) {
+            val k = into.indexOfFirst { it.name.equals(c.name, ignoreCase = true) }
+            if (k < 0) into.add(c)
+            else {
+                val have = into[k].channels.map { it.url }.toSet()
+                into[k] = into[k].copy(channels = into[k].channels + c.channels.filter { it.url !in have })
+            }
+        }
     }
 }
