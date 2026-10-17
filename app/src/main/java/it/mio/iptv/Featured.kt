@@ -9,10 +9,10 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-/** Categoria "In evidenza" creata dall'admin (es. "Canali TV") con i suoi canali. */
+/** Categoria creata dall'admin (es. "Canali TV") con i suoi canali. */
 data class FeaturedCategory(val name: String, val channels: List<Channel>)
 
-/** Salva/legge le categorie e i canali in evidenza; li esporta/importa come codice di testo. */
+/** Salva/legge le categorie e i canali delle sezioni; li esporta/importa come codice di testo. */
 object Featured {
     private const val KEY = "featured"
     const val PREFIX = "IPTV1-"
@@ -61,7 +61,7 @@ object Featured {
         return out
     }
 
-    /** Chiave di salvataggio: "In evidenza" usa quella di sempre, le altre sezioni la loro. */
+    /** Chiave di salvataggio di una sezione (la vecchia "In evidenza" usava quella senza suffisso). */
     private fun key(section: String) = if (section == Sections.DEFAULT_ID) KEY else "${KEY}_$section"
 
     fun load(p: SharedPreferences, section: String = Sections.DEFAULT_ID): MutableList<FeaturedCategory> = try {

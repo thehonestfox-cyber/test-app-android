@@ -156,6 +156,7 @@ class MainActivity : AppCompatActivity() {
     private var inPip = false
     private var loadGen = 0
     private var adminTab = 0
+    private var adminCollapsed = false       // true = nella gestione categorie mostra solo le categorie, senza canali
     private var lastLand: Boolean? = null
 
     // ---------- Avvio ----------
@@ -363,11 +364,14 @@ class MainActivity : AppCompatActivity() {
         homeCards.removeAllViews()
         Sections.load(prefs).forEach { sec ->
             homeCards.addView(
-                homeCard(Sections.iconRes(sec.icon), sec.name, "I canali scelti dall'admin") { showUser(sec.id) }
+                homeCard(
+                    Sections.iconRes(sec.icon), sec.name,
+                    sec.description.ifBlank { "I canali scelti dall'admin" }
+                ) { showUser(sec.id) }
             )
         }
         homeCards.addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
-        homeCards.addView(homeCard(R.drawable.ic_edit, "Impostazioni", "Playlist e sezioni della home") { showAdmin() })
+        homeCards.addView(homeCard(R.drawable.ic_settings, "Impostazioni", "Playlist e sezioni della home") { showAdmin() })
     }
 
     private fun goHome() {
@@ -725,11 +729,11 @@ class MainActivity : AppCompatActivity() {
         show(userView)
     }
 
-    // "In evidenza": solo i canali scelti dall'admin, nelle sue categorie e nel suo ordine
+    // Sezione: solo i canali scelti dall'admin, nelle sue categorie e nel suo ordine
     private fun loadFeatured(section: String) {
         val cats = Featured.load(prefs, section)
         val all = cats.flatMap { it.channels }
-        val name = Sections.load(prefs).firstOrNull { it.id == section }?.name ?: "In evidenza"
+        val name = Sections.load(prefs).firstOrNull { it.id == section }?.name ?: "Sezione"
         setChannels(all, cats.filter { it.channels.isNotEmpty() }.map { it.name })
         listStatus.text =
             if (all.isEmpty()) "Nessun canale in $name: aggiungili da Impostazioni › Admin."
@@ -863,7 +867,7 @@ class MainActivity : AppCompatActivity() {
         start(ch.url, triedHls)
     }
 
-    // ---------- Schermata admin: playlist + categorie e canali in evidenza ----------
+    // ---------- Schermata admin: playlist + sezioni, categorie e canali ----------
 
     private fun scroll(v: View): View = ScrollView(this).apply { addView(v) }
 
@@ -984,17 +988,24 @@ class MainActivity : AppCompatActivity() {
         })
         adminList.addView(
             tv(
-                "Tocca una sezione per gestire categorie e canali. Tieni premuto per rinominarla o cambiarne l'icona.",
+                "Tocca una sezione per gestire categorie e canali. Tieni premuto per cambiarne nome, icona o descrizione.",
                 13f, c(MR.attr.colorOnSurfaceVariant)
             ).apply { setPadding(dp(4), 0, dp(4), dp(8)) }
         )
-        Sections.load(prefs).forEachIndexed { i, sec ->
+        val sections = Sections.load(prefs)
+        if (sections.isEmpty()) {
+            adminList.addView(
+                tv("Nessuna sezione. Creane una con \"Nuova sezione\".", 14f, c(MR.attr.colorOnSurfaceVariant))
+                    .apply { setPadding(dp(4), dp(16), dp(4), 0) }
+            )
+        }
+        sections.forEachIndexed { i, sec ->
             val n = Featured.load(prefs, sec.id).sumOf { it.channels.size }
-            var del: (() -> Unit)? = null
-            if (sec.id != Sections.DEFAULT_ID) del = {
+            val del = {
                 confirmDelete("La sezione \"${sec.name}\" e tutti i suoi canali") { deleteSection(sec.id) }
             }
-            val card = itemCard(sec.name, "$n canali", false, { adminEditing = sec.id; refreshAdmin() }, del)
+            val sub = if (sec.description.isBlank()) "$n canali" else "${sec.description} · $n canali"
+            val card = itemCard(sec.name, sub, false, { adminEditing = sec.id; refreshAdmin() }, del)
             card.setOnLongClickListener {
                 sectionDialog(i)
                 true
@@ -1017,21 +1028,24 @@ class MainActivity : AppCompatActivity() {
         val cur = index?.let { list.getOrNull(it) }
         val til = field("Nome sezione (es. Sport)")
         if (cur != null) til.editText!!.setText(cur.name)
+        val tilDesc = field("Descrizione (facoltativa)")
+        if (cur != null) tilDesc.editText!!.setText(cur.description)
         var icon = cur?.icon ?: Sections.ICONS.first().first
         val label = tv("Icona", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(8)) }
         val picker = iconPicker(icon) { icon = it }
         showDialog(
             MaterialAlertDialogBuilder(this)
                 .setTitle(if (cur == null) "Nuova sezione" else "Modifica sezione")
-                .setView(scroll(padBox(til, label, picker)))
+                .setView(scroll(padBox(til, tilDesc, label, picker)))
                 .setPositiveButton(if (cur == null) "Aggiungi" else "Salva") { _, _ ->
                     val n = til.editText!!.text.toString().trim()
+                    val desc = tilDesc.editText!!.text.toString().trim()
                     if (n.isEmpty()) toast("Scrivi un nome")
                     else if (list.any { it.id != cur?.id && it.name.equals(n, ignoreCase = true) })
                         toast("Esiste già una sezione con questo nome")
                     else {
-                        if (cur == null) list.add(Section(Sections.newId(), n, icon))
-                        else list[index!!] = cur.copy(name = n, icon = icon)
+                        if (cur == null) list.add(Section(Sections.newId(), n, icon, desc))
+                        else list[index!!] = cur.copy(name = n, icon = icon, description = desc)
                         Sections.save(prefs, list)
                         refreshAdmin()
                     }
@@ -1111,7 +1125,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // --- Tab In evidenza: categorie e canali ---
+    // --- Tab Admin: categorie e canali di una sezione ---
 
     private fun refreshFeatured() {
         val cats = Featured.load(prefs, adminSection)
@@ -1138,6 +1152,15 @@ class MainActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams(0, WRAP, 1f)
             )
         })
+        if (cats.isNotEmpty()) {
+            adminList.addView(
+                outlinedBtn(if (adminCollapsed) "Mostra anche i canali" else "Mostra solo le categorie") {
+                    adminCollapsed = !adminCollapsed
+                    refreshAdmin()
+                },
+                LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }
+            )
+        }
         if (cats.isEmpty()) {
             adminList.addView(
                 tv(
@@ -1152,6 +1175,7 @@ class MainActivity : AppCompatActivity() {
             val h = categoryHeader(i, cat, cats.size)
             headers.add(h)
             adminList.addView(h)
+            if (adminCollapsed) return@forEachIndexed
             if (cat.channels.isEmpty()) {
                 adminList.addView(
                     tv("Nessun canale: tocca + per aggiungerne.", 13f, c(MR.attr.colorOnSurfaceVariant))
@@ -1224,7 +1248,7 @@ class MainActivity : AppCompatActivity() {
         m.show()
     }
 
-    // Sposta la categoria di una posizione (l'ordine vale anche nella sezione "In evidenza")
+    // Sposta la categoria di una posizione (l'ordine vale anche nella schermata della sezione)
     private fun moveCategory(i: Int, delta: Int) {
         val j = i + delta
         Featured.edit(prefs, adminSection) { l ->

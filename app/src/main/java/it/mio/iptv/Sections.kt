@@ -4,13 +4,14 @@ import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Sezione della home (es. "In evidenza"): nome e icona. Le sue categorie e i suoi canali stanno in [Featured]. */
-data class Section(val id: String, val name: String, val icon: String)
+/** Sezione della home (es. "Sport"): nome, icona e descrizione facoltativa. Le sue categorie e i suoi canali stanno in [Featured]. */
+data class Section(val id: String, val name: String, val icon: String, val description: String = "")
 
 object Sections {
-    /** La sezione "In evidenza" che esisteva già: i suoi dati restano dove erano. */
+    /** Id della vecchia sezione "In evidenza", ormai rimossa: serve solo per ripulirne i dati. */
     const val DEFAULT_ID = "featured"
     private const val KEY = "sections"
+    private const val LEGACY_KEY = "featured"
 
     /** Icone tra cui scegliere (chiave salvata -> risorsa). */
     val ICONS: List<Pair<String, Int>> = listOf(
@@ -39,19 +40,32 @@ object Sections {
             val a = JSONArray(p.getString(KEY, null) ?: "[]")
             for (i in 0 until a.length()) {
                 val o = a.getJSONObject(i)
-                out.add(Section(o.getString("id"), o.getString("name"), o.optString("icon", "star")))
+                out.add(
+                    Section(
+                        o.getString("id"), o.getString("name"),
+                        o.optString("icon", "star"), o.optString("description", "")
+                    )
+                )
             }
         } catch (_: Exception) {
             out.clear()
         }
-        if (out.none { it.id == DEFAULT_ID }) out.add(0, Section(DEFAULT_ID, "In evidenza", "star"))
+        // La sezione "In evidenza" non esiste più: la tolgo (una volta sola) insieme ai suoi dati
+        val hadLegacy = out.removeAll { it.id == DEFAULT_ID }
+        if (hadLegacy || p.contains(LEGACY_KEY)) {
+            Featured.delete(p, DEFAULT_ID)
+            save(p, out)
+        }
         return out
     }
 
     fun save(p: SharedPreferences, list: List<Section>) {
         val arr = JSONArray()
         list.forEach { s ->
-            arr.put(JSONObject().put("id", s.id).put("name", s.name).put("icon", s.icon))
+            arr.put(
+                JSONObject().put("id", s.id).put("name", s.name).put("icon", s.icon)
+                    .put("description", s.description)
+            )
         }
         p.edit().putString(KEY, arr.toString()).apply()
     }
