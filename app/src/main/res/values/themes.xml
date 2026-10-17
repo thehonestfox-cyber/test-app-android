@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.IPTV" parent="Theme.Material3.DayNight.NoActionBar" />
+    <!-- Schede (Playlist / In evidenza) a tutta larghezza anche in orizzontale:
+         Material limita di default ogni scheda a 264dp, quindi su schermi larghi restavano strette al centro. -->
+    <style name="Widget.IPTV.TabLayout" parent="Widget.Material3.TabLayout">
+        <item name="tabMaxWidth">0dp</item>
+    </style>
+
+    <style name="Theme.IPTV" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="tabStyle">@style/Widget.IPTV.TabLayout</item>
+    </style>
 </resources>
