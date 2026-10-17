@@ -1,0 +1,12 @@
+IPTV Player per Android 15 (API 35)
+
+1. Installa Android Studio (ultima versione stabile): developer.android.com/studio
+2. File > Open, scegli questa cartella e aspetta la sincronizzazione Gradle
+   (scarica da solo Gradle e le librerie, serve internet).
+3. Sul telefono: Impostazioni > Info telefono > tocca 7 volte "Numero build",
+   poi Opzioni sviluppatore > attiva "Debug USB". Collega il telefono al PC.
+4. In Android Studio premi Run (triangolo verde) con il telefono selezionato.
+
+Per ottenere un file APK da installare/condividere:
+Build > Build Bundle(s) / APK(s) > Build APK(s)
+Il file e' in app/build/outputs/apk/debug/app-debug.apk
