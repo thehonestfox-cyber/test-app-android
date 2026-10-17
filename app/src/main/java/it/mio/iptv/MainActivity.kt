@@ -1,6 +1,7 @@
 package it.mio.iptv
 
 import android.content.Context
+import android.content.DialogInterface
 import android.content.pm.ActivityInfo
 import android.content.res.ColorStateList
 import android.content.res.Configuration
@@ -55,6 +56,7 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
+import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import org.json.JSONArray
@@ -65,12 +67,13 @@ import com.google.android.material.R as MR
 // Contenitore che mantiene il rapporto 16:9 (come il player di YouTube)
 private class Ratio(ctx: Context) : FrameLayout(ctx) {
     var ratio = true
+    var maxH = Int.MAX_VALUE
     override fun onMeasure(w: Int, h: Int) {
         if (ratio) {
             val width = MeasureSpec.getSize(w)
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(width * 9 / 16, MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(minOf(width * 9 / 16, maxH), MeasureSpec.EXACTLY)
             )
         } else super.onMeasure(w, h)
     }
@@ -100,9 +103,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var seekFlash: TextView
 
     private lateinit var homeView: View
-    private lateinit var userView: View
+    private lateinit var userView: LinearLayout
     private lateinit var adminView: View
-    private lateinit var userPanel: View
+    private lateinit var listPanel: LinearLayout
+    private lateinit var rightColumn: LinearLayout
+    private lateinit var infoRow: LinearLayout
+    private lateinit var adminTabs: TabLayout
     private lateinit var nowTitle: TextView
     private lateinit var nowSub: TextView
     private lateinit var errorText: TextView
@@ -123,6 +129,9 @@ class MainActivity : AppCompatActivity() {
     private var currentUrl = ""
     private var triedHls = false
     private var fullscreen = false
+    private var featuredMode = false
+    private var adminTab = 0
+    private var lastLand: Boolean? = null
 
     // ---------- Avvio ----------
 
@@ -160,10 +169,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        // Come YouTube: ruotando il telefono si passa a schermo intero
-        if (currentView === userView) {
-            setFullscreen(newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE)
-        }
+        if (currentView === userView) applyUserLayout()
     }
 
     // ---------- Utility UI ----------
@@ -289,19 +295,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Home ----------
+    // ---------- Home: In evidenza / Completa / Admin ----------
 
     private fun buildHome() {
-        homeView = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(24), dp(24), dp(24), dp(24))
-            addView(tv("IPTV Player", 34f, c(MR.attr.colorOnSurface), true))
-            addView(tv("Scegli come entrare", 16f, c(MR.attr.colorOnSurfaceVariant)).apply {
-                setPadding(0, dp(4), 0, dp(16))
-            })
-            addView(homeCard(R.drawable.ic_person, "Utente", "Guarda i canali") { showUser() })
-            addView(homeCard(R.drawable.ic_edit, "Admin", "Gestisci le playlist") { showAdmin() })
+        homeView = ScrollView(this).apply {
+            isFillViewport = true
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(24), dp(24), dp(24), dp(24))
+                addView(tv("IPTV Player", 34f, c(MR.attr.colorOnSurface), true))
+                addView(tv("Scegli una sezione", 16f, c(MR.attr.colorOnSurfaceVariant)).apply {
+                    setPadding(0, dp(4), 0, dp(16))
+                })
+                addView(homeCard(R.drawable.ic_star, "In evidenza", "I canali scelti dall'admin") { showUser(true) })
+                addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(false) })
+                addView(homeCard(R.drawable.ic_edit, "Admin", "Playlist, categorie e canali") { showAdmin() })
+            }, ViewGroup.LayoutParams(MATCH, WRAP))
         }
     }
 
@@ -469,10 +479,7 @@ class MainActivity : AppCompatActivity() {
     private fun setFullscreen(on: Boolean) {
         if (on == fullscreen) return
         fullscreen = on
-        userPanel.visibility = if (on) View.GONE else View.VISIBLE
-        playerBox.ratio = !on
-        playerBox.layoutParams = LinearLayout.LayoutParams(MATCH, if (on) MATCH else WRAP)
-        playerBox.requestLayout()
+        applyUserLayout()
         fsBtn.setImageResource(if (on) R.drawable.ic_fullscreen_exit else R.drawable.ic_fullscreen)
         requestedOrientation = if (on) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -504,7 +511,7 @@ class MainActivity : AppCompatActivity() {
             addView(nowSub)
             addView(errorText)
         }
-        val info = LinearLayout(this).apply {
+        infoRow = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(12), dp(16), dp(8))
             addView(nowLogo, LinearLayout.LayoutParams(dp(64), dp(44)).apply { rightMargin = dp(12) })
@@ -512,7 +519,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         listStatus = tv("", 13f, c(MR.attr.colorOnSurfaceVariant)).apply {
-            setPadding(dp(16), 0, dp(16), dp(4))
+            setPadding(dp(16), dp(8), dp(16), dp(4))
         }
         chipGroup = ChipGroup(this).apply {
             isSingleSelection = true
@@ -534,7 +541,7 @@ class MainActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
         })
 
-        channelAdapter = ChannelAdapter(this) { playChannel(it) }
+        channelAdapter = ChannelAdapter(this) { onChannelTap(it) }
         val recycler = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(context)
             adapter = channelAdapter
@@ -542,23 +549,52 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(16), 0, dp(16), dp(16))
         }
 
-        userPanel = LinearLayout(this).apply {
+        // Pannello con la lista dei canali (a sinistra in orizzontale, sotto in verticale)
+        listPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(info)
             addView(listStatus)
             addView(chipScroll, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(searchField, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(recycler, lp(0, 1f))
         }
-        userView = LinearLayout(this).apply {
+        // Player + info sul canale (a destra in orizzontale, sopra in verticale)
+        rightColumn = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(playerBox, LinearLayout.LayoutParams(MATCH, WRAP))
-            addView(userPanel, lp(0, 1f))
+            addView(infoRow, LinearLayout.LayoutParams(MATCH, WRAP))
         }
+        // listPanel viene aggiunto da applyUserLayout() nel posto giusto
+        userView = LinearLayout(this).apply { addView(rightColumn) }
     }
 
-    private fun showUser() {
-        cache.clear()
+    /** Verticale: player sopra e canali sotto. Orizzontale: canali a sinistra e player a destra. */
+    private fun applyUserLayout() {
+        val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        listPanel.visibility = if (fullscreen) View.GONE else View.VISIBLE
+        infoRow.visibility = if (fullscreen) View.GONE else View.VISIBLE
+        playerBox.ratio = !fullscreen
+        playerBox.maxH = if (land) (resources.displayMetrics.heightPixels * 0.7f).toInt() else Int.MAX_VALUE
+        playerBox.layoutParams = LinearLayout.LayoutParams(MATCH, if (fullscreen) MATCH else WRAP)
+        if (lastLand != land) {
+            userView.orientation = if (land) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            userView.removeView(listPanel)
+            if (land) userView.addView(listPanel, 0, LinearLayout.LayoutParams(0, MATCH, 4f))
+            else userView.addView(listPanel, LinearLayout.LayoutParams(MATCH, 0, 1f))
+            lastLand = land
+        }
+        rightColumn.layoutParams =
+            if (land) LinearLayout.LayoutParams(0, MATCH, 6f)
+            else LinearLayout.LayoutParams(MATCH, if (fullscreen) MATCH else WRAP)
+    }
+
+    // Primo tocco: seleziona e riproduce. Tocco sul canale già selezionato: schermo intero.
+    private fun onChannelTap(ch: Channel) {
+        if (currentChannel?.url == ch.url) setFullscreen(true) else playChannel(ch)
+    }
+
+    private fun showUser(featured: Boolean) {
+        featuredMode = featured
+        if (!featured) cache.clear()
         currentChannel = null
         nowTitle.text = "Scegli un canale"
         nowSub.text = ""
@@ -566,19 +602,28 @@ class MainActivity : AppCompatActivity() {
         errorText.text = ""
         nowLogo.visibility = View.GONE
         channelAdapter.select(null)
-        loadAllChannels()
+        applyUserLayout()
+        if (featured) loadFeatured() else loadAllChannels()
         show(userView)
     }
 
-    // Scarica tutte le playlist, unisce i canali e crea le categorie da sole
-    private fun loadAllChannels() {
+    // "In evidenza": solo i canali scelti dall'admin, nelle sue categorie e nel suo ordine
+    private fun loadFeatured() {
+        val cats = Featured.load(prefs)
+        val all = cats.flatMap { it.channels }
+        setChannels(all, cats.filter { it.channels.isNotEmpty() }.map { it.name })
+        listStatus.text =
+            if (all.isEmpty()) "Nessun canale in evidenza: l'admin può aggiungerli dalla sezione Admin."
+            else "In evidenza · ${all.size} canali"
+    }
+
+    // Scarica tutte le playlist e unisce i canali
+    private fun loadPlaylistChannels(cb: (List<Channel>, Int) -> Unit) {
         val pls = loadPlaylists()
         if (pls.isEmpty()) {
-            setChannels(emptyList())
-            listStatus.text = "Nessuna playlist: aggiungila dalla sezione Admin."
+            cb(emptyList(), 0)
             return
         }
-        listStatus.text = "Caricamento canali…"
         val results = arrayOfNulls<List<Channel>>(pls.size)
         var errors = 0
         var pending = pls.size
@@ -586,23 +631,35 @@ class MainActivity : AppCompatActivity() {
             fetchPlaylist(url) { list, _ ->
                 if (list != null) results[i] = list else errors++
                 pending--
-                if (pending == 0) {
-                    val all = results.filterNotNull().flatten()
-                    setChannels(all)
-                    listStatus.text = when {
-                        errors > 0 -> "Errore nel caricamento di $errors playlist · ${all.size} canali"
-                        all.isEmpty() -> "La playlist è vuota."
-                        else -> "${all.size} canali"
-                    }
-                }
+                if (pending == 0) cb(results.filterNotNull().flatten(), errors)
             }
         }
     }
 
-    private fun setChannels(list: List<Channel>) {
-        allChannels = list.sortedWith(Categorizer.channelOrder)
+    // "Completa": tutte le playlist, con le categorie create da sole
+    private fun loadAllChannels() {
+        if (loadPlaylists().isEmpty()) {
+            setChannels(emptyList())
+            listStatus.text = "Nessuna playlist: aggiungila dalla sezione Admin."
+            return
+        }
+        listStatus.text = "Caricamento canali…"
+        loadPlaylistChannels { all, errors ->
+            if (featuredMode || currentView !== userView) return@loadPlaylistChannels
+            setChannels(all)
+            listStatus.text = when {
+                errors > 0 -> "Errore nel caricamento di $errors playlist · ${all.size} canali"
+                all.isEmpty() -> "La playlist è vuota."
+                else -> "${all.size} canali"
+            }
+        }
+    }
+
+    // order = ordine delle categorie deciso dall'admin (se null: ordine automatico)
+    private fun setChannels(list: List<Channel>, order: List<String>? = null) {
+        allChannels = if (order != null) list else list.sortedWith(Categorizer.channelOrder)
         val counts = allChannels.groupingBy { it.category }.eachCount()
-        categories = Categorizer.sortCategories(counts.keys)
+        categories = order ?: Categorizer.sortCategories(counts.keys)
         selectedCategory = null
         rebuildChips(counts)
         // svuota la ricerca (il TextWatcher richiama applyFilter)
@@ -631,20 +688,25 @@ class MainActivity : AppCompatActivity() {
         categories.forEach { add("$it (${counts[it]})", it) }
     }
 
+    // Intestazioni di categoria + canali, nell'ordine indicato
+    private fun rowsOf(list: List<Channel>, order: List<String>): List<ChannelAdapter.Row> {
+        val rows = mutableListOf<ChannelAdapter.Row>()
+        list.groupBy { it.category }
+            .toSortedMap(compareBy<String> { order.indexOf(it) })
+            .forEach { (cat, l) ->
+                rows.add(ChannelAdapter.Row.Header(cat, l.size))
+                l.forEach { rows.add(ChannelAdapter.Row.Item(it)) }
+            }
+        return rows
+    }
+
     private fun applyFilter() {
         val q = query.trim().lowercase()
         val filtered = allChannels.filter {
             (selectedCategory == null || it.category == selectedCategory) &&
                 (q.isEmpty() || it.name.lowercase().contains(q))
         }
-        val rows = mutableListOf<ChannelAdapter.Row>()
-        filtered.groupBy { it.category }
-            .toSortedMap(compareBy<String> { categories.indexOf(it) })
-            .forEach { (cat, list) ->
-                rows.add(ChannelAdapter.Row.Header(cat, list.size))
-                list.forEach { rows.add(ChannelAdapter.Row.Item(it)) }
-            }
-        channelAdapter.submit(rows)
+        channelAdapter.submit(rowsOf(filtered, categories))
     }
 
     private fun playChannel(ch: Channel) {
@@ -663,15 +725,28 @@ class MainActivity : AppCompatActivity() {
         start(ch.url, triedHls)
     }
 
-    // ---------- Schermata admin (solo playlist: i canali si creano da soli) ----------
+    // ---------- Schermata admin: playlist + categorie e canali in evidenza ----------
 
     private fun buildAdmin() {
         val toolbar = MaterialToolbar(this).apply {
-            title = "Admin · Playlist"
+            title = "Admin"
             setNavigationIcon(R.drawable.ic_back)
             setNavigationIconTint(c(MR.attr.colorOnSurface))
             setTitleTextColor(c(MR.attr.colorOnSurface))
             setNavigationOnClickListener { goHome() }
+        }
+        adminTabs = TabLayout(this).apply {
+            tabGravity = TabLayout.GRAVITY_FILL
+            addTab(newTab().setText("Playlist"))
+            addTab(newTab().setText("In evidenza"))
+            addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+                override fun onTabSelected(tab: TabLayout.Tab?) {
+                    adminTab = tab?.position ?: 0
+                    refreshAdmin()
+                }
+                override fun onTabUnselected(tab: TabLayout.Tab?) {}
+                override fun onTabReselected(tab: TabLayout.Tab?) {}
+            })
         }
         adminList = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -680,11 +755,12 @@ class MainActivity : AppCompatActivity() {
         fab = ExtendedFloatingActionButton(this).apply {
             text = "Aggiungi playlist"
             setIconResource(R.drawable.ic_add)
-            setOnClickListener { addPlaylistDialog() }
+            setOnClickListener { if (adminTab == 0) addPlaylistDialog() else categoryDialog(null) }
         }
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(toolbar)
+            addView(adminTabs, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(ScrollView(context).apply { addView(adminList) }, lp(0, 1f))
         }
         adminView = FrameLayout(this).apply {
@@ -696,12 +772,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAdmin() {
+        adminTabs.getTabAt(adminTab)?.select()
         refreshAdmin()
         show(adminView)
     }
 
     private fun refreshAdmin() {
         adminList.removeAllViews()
+        if (adminTab == 0) {
+            fab.text = "Aggiungi playlist"
+            refreshPlaylists()
+        } else {
+            fab.text = "Nuova categoria"
+            refreshFeatured()
+        }
+    }
+
+    // --- Tab Playlist ---
+
+    private fun refreshPlaylists() {
         val l = loadPlaylists()
         if (l.isEmpty()) adminList.addView(tv("Nessuna playlist.", 14f, c(MR.attr.colorOnSurfaceVariant)))
         l.forEachIndexed { i, u ->
@@ -736,6 +825,207 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("Annulla", null)
             .show()
+    }
+
+    // --- Tab In evidenza: categorie e canali ---
+
+    private fun refreshFeatured() {
+        val cats = Featured.load(prefs)
+        if (cats.isEmpty()) {
+            adminList.addView(
+                tv(
+                    "Nessuna categoria. Creane una (es. \"Canali TV\") e poi aggiungi i canali scegliendoli dalla playlist.",
+                    14f, c(MR.attr.colorOnSurfaceVariant)
+                ).apply { setPadding(dp(4), dp(8), dp(4), 0) }
+            )
+            return
+        }
+        cats.forEachIndexed { i, cat ->
+            adminList.addView(categoryHeader(i, cat))
+            if (cat.channels.isEmpty()) {
+                adminList.addView(
+                    tv("Nessun canale: tocca + per aggiungerne.", 13f, c(MR.attr.colorOnSurfaceVariant))
+                        .apply { setPadding(dp(16), dp(4), 0, 0) }
+                )
+            }
+            cat.channels.forEachIndexed { j, ch ->
+                val card = itemCard(ch.name, ch.rawName.takeIf { it != ch.name }, false, { renameChannelDialog(i, j) }) {
+                    confirmDelete(ch.name) {
+                        Featured.edit(prefs) { l ->
+                            l.getOrNull(i)?.let { cat0 ->
+                                l[i] = cat0.copy(channels = cat0.channels.filterIndexed { k, _ -> k != j })
+                            }
+                        }
+                        refreshAdmin()
+                    }
+                }
+                (card.layoutParams as LinearLayout.LayoutParams).leftMargin = dp(12)
+                adminList.addView(card)
+            }
+        }
+    }
+
+    private fun categoryHeader(i: Int, cat: FeaturedCategory): View {
+        val tint = c(MR.attr.colorOnSurfaceVariant)
+        return LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(4), dp(20), 0, 0)
+            addView(
+                tv("${cat.name} · ${cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
+                LinearLayout.LayoutParams(0, WRAP, 1f)
+            )
+            addView(
+                iconBtn(R.drawable.ic_add, tint, dp(10), null) { addChannelDialog(i) },
+                LinearLayout.LayoutParams(dp(44), dp(44))
+            )
+            addView(
+                iconBtn(R.drawable.ic_edit, tint, dp(10), null) { categoryDialog(i) },
+                LinearLayout.LayoutParams(dp(44), dp(44))
+            )
+            addView(
+                iconBtn(R.drawable.ic_delete, tint, dp(10), null) {
+                    confirmDelete("La categoria \"${cat.name}\" e i suoi ${cat.channels.size} canali") {
+                        Featured.edit(prefs) { l -> if (i < l.size) l.removeAt(i) }
+                        refreshAdmin()
+                    }
+                },
+                LinearLayout.LayoutParams(dp(44), dp(44))
+            )
+        }
+    }
+
+    // index == null: nuova categoria; altrimenti rinomina
+    private fun categoryDialog(index: Int?) {
+        val til = field("Nome categoria (es. Canali TV)")
+        if (index != null) Featured.load(prefs).getOrNull(index)?.let { til.editText!!.setText(it.name) }
+        val box = LinearLayout(this).apply {
+            setPadding(dp(24), dp(8), dp(24), 0)
+            addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(if (index == null) "Nuova categoria" else "Rinomina categoria")
+            .setView(box)
+            .setPositiveButton(if (index == null) "Crea" else "Salva") { _, _ ->
+                val n = til.editText!!.text.toString().trim()
+                val l = Featured.load(prefs)
+                when {
+                    n.isEmpty() -> toast("Scrivi un nome")
+                    l.withIndex().any { (k, x) -> k != index && x.name.equals(n, ignoreCase = true) } ->
+                        toast("Esiste già una categoria con questo nome")
+                    else -> {
+                        if (index == null) l.add(FeaturedCategory(n, emptyList()))
+                        else if (index < l.size) l[index] = l[index].copy(name = n)
+                        Featured.save(prefs, l)
+                    }
+                }
+                refreshAdmin()
+            }
+            .setNegativeButton("Annulla", null)
+            .show()
+    }
+
+    private fun renameChannelDialog(ci: Int, ji: Int) {
+        val ch = Featured.load(prefs).getOrNull(ci)?.channels?.getOrNull(ji) ?: return
+        val til = field("Nome canale (se vuoto usa quello della playlist)")
+        til.editText!!.setText(ch.name)
+        val box = LinearLayout(this).apply {
+            setPadding(dp(24), dp(8), dp(24), 0)
+            addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Rinomina canale")
+            .setView(box)
+            .setPositiveButton("Salva") { _, _ ->
+                val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
+                Featured.edit(prefs) { l ->
+                    val cat = l.getOrNull(ci)
+                    if (cat != null && ji < cat.channels.size) {
+                        val chs = cat.channels.toMutableList()
+                        val old = chs[ji]
+                        chs[ji] = old.copy(name = n, logos = (old.logos + listOfNotNull(Logos.repoUrl(n))).distinct())
+                        l[ci] = cat.copy(channels = chs)
+                    }
+                }
+                refreshAdmin()
+            }
+            .setNegativeButton("Annulla", null)
+            .show()
+    }
+
+    // Nome (facoltativo) + scelta del canale dalla playlist
+    private fun addChannelDialog(ci: Int) {
+        if (Featured.load(prefs).getOrNull(ci) == null) return
+        val nameField = field("Nome canale (se vuoto usa quello della playlist)")
+        val search = field("Cerca nella playlist")
+        val status = tv("Caricamento canali…", 13f, c(MR.attr.colorOnSurfaceVariant))
+            .apply { setPadding(dp(4), dp(8), dp(4), dp(4)) }
+        var picked: Channel? = null
+        var list = listOf<Channel>()
+        var order = listOf<String>()
+        lateinit var pickAdapter: ChannelAdapter
+        pickAdapter = ChannelAdapter(this) { ch ->
+            picked = ch
+            pickAdapter.select(ch.url)
+            nameField.placeholderText = ch.name
+        }
+        fun refilter() {
+            val q = search.editText!!.text.toString().trim().lowercase()
+            pickAdapter.submit(rowsOf(list.filter { q.isEmpty() || it.name.lowercase().contains(q) }, order))
+        }
+        search.editText!!.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) = refilter()
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
+        val recycler = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(context)
+            this.adapter = pickAdapter
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(8), dp(24), 0)
+            addView(nameField, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(search, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(status)
+            addView(recycler, LinearLayout.LayoutParams(MATCH, dp(280)))
+        }
+        loadPlaylistChannels { all, errors ->
+            list = all.sortedWith(Categorizer.channelOrder)
+            order = Categorizer.sortCategories(list.map { it.category }.toSet())
+            status.text = when {
+                list.isEmpty() && errors == 0 -> "Nessun canale: aggiungi prima una playlist."
+                errors > 0 -> "Errore nel caricamento di $errors playlist · ${list.size} canali"
+                else -> "${list.size} canali · tocca per scegliere"
+            }
+            refilter()
+        }
+        val dlg = MaterialAlertDialogBuilder(this)
+            .setTitle("Aggiungi canale")
+            .setView(box)
+            .setPositiveButton("Aggiungi", null)
+            .setNegativeButton("Annulla", null)
+            .create()
+        dlg.setOnShowListener {
+            dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                val p = picked
+                if (p == null) {
+                    toast("Scegli un canale dalla playlist")
+                } else {
+                    val nm = nameField.editText!!.text.toString().trim().ifEmpty { p.name }
+                    Featured.edit(prefs) { l ->
+                        val cat = l.getOrNull(ci)
+                        if (cat != null) {
+                            val logos = (p.logos + listOfNotNull(Logos.repoUrl(nm))).distinct()
+                            val ch = Channel(nm, p.rawName, p.quality, cat.name, p.url, logos)
+                            l[ci] = cat.copy(channels = cat.channels + ch)
+                        }
+                    }
+                    dlg.dismiss()
+                    refreshAdmin()
+                }
+            }
+        }
+        dlg.show()
     }
 
     // ---------- Dati salvati ----------
