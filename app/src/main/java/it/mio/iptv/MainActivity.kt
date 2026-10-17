@@ -325,20 +325,30 @@ class MainActivity : AppCompatActivity() {
     // ---------- Home: In evidenza / Completa / Admin ----------
 
     private fun buildHome() {
-        homeView = ScrollView(this).apply {
-            isFillViewport = true
-            addView(LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(24), dp(24), dp(24), dp(24))
-                addView(tv("IPTV Player", 34f, c(MR.attr.colorOnSurface), true))
-                addView(tv("Scegli una sezione", 16f, c(MR.attr.colorOnSurfaceVariant)).apply {
-                    setPadding(0, dp(4), 0, dp(16))
-                })
-                addView(homeCard(R.drawable.ic_star, "In evidenza", "I canali scelti dall'admin") { showUser(true) })
-                addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(false) })
-                addView(homeCard(R.drawable.ic_edit, "Admin", "Playlist, categorie e canali") { showAdmin() })
-            }, ViewGroup.LayoutParams(MATCH, WRAP))
+        // Barra fissa in alto con il nome dell'app (fuori dalle sezioni)
+        val bar = MaterialToolbar(this).apply {
+            title = "IPTV Player"
+            setNavigationIcon(R.drawable.ic_tv)
+            setNavigationIconTint(c(MR.attr.colorPrimary))
+            setTitleTextColor(c(MR.attr.colorOnSurface))
+        }
+        val divider = View(this).apply { setBackgroundColor(c(MR.attr.colorOutlineVariant)) }
+        val cards = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(24), dp(8), dp(24), dp(24))
+            addView(homeCard(R.drawable.ic_star, "In evidenza", "I canali scelti dall'admin") { showUser(true) })
+            addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(false) })
+            addView(homeCard(R.drawable.ic_edit, "Admin", "Playlist, categorie e canali") { showAdmin() })
+        }
+        homeView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(bar, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(divider, LinearLayout.LayoutParams(MATCH, dp(1)))
+            addView(ScrollView(context).apply {
+                isFillViewport = true
+                addView(cards, ViewGroup.LayoutParams(MATCH, WRAP))
+            }, lp(0, 1f))
         }
     }
 
@@ -902,20 +912,12 @@ class MainActivity : AppCompatActivity() {
         applyAdminLayout()
     }
 
-    // Verticale: barra del titolo e schede una sopra l'altra.
-    // Orizzontale: sulla stessa riga, per lasciare più spazio alla lista.
+    // Barra del titolo e schede una sopra l'altra, uguale in verticale e in orizzontale.
     private fun applyAdminLayout() {
-        val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         adminHeader.removeAllViews()
-        adminHeader.orientation = if (land) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-        adminHeader.gravity = Gravity.CENTER_VERTICAL
-        if (land) {
-            adminHeader.addView(adminToolbar, LinearLayout.LayoutParams(WRAP, dp(48)))
-            adminHeader.addView(adminTabs, LinearLayout.LayoutParams(0, WRAP, 1f))
-        } else {
-            adminHeader.addView(adminToolbar, LinearLayout.LayoutParams(MATCH, WRAP))
-            adminHeader.addView(adminTabs, LinearLayout.LayoutParams(MATCH, WRAP))
-        }
+        adminHeader.orientation = LinearLayout.VERTICAL
+        adminHeader.addView(adminToolbar, LinearLayout.LayoutParams(MATCH, WRAP))
+        adminHeader.addView(adminTabs, LinearLayout.LayoutParams(MATCH, WRAP))
     }
 
     private fun showAdmin() {
