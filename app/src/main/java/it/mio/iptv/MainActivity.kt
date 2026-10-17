@@ -1,7 +1,6 @@
 package it.mio.iptv
 
 import android.content.Context
-import android.content.DialogInterface
 import android.content.pm.ActivityInfo
 import android.content.res.ColorStateList
 import android.content.res.Configuration
@@ -21,15 +20,12 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ListView
 import android.widget.ScrollView
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -48,18 +44,20 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
-import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import org.json.JSONArray
-import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import com.google.android.material.R as MR
@@ -81,16 +79,13 @@ private class Ratio(ctx: Context) : FrameLayout(ctx) {
 @OptIn(UnstableApi::class)
 class MainActivity : AppCompatActivity() {
 
-    data class PCh(val name: String, val group: String, val url: String)
-    data class MyCh(val name: String, val playlist: String, val source: String, val url: String)
-
     private val defaultPlaylist =
         "https://gist.githubusercontent.com/alemagno1994alex-glitch/c285620b3b4c62b806b8037c0eaa6a6e/raw/iptv.m3u"
     private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
     private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
     private val prefs by lazy { getSharedPreferences("iptv", MODE_PRIVATE) }
-    private val cache = mutableMapOf<String, List<PCh>>()
+    private val cache = mutableMapOf<String, List<Channel>>()
     private val ui = Handler(Looper.getMainLooper())
 
     private lateinit var root: FrameLayout
@@ -111,14 +106,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nowTitle: TextView
     private lateinit var nowSub: TextView
     private lateinit var errorText: TextView
-    private lateinit var userList: LinearLayout
+    private lateinit var nowLogo: ImageView
+    private lateinit var listStatus: TextView
+    private lateinit var chipGroup: ChipGroup
+    private lateinit var searchField: TextInputLayout
+    private lateinit var channelAdapter: ChannelAdapter
     private lateinit var adminList: LinearLayout
     private lateinit var fab: ExtendedFloatingActionButton
 
     private var currentView: View? = null
-    private var currentMy: MyCh? = null
-    private var userChannels = listOf<MyCh>()
-    private var adminTab = 0
+    private var currentChannel: Channel? = null
+    private var allChannels = listOf<Channel>()
+    private var categories = listOf<String>()
+    private var selectedCategory: String? = null
+    private var query = ""
     private var currentUrl = ""
     private var triedHls = false
     private var fullscreen = false
@@ -128,6 +129,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         DynamicColors.applyToActivityIfAvailable(this)
+        Logos.init(this)
         if (!prefs.contains("playlists")) savePlaylists(listOf(defaultPlaylist))
 
         root = FrameLayout(this).apply { setBackgroundColor(c(MR.attr.colorSurface)) }
@@ -170,8 +172,6 @@ class MainActivity : AppCompatActivity() {
     private fun lp(h: Int, w: Float = 0f) = LinearLayout.LayoutParams(MATCH, h, w)
     private fun c(attr: Int) = MaterialColors.getColor(this, attr, Color.MAGENTA)
     private fun toast(t: String) = Toast.makeText(this, t, Toast.LENGTH_SHORT).show()
-    private fun adapter(items: List<String>) =
-        ArrayAdapter(this, android.R.layout.simple_list_item_1, items)
 
     private fun tv(t: String, size: Float, color: Int, bold: Boolean = false) = TextView(this).apply {
         text = t
@@ -301,14 +301,14 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(4), 0, dp(16))
             })
             addView(homeCard(R.drawable.ic_person, "Utente", "Guarda i canali") { showUser() })
-            addView(homeCard(R.drawable.ic_edit, "Admin", "Gestisci playlist e canali") { showAdmin() })
+            addView(homeCard(R.drawable.ic_edit, "Admin", "Gestisci le playlist") { showAdmin() })
         }
     }
 
     private fun goHome() {
         player.stop()
         if (fullscreen) setFullscreen(false)
-        currentMy = null
+        currentChannel = null
         show(homeView)
     }
 
@@ -485,30 +485,70 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- Schermata utente ----------
+    // ---------- Schermata utente: categorie + canali ----------
+
+    private fun logoBox(): ImageView = ImageView(this).apply {
+        scaleType = ImageView.ScaleType.FIT_CENTER
+        setPadding(dp(6), dp(4), dp(6), dp(4))
+        background = logoBackground(this@MainActivity, 8)
+    }
 
     private fun buildUser() {
         nowTitle = tv("Scegli un canale", 20f, c(MR.attr.colorOnSurface), true)
         nowSub = tv("", 13f, c(MR.attr.colorOnSurfaceVariant))
         errorText = tv("", 14f, c(MR.attr.colorError))
-        userList = LinearLayout(this).apply {
+        nowLogo = logoBox().apply { visibility = View.GONE }
+        val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), 0, dp(16), dp(16))
-        }
-        val info = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(8))
             addView(nowTitle)
             addView(nowSub)
             addView(errorText)
         }
+        val info = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(8))
+            addView(nowLogo, LinearLayout.LayoutParams(dp(64), dp(44)).apply { rightMargin = dp(12) })
+            addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
+        }
+
+        listStatus = tv("", 13f, c(MR.attr.colorOnSurfaceVariant)).apply {
+            setPadding(dp(16), 0, dp(16), dp(4))
+        }
+        chipGroup = ChipGroup(this).apply {
+            isSingleSelection = true
+            isSelectionRequired = true
+            isSingleLine = true
+            setPadding(dp(16), 0, dp(16), 0)
+        }
+        val chipScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(chipGroup)
+        }
+        searchField = field("Cerca canale").apply { setPadding(dp(16), dp(4), dp(16), 0) }
+        searchField.editText!!.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                query = s?.toString() ?: ""
+                applyFilter()
+            }
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
+
+        channelAdapter = ChannelAdapter(this) { playChannel(it) }
+        val recycler = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = channelAdapter
+            clipToPadding = false
+            setPadding(dp(16), 0, dp(16), dp(16))
+        }
+
         userPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(info)
-            addView(tv("Canali", 14f, c(MR.attr.colorPrimary), true).apply {
-                setPadding(dp(16), dp(8), dp(16), dp(4))
-            })
-            addView(ScrollView(context).apply { addView(userList) }, lp(0, 1f))
+            addView(listStatus)
+            addView(chipScroll, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(searchField, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(recycler, lp(0, 1f))
         }
         userView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -519,58 +559,119 @@ class MainActivity : AppCompatActivity() {
 
     private fun showUser() {
         cache.clear()
-        userChannels = loadChannels()
+        currentChannel = null
         nowTitle.text = "Scegli un canale"
         nowSub.text = ""
         titleView.text = ""
-        errorText.text = if (userChannels.isEmpty()) "Nessun canale: l'admin deve crearne qualcuno." else ""
-        renderUser()
+        errorText.text = ""
+        nowLogo.visibility = View.GONE
+        channelAdapter.select(null)
+        loadAllChannels()
         show(userView)
     }
 
-    private fun renderUser() {
-        userList.removeAllViews()
-        userChannels.forEach { ch ->
-            userList.addView(itemCard(ch.name, ch.source, ch === currentMy, { playMy(ch) }, null))
+    // Scarica tutte le playlist, unisce i canali e crea le categorie da sole
+    private fun loadAllChannels() {
+        val pls = loadPlaylists()
+        if (pls.isEmpty()) {
+            setChannels(emptyList())
+            listStatus.text = "Nessuna playlist: aggiungila dalla sezione Admin."
+            return
+        }
+        listStatus.text = "Caricamento canali…"
+        val results = arrayOfNulls<List<Channel>>(pls.size)
+        var errors = 0
+        var pending = pls.size
+        pls.forEachIndexed { i, url ->
+            fetchPlaylist(url) { list, _ ->
+                if (list != null) results[i] = list else errors++
+                pending--
+                if (pending == 0) {
+                    val all = results.filterNotNull().flatten()
+                    setChannels(all)
+                    listStatus.text = when {
+                        errors > 0 -> "Errore nel caricamento di $errors playlist · ${all.size} canali"
+                        all.isEmpty() -> "La playlist è vuota."
+                        else -> "${all.size} canali"
+                    }
+                }
+            }
         }
     }
 
-    // Risolve il canale della playlist (per nome) e lo riproduce
-    private fun playMy(ch: MyCh) {
-        currentMy = ch
+    private fun setChannels(list: List<Channel>) {
+        allChannels = list.sortedWith(Categorizer.channelOrder)
+        val counts = allChannels.groupingBy { it.category }.eachCount()
+        categories = Categorizer.sortCategories(counts.keys)
+        selectedCategory = null
+        rebuildChips(counts)
+        // svuota la ricerca (il TextWatcher richiama applyFilter)
+        query = ""
+        if (searchField.editText!!.text.isNotEmpty()) searchField.editText!!.setText("")
+        else applyFilter()
+    }
+
+    private fun rebuildChips(counts: Map<String, Int>) {
+        chipGroup.removeAllViews()
+        fun add(label: String, cat: String?) {
+            chipGroup.addView(Chip(this).apply {
+                id = View.generateViewId()
+                text = label
+                isCheckable = true
+                isChecked = cat == selectedCategory
+                setOnCheckedChangeListener { _, checked ->
+                    if (checked) {
+                        selectedCategory = cat
+                        applyFilter()
+                    }
+                }
+            })
+        }
+        add("Tutti (${allChannels.size})", null)
+        categories.forEach { add("$it (${counts[it]})", it) }
+    }
+
+    private fun applyFilter() {
+        val q = query.trim().lowercase()
+        val filtered = allChannels.filter {
+            (selectedCategory == null || it.category == selectedCategory) &&
+                (q.isEmpty() || it.name.lowercase().contains(q))
+        }
+        val rows = mutableListOf<ChannelAdapter.Row>()
+        filtered.groupBy { it.category }
+            .toSortedMap(compareBy<String> { categories.indexOf(it) })
+            .forEach { (cat, list) ->
+                rows.add(ChannelAdapter.Row.Header(cat, list.size))
+                list.forEach { rows.add(ChannelAdapter.Row.Item(it)) }
+            }
+        channelAdapter.submit(rows)
+    }
+
+    private fun playChannel(ch: Channel) {
+        currentChannel = ch
         nowTitle.text = ch.name
-        nowSub.text = "Diretta · ${ch.source}"
+        nowSub.text = "Diretta · ${ch.category}" + if (ch.quality.isNotEmpty()) " · ${ch.quality}" else ""
         titleView.text = ch.name
         errorText.text = ""
+        nowLogo.visibility = View.VISIBLE
+        loadChannelLogo(nowLogo, ch)
         spinner.visibility = View.VISIBLE
-        renderUser()
+        channelAdapter.select(ch.url)
         showControls()
-        fetchPlaylist(ch.playlist) { list, _ ->
-            val url = list?.firstOrNull { it.name.trim().equals(ch.source.trim(), true) }?.url ?: ch.url
-            currentUrl = url
-            triedHls = url.contains(".m3u8", ignoreCase = true)
-            start(url, triedHls)
-        }
+        currentUrl = ch.url
+        triedHls = ch.url.contains(".m3u8", ignoreCase = true)
+        start(ch.url, triedHls)
     }
 
-    // ---------- Schermata admin ----------
+    // ---------- Schermata admin (solo playlist: i canali si creano da soli) ----------
 
     private fun buildAdmin() {
         val toolbar = MaterialToolbar(this).apply {
-            title = "Admin"
+            title = "Admin · Playlist"
             setNavigationIcon(R.drawable.ic_back)
             setNavigationIconTint(c(MR.attr.colorOnSurface))
             setTitleTextColor(c(MR.attr.colorOnSurface))
             setNavigationOnClickListener { goHome() }
-        }
-        val tabs = TabLayout(this).apply {
-            addTab(newTab().setText("Playlist"))
-            addTab(newTab().setText("Canali"))
-            addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-                override fun onTabSelected(tab: TabLayout.Tab) = showTab(tab.position)
-                override fun onTabUnselected(tab: TabLayout.Tab) {}
-                override fun onTabReselected(tab: TabLayout.Tab) {}
-            })
         }
         adminList = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -579,12 +680,11 @@ class MainActivity : AppCompatActivity() {
         fab = ExtendedFloatingActionButton(this).apply {
             text = "Aggiungi playlist"
             setIconResource(R.drawable.ic_add)
-            setOnClickListener { if (adminTab == 0) addPlaylistDialog() else newChannelDialog() }
+            setOnClickListener { addPlaylistDialog() }
         }
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(toolbar)
-            addView(tabs)
             addView(ScrollView(context).apply { addView(adminList) }, lp(0, 1f))
         }
         adminView = FrameLayout(this).apply {
@@ -596,44 +696,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAdmin() {
-        showTab(adminTab)
-        show(adminView)
-    }
-
-    private fun showTab(i: Int) {
-        adminTab = i
-        fab.text = if (i == 0) "Aggiungi playlist" else "Nuovo canale"
         refreshAdmin()
+        show(adminView)
     }
 
     private fun refreshAdmin() {
         adminList.removeAllViews()
-        if (adminTab == 0) {
-            val l = loadPlaylists()
-            if (l.isEmpty()) adminList.addView(tv("Nessuna playlist.", 14f, c(MR.attr.colorOnSurfaceVariant)))
-            l.forEachIndexed { i, u ->
-                adminList.addView(itemCard(u, null, false, null) {
-                    confirmDelete(u) {
-                        val x = loadPlaylists()
-                        x.removeAt(i)
-                        savePlaylists(x)
-                        refreshAdmin()
-                    }
-                })
-            }
-        } else {
-            val l = loadChannels()
-            if (l.isEmpty()) adminList.addView(tv("Nessun canale creato.", 14f, c(MR.attr.colorOnSurfaceVariant)))
-            l.forEachIndexed { i, ch ->
-                adminList.addView(itemCard(ch.name, "→ ${ch.source}", false, null) {
-                    confirmDelete("Eliminare il canale \"${ch.name}\"?") {
-                        val x = loadChannels()
-                        x.removeAt(i)
-                        saveChannels(x)
-                        refreshAdmin()
-                    }
-                })
-            }
+        val l = loadPlaylists()
+        if (l.isEmpty()) adminList.addView(tv("Nessuna playlist.", 14f, c(MR.attr.colorOnSurfaceVariant)))
+        l.forEachIndexed { i, u ->
+            adminList.addView(itemCard(u, null, false, null) {
+                confirmDelete(u) {
+                    val x = loadPlaylists()
+                    x.removeAt(i)
+                    savePlaylists(x)
+                    refreshAdmin()
+                }
+            })
         }
     }
 
@@ -659,92 +738,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // Crea un canale e lo associa a un canale di una playlist
-    private fun newChannelDialog() {
-        val pls = loadPlaylists()
-        if (pls.isEmpty()) {
-            toast("Aggiungi prima una playlist")
-            return
-        }
-        val nameField = field("Nome del canale (es. RAI 1)")
-        val searchField = field("Cerca nella playlist")
-        val spinnerPl = Spinner(this)
-        spinnerPl.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, pls)
-        val status = tv("", 13f, c(MR.attr.colorOnSurfaceVariant))
-        val chosen = tv("Associato a: nessuno", 14f, c(MR.attr.colorPrimary), true)
-        val lv = ListView(this)
-        var items = listOf<PCh>()
-        var shownItems = listOf<PCh>()
-        var selected: PCh? = null
-
-        fun filter() {
-            val q = searchField.editText!!.text.toString().trim().lowercase()
-            shownItems = items.filter { q.isEmpty() || it.name.lowercase().contains(q) }
-            lv.adapter = adapter(shownItems.map { it.name })
-        }
-
-        fun load(url: String) {
-            status.text = "Caricamento…"
-            selected = null
-            chosen.text = "Associato a: nessuno"
-            fetchPlaylist(url) { list, err ->
-                if (list == null) {
-                    status.text = "Errore: $err"
-                } else {
-                    items = list
-                    status.text = "${list.size} canali"
-                    filter()
-                }
-            }
-        }
-
-        spinnerPl.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) = load(pls[pos])
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-        }
-        searchField.editText!!.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) = filter()
-            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-        })
-        lv.setOnItemClickListener { _, _, pos, _ ->
-            val s = shownItems[pos]
-            selected = s
-            chosen.text = "Associato a: ${s.name}"
-        }
-
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(8), dp(24), 0)
-            addView(nameField)
-            addView(spinnerPl)
-            addView(searchField)
-            addView(status)
-            addView(chosen)
-            addView(lv, LinearLayout.LayoutParams(MATCH, dp(240)))
-        }
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Nuovo canale")
-            .setView(content)
-            .setPositiveButton("Salva", null)
-            .setNegativeButton("Annulla", null)
-            .create()
-        dialog.show()
-        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-            val n = nameField.editText!!.text.toString().trim()
-            val s = selected
-            if (n.isEmpty() || s == null) {
-                toast("Scrivi un nome e scegli un canale della playlist")
-            } else {
-                val l = loadChannels()
-                l.add(MyCh(n, spinnerPl.selectedItem as String, s.name, s.url))
-                saveChannels(l)
-                refreshAdmin()
-                dialog.dismiss()
-            }
-        }
-    }
-
     // ---------- Dati salvati ----------
 
     private fun loadPlaylists(): MutableList<String> {
@@ -756,61 +749,25 @@ class MainActivity : AppCompatActivity() {
         prefs.edit().putString("playlists", JSONArray(l).toString()).apply()
     }
 
-    private fun loadChannels(): MutableList<MyCh> {
-        val a = JSONArray(prefs.getString("channels", null) ?: "[]")
-        return MutableList(a.length()) {
-            val o = a.getJSONObject(it)
-            MyCh(o.getString("name"), o.getString("playlist"), o.getString("source"), o.getString("url"))
-        }
-    }
-
-    private fun saveChannels(l: List<MyCh>) {
-        val a = JSONArray()
-        l.forEach {
-            a.put(
-                JSONObject().put("name", it.name).put("playlist", it.playlist)
-                    .put("source", it.source).put("url", it.url)
-            )
-        }
-        prefs.edit().putString("channels", a.toString()).apply()
-    }
-
     // ---------- Playlist M3U ----------
 
-    private fun fetchPlaylist(url: String, cb: (List<PCh>?, String?) -> Unit) {
+    private fun fetchPlaylist(url: String, cb: (List<Channel>?, String?) -> Unit) {
         cache[url]?.let { cb(it, null); return }
         Thread {
             try {
                 val conn = URL(url).openConnection() as HttpURLConnection
                 conn.connectTimeout = 15000
                 conn.readTimeout = 15000
-                val list = parseM3U(conn.inputStream.bufferedReader().use { it.readText() })
-                cache[url] = list
-                runOnUiThread { cb(list, null) }
+                conn.setRequestProperty("User-Agent", "VLC/3.0.20 LibVLC/3.0.20")
+                val list = M3U.parse(conn.inputStream.bufferedReader().use { it.readText() })
+                runOnUiThread {
+                    cache[url] = list
+                    cb(list, null)
+                }
             } catch (e: Exception) {
                 runOnUiThread { cb(null, e.message) }
             }
         }.start()
-    }
-
-    private fun parseM3U(text: String): List<PCh> {
-        val out = mutableListOf<PCh>()
-        var name = ""
-        var group = ""
-        for (raw in text.lines()) {
-            val l = raw.trim()
-            if (l.isEmpty()) continue
-            if (l.startsWith("#EXTINF")) {
-                name = if (l.contains(',')) l.substringAfterLast(',').trim() else ""
-                group = Regex("group-title=\"([^\"]*)\"", RegexOption.IGNORE_CASE)
-                    .find(l)?.groupValues?.get(1) ?: ""
-            } else if (!l.startsWith("#")) {
-                out.add(PCh(name.ifEmpty { l }, group, l))
-                name = ""
-                group = ""
-            }
-        }
-        return out
     }
 
     override fun onStop() {
