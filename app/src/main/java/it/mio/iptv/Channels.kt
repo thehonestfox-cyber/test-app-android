@@ -143,15 +143,24 @@ object Categorizer {
 
     private fun qualityRank(q: String) = when (q) { "4K" -> 5; "FHD" -> 4; "HD" -> 3; "" -> 2; else -> 1 }
 
+    private fun tokens(s: String) = tok.findAll(s.lowercase()).map { it.value }.toList()
+
     /** Ordine "naturale": RAI 1, RAI 2, ... RAI 10 (e a parità di nome, qualità migliore prima). */
     val channelOrder = Comparator<Channel> { a, b ->
-        val c = natural(a.name, b.name)
+        val c = natural(tokens(a.name), tokens(b.name))
         if (c != 0) c else qualityRank(b.quality) - qualityRank(a.quality)
     }
 
-    private fun natural(a: String, b: String): Int {
-        val x = tok.findAll(a.lowercase()).map { it.value }.toList()
-        val y = tok.findAll(b.lowercase()).map { it.value }.toList()
+    /** Come channelOrder ma veloce: spezza i nomi una volta sola (da usare per liste grandi). */
+    fun sortChannels(list: List<Channel>): List<Channel> =
+        list.map { it to tokens(it.name) }
+            .sortedWith(Comparator { a, b ->
+                val c = natural(a.second, b.second)
+                if (c != 0) c else qualityRank(b.first.quality) - qualityRank(a.first.quality)
+            })
+            .map { it.first }
+
+    private fun natural(x: List<String>, y: List<String>): Int {
         for (i in 0 until minOf(x.size, y.size)) {
             val p = x[i]
             val q = y[i]

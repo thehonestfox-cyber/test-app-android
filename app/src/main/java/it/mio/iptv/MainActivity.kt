@@ -1,20 +1,24 @@
 package it.mio.iptv
 
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Rational
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.Gravity
@@ -62,6 +66,9 @@ import com.google.android.material.textfield.TextInputLayout
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import com.google.android.material.R as MR
 
 // Contenitore che mantiene il rapporto 16:9 (come il player di YouTube)
@@ -88,7 +95,8 @@ class MainActivity : AppCompatActivity() {
     private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
     private val prefs by lazy { getSharedPreferences("iptv", MODE_PRIVATE) }
-    private val cache = mutableMapOf<String, List<Channel>>()
+    private val cache = ConcurrentHashMap<String, List<Channel>>()
+    private val fetchedAt = ConcurrentHashMap<String, Long>()
     private val ui = Handler(Looper.getMainLooper())
 
     private lateinit var root: FrameLayout
@@ -99,6 +107,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var titleView: TextView
     private lateinit var playBtn: ImageButton
     private lateinit var fsBtn: ImageButton
+    private lateinit var pipBtn: ImageButton
     private lateinit var spinner: CircularProgressIndicator
     private lateinit var seekFlash: TextView
 
@@ -130,6 +139,8 @@ class MainActivity : AppCompatActivity() {
     private var triedHls = false
     private var fullscreen = false
     private var featuredMode = false
+    private var inPip = false
+    private var loadGen = 0
     private var adminTab = 0
     private var lastLand: Boolean? = null
 
@@ -209,6 +220,7 @@ class MainActivity : AppCompatActivity() {
         root.removeAllViews()
         root.addView(v, ViewGroup.LayoutParams(MATCH, MATCH))
         currentView = v
+        updatePip()
     }
 
     private fun field(hint: String): TextInputLayout {
@@ -339,6 +351,7 @@ class MainActivity : AppCompatActivity() {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 playBtn.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
                 showControls()
+                updatePip()
             }
             override fun onPlaybackStateChanged(state: Int) {
                 val buffering = state == Player.STATE_BUFFERING
@@ -361,6 +374,8 @@ class MainActivity : AppCompatActivity() {
         }
         playBtn = iconBtn(R.drawable.ic_play, white, dp(14), 0x80000000.toInt()) { togglePlay() }
         fsBtn = iconBtn(R.drawable.ic_fullscreen, white, dp(10), null) { setFullscreen(!fullscreen) }
+        pipBtn = iconBtn(R.drawable.ic_pip, white, dp(10), null) { enterPip() }
+        if (!pipSupported()) pipBtn.visibility = View.GONE
         val liveDot = View(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -369,18 +384,22 @@ class MainActivity : AppCompatActivity() {
         }
         val live = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), 0, 0, dp(14))
             addView(liveDot, LinearLayout.LayoutParams(dp(8), dp(8)).apply { rightMargin = dp(6) })
-            addView(tv("DIRETTA", 12f, white, true))
+            addView(tv("DIRETTA", 12f, white, true).apply { includeFontPadding = false })
+        }
+        // Barra in basso: "DIRETTA" e icone sulla stessa riga, centrate in verticale
+        val bottomBar = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), 0, dp(8), dp(4))
+            addView(live, LinearLayout.LayoutParams(0, dp(44), 1f))
+            addView(pipBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
+            addView(fsBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
         }
         controls = FrameLayout(this).apply {
             addView(View(context).apply { setBackgroundColor(0x66000000) }, FrameLayout.LayoutParams(MATCH, MATCH))
             addView(titleView, FrameLayout.LayoutParams(MATCH, WRAP, Gravity.TOP))
             addView(playBtn, FrameLayout.LayoutParams(dp(64), dp(64), Gravity.CENTER))
-            addView(live, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.START))
-            addView(fsBtn, FrameLayout.LayoutParams(dp(44), dp(44), Gravity.BOTTOM or Gravity.END).apply {
-                setMargins(0, 0, dp(8), dp(4))
-            })
+            addView(bottomBar, FrameLayout.LayoutParams(MATCH, WRAP, Gravity.BOTTOM))
         }
         spinner = CircularProgressIndicator(this).apply {
             isIndeterminate = true
@@ -424,6 +443,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showControls() {
+        if (inPip) return
         ui.removeCallbacks(hideRun)
         controls.animate().cancel()
         controls.alpha = 1f
@@ -436,6 +456,11 @@ class MainActivity : AppCompatActivity() {
             ui.removeCallbacks(hideRun)
             hideRun.run()
         } else showControls()
+    }
+
+    private fun setError(t: String) {
+        errorText.text = t
+        errorText.visibility = if (t.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun togglePlay() {
@@ -473,7 +498,7 @@ class MainActivity : AppCompatActivity() {
             start(currentUrl, true)
             return
         }
-        errorText.text = "Impossibile riprodurre questo canale (${e.errorCodeName})."
+        setError("Impossibile riprodurre questo canale (${e.errorCodeName}).")
     }
 
     private fun setFullscreen(on: Boolean) {
@@ -492,6 +517,52 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ---------- Picture in picture ----------
+
+    private fun pipSupported() = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+
+    private fun pipParams(): PictureInPictureParams {
+        val b = PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9))
+        // Android 12+: entra da solo in PiP quando si esce dall'app mentre il canale è in riproduzione
+        if (Build.VERSION.SDK_INT >= 31) {
+            b.setAutoEnterEnabled(pipSupported() && currentView === userView && player.isPlaying)
+        }
+        return b.build()
+    }
+
+    private fun updatePip() {
+        if (!pipSupported()) return
+        try {
+            setPictureInPictureParams(pipParams())
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun enterPip() {
+        if (!pipSupported() || currentView !== userView) return
+        try {
+            enterPictureInPictureMode(pipParams())
+        } catch (_: Exception) {
+            toast("Picture in picture non disponibile")
+        }
+    }
+
+    // Android 8-11: si entra in PiP quando l'utente esce dall'app (tasto home)
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT < 31 && currentView === userView && player.isPlaying) enterPip()
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        inPip = isInPictureInPictureMode
+        if (inPip) {
+            ui.removeCallbacks(hideRun)
+            controls.visibility = View.GONE
+        } else showControls()
+        applyUserLayout()
+    }
+
     // ---------- Schermata utente: categorie + canali ----------
 
     private fun logoBox(): ImageView = ImageView(this).apply {
@@ -501,9 +572,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildUser() {
-        nowTitle = tv("Scegli un canale", 20f, c(MR.attr.colorOnSurface), true)
-        nowSub = tv("", 13f, c(MR.attr.colorOnSurfaceVariant))
-        errorText = tv("", 14f, c(MR.attr.colorError))
+        nowTitle = tv("Scegli un canale", 20f, c(MR.attr.colorOnSurface), true).apply { includeFontPadding = false }
+        nowSub = tv("", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { includeFontPadding = false }
+        errorText = tv("", 14f, c(MR.attr.colorError)).apply { visibility = View.GONE }
         nowLogo = logoBox().apply { visibility = View.GONE }
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -570,11 +641,12 @@ class MainActivity : AppCompatActivity() {
     /** Verticale: player sopra e canali sotto. Orizzontale: canali a sinistra e player a destra. */
     private fun applyUserLayout() {
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        listPanel.visibility = if (fullscreen) View.GONE else View.VISIBLE
-        infoRow.visibility = if (fullscreen) View.GONE else View.VISIBLE
-        playerBox.ratio = !fullscreen
+        val playerOnly = fullscreen || inPip
+        listPanel.visibility = if (playerOnly) View.GONE else View.VISIBLE
+        infoRow.visibility = if (playerOnly) View.GONE else View.VISIBLE
+        playerBox.ratio = !playerOnly
         playerBox.maxH = if (land) (resources.displayMetrics.heightPixels * 0.7f).toInt() else Int.MAX_VALUE
-        playerBox.layoutParams = LinearLayout.LayoutParams(MATCH, if (fullscreen) MATCH else WRAP)
+        playerBox.layoutParams = LinearLayout.LayoutParams(MATCH, if (playerOnly) MATCH else WRAP)
         if (lastLand != land) {
             userView.orientation = if (land) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             userView.removeView(listPanel)
@@ -584,7 +656,7 @@ class MainActivity : AppCompatActivity() {
         }
         rightColumn.layoutParams =
             if (land) LinearLayout.LayoutParams(0, MATCH, 6f)
-            else LinearLayout.LayoutParams(MATCH, if (fullscreen) MATCH else WRAP)
+            else LinearLayout.LayoutParams(MATCH, if (playerOnly) MATCH else WRAP)
     }
 
     // Primo tocco: seleziona e riproduce. Tocco sul canale già selezionato: schermo intero.
@@ -594,14 +666,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun showUser(featured: Boolean) {
         featuredMode = featured
-        if (!featured) cache.clear()
+        loadGen++
         currentChannel = null
         nowTitle.text = "Scegli un canale"
         nowSub.text = ""
         titleView.text = ""
-        errorText.text = ""
+        setError("")
         nowLogo.visibility = View.GONE
         channelAdapter.select(null)
+        setChannels(emptyList())   // via subito i canali dell'altra sezione
+        listStatus.text = ""
         applyUserLayout()
         if (featured) loadFeatured() else loadAllChannels()
         show(userView)
@@ -617,37 +691,56 @@ class MainActivity : AppCompatActivity() {
             else "In evidenza · ${all.size} canali"
     }
 
-    // Scarica tutte le playlist e unisce i canali
-    private fun loadPlaylistChannels(cb: (List<Channel>, Int) -> Unit) {
-        val pls = loadPlaylists()
-        if (pls.isEmpty()) {
-            cb(emptyList(), 0)
+    // Carica le playlist in background: mostra subito quanto è già salvato (memoria/disco),
+    // poi scarica gli aggiornamenti. cb(canali ordinati, errori, finale?) arriva sul thread UI.
+    private fun loadPlaylistChannels(cb: (List<Channel>, Int, Boolean) -> Unit) {
+        val urls = loadPlaylists()
+        if (urls.isEmpty()) {
+            cb(emptyList(), 0, true)
             return
         }
-        val results = arrayOfNulls<List<Channel>>(pls.size)
-        var errors = 0
-        var pending = pls.size
-        pls.forEachIndexed { i, url ->
-            fetchPlaylist(url) { list, _ ->
-                if (list != null) results[i] = list else errors++
-                pending--
-                if (pending == 0) cb(results.filterNotNull().flatten(), errors)
+        Thread {
+            val cached = urls.map { cachedPlaylist(it) }
+            val now = System.currentTimeMillis()
+            // se scaricata da meno di 10 minuti non serve riscaricarla
+            val fresh = urls.map { cache.containsKey(it) && (fetchedAt[it] ?: 0L) + 10 * 60_000L > now }
+            if (cached.any { it != null } && !fresh.all { it }) {
+                val first = Categorizer.sortChannels(cached.filterNotNull().flatten())
+                runOnUiThread { cb(first, 0, false) }
             }
-        }
+            val pool = Executors.newFixedThreadPool(minOf(urls.size, 4))
+            val futures = urls.mapIndexed { i, u ->
+                pool.submit(Callable<List<Channel>?> { if (fresh[i]) cached[i] else (downloadPlaylist(u) ?: cached[i]) })
+            }
+            var errors = 0
+            val lists = futures.map { f ->
+                val r = try { f.get() } catch (e: Exception) { null }
+                if (r == null) errors++
+                r
+            }
+            pool.shutdown()
+            val all = Categorizer.sortChannels(lists.filterNotNull().flatten())
+            runOnUiThread { cb(all, errors, true) }
+        }.start()
     }
 
     // "Completa": tutte le playlist, con le categorie create da sole
     private fun loadAllChannels() {
+        val gen = loadGen
         if (loadPlaylists().isEmpty()) {
-            setChannels(emptyList())
             listStatus.text = "Nessuna playlist: aggiungila dalla sezione Admin."
             return
         }
         listStatus.text = "Caricamento canali…"
-        loadPlaylistChannels { all, errors ->
-            if (featuredMode || currentView !== userView) return@loadPlaylistChannels
-            setChannels(all)
+        var shown: List<Channel>? = null
+        loadPlaylistChannels { all, errors, final ->
+            if (gen != loadGen) return@loadPlaylistChannels
+            if (shown != all) {
+                setChannels(all)
+                shown = all
+            }
             listStatus.text = when {
+                !final -> "${all.size} canali · aggiornamento…"
                 errors > 0 -> "Errore nel caricamento di $errors playlist · ${all.size} canali"
                 all.isEmpty() -> "La playlist è vuota."
                 else -> "${all.size} canali"
@@ -657,7 +750,7 @@ class MainActivity : AppCompatActivity() {
 
     // order = ordine delle categorie deciso dall'admin (se null: ordine automatico)
     private fun setChannels(list: List<Channel>, order: List<String>? = null) {
-        allChannels = if (order != null) list else list.sortedWith(Categorizer.channelOrder)
+        allChannels = list
         val counts = allChannels.groupingBy { it.category }.eachCount()
         categories = order ?: Categorizer.sortCategories(counts.keys)
         selectedCategory = null
@@ -714,7 +807,7 @@ class MainActivity : AppCompatActivity() {
         nowTitle.text = ch.name
         nowSub.text = "Diretta · ${ch.category}" + if (ch.quality.isNotEmpty()) " · ${ch.quality}" else ""
         titleView.text = ch.name
-        errorText.text = ""
+        setError("")
         nowLogo.visibility = View.VISIBLE
         loadChannelLogo(nowLogo, ch)
         spinner.visibility = View.VISIBLE
@@ -989,10 +1082,11 @@ class MainActivity : AppCompatActivity() {
             addView(status)
             addView(recycler, LinearLayout.LayoutParams(MATCH, dp(280)))
         }
-        loadPlaylistChannels { all, errors ->
-            list = all.sortedWith(Categorizer.channelOrder)
+        loadPlaylistChannels { all, errors, final ->
+            list = all
             order = Categorizer.sortCategories(list.map { it.category }.toSet())
             status.text = when {
+                !final -> "${list.size} canali · aggiornamento…"
                 list.isEmpty() && errors == 0 -> "Nessun canale: aggiungi prima una playlist."
                 errors > 0 -> "Errore nel caricamento di $errors playlist · ${list.size} canali"
                 else -> "${list.size} canali · tocca per scegliere"
@@ -1039,25 +1133,39 @@ class MainActivity : AppCompatActivity() {
         prefs.edit().putString("playlists", JSONArray(l).toString()).apply()
     }
 
-    // ---------- Playlist M3U ----------
+    // ---------- Playlist M3U (cache in memoria + su disco) ----------
 
-    private fun fetchPlaylist(url: String, cb: (List<Channel>?, String?) -> Unit) {
-        cache[url]?.let { cb(it, null); return }
-        Thread {
-            try {
-                val conn = URL(url).openConnection() as HttpURLConnection
-                conn.connectTimeout = 15000
-                conn.readTimeout = 15000
-                conn.setRequestProperty("User-Agent", "VLC/3.0.20 LibVLC/3.0.20")
-                val list = M3U.parse(conn.inputStream.bufferedReader().use { it.readText() })
-                runOnUiThread {
-                    cache[url] = list
-                    cb(list, null)
-                }
-            } catch (e: Exception) {
-                runOnUiThread { cb(null, e.message) }
-            }
-        }.start()
+    private fun cacheFile(url: String) =
+        java.io.File(cacheDir, "pl_" + Integer.toHexString(url.hashCode()) + ".m3u")
+
+    // Dalla memoria o dal disco (nessuna rete). Da chiamare fuori dal thread UI.
+    private fun cachedPlaylist(url: String): List<Channel>? {
+        cache[url]?.let { return it }
+        return try {
+            val f = cacheFile(url)
+            if (f.exists()) M3U.parse(f.readText()).also { cache[url] = it } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Scarica e salva. Da chiamare fuori dal thread UI.
+    private fun downloadPlaylist(url: String): List<Channel>? = try {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.connectTimeout = 15000
+        conn.readTimeout = 15000
+        conn.setRequestProperty("User-Agent", "VLC/3.0.20 LibVLC/3.0.20")
+        val text = conn.inputStream.bufferedReader().use { it.readText() }
+        val list = M3U.parse(text)
+        cache[url] = list
+        fetchedAt[url] = System.currentTimeMillis()
+        try {
+            cacheFile(url).writeText(text)
+        } catch (_: Exception) {
+        }
+        list
+    } catch (e: Exception) {
+        null
     }
 
     override fun onStop() {
