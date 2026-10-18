@@ -12,6 +12,7 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -164,6 +165,7 @@ class MainActivity : AppCompatActivity() {
     private var inPip = false
     private var loadGen = 0
     private var adminTab = 0
+    private var nightApplied = 0              // modalità chiaro/scuro con cui sono costruite le schermate
     private val collapsedCats = mutableSetOf<String>()   // categorie chiuse (sezione/nome) nella gestione admin
     private var lastLand: Boolean? = null
 
@@ -173,6 +175,7 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(themeMode())
         super.onCreate(savedInstanceState)
         DynamicColors.applyToActivityIfAvailable(this)
+        nightApplied = nightNow()
         Logos.init(this)
         if (!prefs.contains("playlists")) savePlaylists(listOf(defaultPlaylist))
 
@@ -216,6 +219,40 @@ class MainActivity : AppCompatActivity() {
         outState.putInt("adminTab", adminTab)
     }
 
+    private fun nightNow() = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+
+    /**
+     * Applica il tema chiaro/scuro senza ricreare l'activity (molto più veloce):
+     * riapplica lo stile, ricostruisce le schermate con i nuovi colori e tiene lo stesso player.
+     */
+    private fun applyThemeInPlace() {
+        nightApplied = nightNow()
+        theme.applyStyle(R.style.Theme_IPTV, true)
+        DynamicColors.applyToActivityIfAvailable(this)
+        val night = nightApplied == Configuration.UI_MODE_NIGHT_YES
+        window.setBackgroundDrawable(ColorDrawable(c(MR.attr.colorSurface)))
+        root.setBackgroundColor(c(MR.attr.colorSurface))
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !night
+            isAppearanceLightNavigationBars = !night
+        }
+        val keep = currentView
+        (playerBox.parent as? ViewGroup)?.removeView(playerBox)   // il player resta lo stesso
+        buildHome()
+        buildUser()
+        buildAdmin()
+        lastLand = null
+        if (keep === adminView) {
+            applyAdminLayout()
+            adminTabs.getTabAt(adminTab)?.select()
+            refreshAdmin()
+            show(adminView)
+        } else {
+            refreshHome()
+            show(homeView)
+        }
+    }
+
     // Tema dell'app: "system" (come il telefono), "light" o "dark"
     private fun themeMode() = when (prefs.getString("theme", "system")) {
         "light" -> AppCompatDelegate.MODE_NIGHT_NO
@@ -225,6 +262,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        // Cambio chiaro/scuro (anche dal sistema): senza ricreare l'activity
+        if (nightNow() != nightApplied) {
+            if (currentView === userView) recreate() else applyThemeInPlace()
+            return
+        }
         if (currentView === userView) applyUserLayout()
         if (currentView === adminView) applyAdminLayout()
     }
@@ -246,6 +288,13 @@ class MainActivity : AppCompatActivity() {
     private fun selectable(): Drawable? {
         val tv = TypedValue()
         theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, tv, true)
+        return ContextCompat.getDrawable(this, tv.resourceId)
+    }
+
+    // Ripple che resta dentro i bordi della vista (quello "borderless" si allarga a tutto lo schermo)
+    private fun selectableBounded(): Drawable? {
+        val tv = TypedValue()
+        theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
         return ContextCompat.getDrawable(this, tv.resourceId)
     }
 
@@ -1270,7 +1319,7 @@ class MainActivity : AppCompatActivity() {
         return LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(14), dp(4), dp(14))
-            background = selectable()
+            background = selectableBounded()
             isClickable = true
             isFocusable = true
             setOnClickListener { onClick() }
@@ -1296,12 +1345,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Risposta immediata: salvo, aggiorno subito la riga e applico il tema al frame successivo,
-    // così il menu si chiude senza scatti e il ricaricamento (se serve) parte a schermo libero.
+    // così il menu si chiude senza scatti.
     private fun setTheme(key: String) {
         if (key == prefs.getString("theme", "system")) return
         prefs.edit().putString("theme", key).apply()
         refreshAdmin()
-        ui.post { AppCompatDelegate.setDefaultNightMode(themeMode()) }   // se il tema cambia davvero, l'activity si ricrea
+        ui.post {
+            AppCompatDelegate.setDefaultNightMode(themeMode())
+            // di solito AppCompat chiama già onConfigurationChanged; se non l'ha fatto lo applico io
+            if (nightNow() != nightApplied) applyThemeInPlace()
+            // sicurezza: se il sistema non ha applicato la modalità attesa, ricreo l'activity
+            val expected = when (themeMode()) {
+                AppCompatDelegate.MODE_NIGHT_YES -> Configuration.UI_MODE_NIGHT_YES
+                AppCompatDelegate.MODE_NIGHT_NO -> Configuration.UI_MODE_NIGHT_NO
+                else -> android.content.res.Resources.getSystem().configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            }
+            if (nightNow() != expected) recreate()
+        }
     }
 
     // Pulsante con bordo e icona + (stesso stile per "Nuova sezione" e "Aggiungi playlist")
