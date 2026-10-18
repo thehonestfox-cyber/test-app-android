@@ -1159,6 +1159,11 @@ class MainActivity : AppCompatActivity() {
             chips.addView(Chip(ctx).apply {
                 ring(10)
                 scrollTopOnFocus()
+                val st = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+                chipBackgroundColor = ColorStateList(st, intArrayOf(mvContainer(), Color.TRANSPARENT))
+                chipStrokeColor = ColorStateList(st, intArrayOf(mvAccent(), c(MR.attr.colorOutline)))
+                chipStrokeWidth = dp(1).toFloat()
+                setTextColor(ColorStateList(st, intArrayOf(mvOnContainer(), onS)))
                 id = View.generateViewId()
                 text = if (n == 1) "1 player" else "$n player"
                 isCheckable = true
@@ -1190,12 +1195,15 @@ class MainActivity : AppCompatActivity() {
                 MaterialButton(ctx).apply {
                     text = "Guarda"
                     icon = ContextCompat.getDrawable(ctx, R.drawable.ic_play)
-                    iconTint = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
+                    val off = arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf())
+                    backgroundTintList = ColorStateList(off, intArrayOf((onS and 0xFFFFFF) or 0x1F000000, mvAccent()))
+                    setTextColor(ColorStateList(off, intArrayOf((onS and 0xFFFFFF) or 0x61000000, mvOnAccent())))
+                    iconTint = ColorStateList(off, intArrayOf((onS and 0xFFFFFF) or 0x61000000, mvOnAccent()))
                     iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
                     isEnabled = multi.active().isNotEmpty()
                     // il tasto è pieno di colorPrimary: il bordo del focus è quello del tasto stesso (stroke Material)
                     // in un colore a contrasto, così si vede sempre
-                    strokeColor = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
+                    strokeColor = ColorStateList.valueOf(mvOnAccent())
                     strokeWidth = 0
                     onFocusChangeListener = View.OnFocusChangeListener { _, has -> strokeWidth = if (has) dp(4) else 0 }
                     scrollTopOnFocus()
@@ -1210,12 +1218,12 @@ class MainActivity : AppCompatActivity() {
     private fun multiSlotCard(i: Int): View {
         val ch = multi.slots[i]
         val target = i == multi.target
-        val onC = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurface)
-        val onV = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurfaceVariant)
+        val onC = if (target) mvOnContainer() else c(MR.attr.colorOnSurface)
+        val onV = if (target) mvOnContainer() else c(MR.attr.colorOnSurfaceVariant)
         val hasAudio = ch != null && i == multi.audio
         val speaker = ImageView(this).apply {
             setImageResource(if (hasAudio) R.drawable.ic_volume_on else R.drawable.ic_volume_off)
-            imageTintList = ColorStateList.valueOf(if (hasAudio) c(MR.attr.colorPrimary) else onV)
+            imageTintList = ColorStateList.valueOf(if (hasAudio) mvAccent() else onV)
             visibility = if (ch != null) View.VISIBLE else View.INVISIBLE
             setPadding(dp(4), dp(4), dp(4), dp(4))
             setOnClickListener {
@@ -1240,7 +1248,7 @@ class MainActivity : AppCompatActivity() {
         return MaterialCardView(this).apply {
             radius = dp(12).toFloat()
             cardElevation = 0f
-            setCardBackgroundColor(c(if (target) MR.attr.colorPrimaryContainer else MR.attr.colorSurfaceVariant))
+            setCardBackgroundColor(if (target) mvContainer() else c(MR.attr.colorSurfaceVariant))
             isClickable = true
             isFocusable = true
             enableFocusRing()
@@ -1463,6 +1471,13 @@ class MainActivity : AppCompatActivity() {
         it.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         it.show()
     }
+
+    // Colori del multi-schermo (verde acqua), scelti a mano per tema chiaro e scuro: contrasto buono in entrambi
+    private fun mvNight() = nightNow() == Configuration.UI_MODE_NIGHT_YES
+    private fun mvAccent() = if (mvNight()) 0xFF4DB6AC.toInt() else 0xFF00796B.toInt()           // tasti e icone attive
+    private fun mvOnAccent() = if (mvNight()) 0xFF00201D.toInt() else 0xFFFFFFFF.toInt()         // testo sopra il colore pieno
+    private fun mvContainer() = if (mvNight()) 0xFF00504A.toInt() else 0xFFB2DFDB.toInt()        // sfondo selezionato
+    private fun mvOnContainer() = if (mvNight()) 0xFFB2F0E8.toInt() else 0xFF00332E.toInt()      // testo sullo sfondo selezionato
 
     // Nella sezione live: quando il focus arriva su un controllo del multi-schermo la lista risale in cima,
     // così si vede anche il titolo "Multi-schermo"
