@@ -5,7 +5,9 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.widget.ImageView
+import coil.imageLoader
 import coil.load
+import coil.request.ImageRequest
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -37,9 +39,10 @@ object SportsDb {
     private const val WINDOW_DAYS = 2L          // distanza massima (in giorni) della partita da oggi
     private const val MISS_RETRY_MS = 5 * 60_000L
 
-    private val pool = Executors.newFixedThreadPool(2)
+    private val pool = Executors.newFixedThreadPool(4)
     private val main = Handler(Looper.getMainLooper())
     private var prefs: SharedPreferences? = null
+    private var app: Context? = null
 
     /** Quello che si sa di una partita: immagine (può mancare) e orario di inizio in millisecondi (0 = sconosciuto). */
     private class Info(val thumb: String, val start: Long)
@@ -48,6 +51,7 @@ object SportsDb {
     private val misses = ConcurrentHashMap<String, Long>()     // "nome|data" -> quando è fallita
     private class Day(val at: Long, val events: List<JSONObject>)
     private val days = ConcurrentHashMap<LocalDate, Day>()
+    private val dayLocks = ConcurrentHashMap<LocalDate, Any>()
 
     private val splitRe = Regex("""\s+(?:-|–|—|vs\.?|v)\s+""", RegexOption.IGNORE_CASE)
     private val timeRe = Regex("""\b\d{1,2}[:.]\d{2}\b""")
@@ -68,6 +72,7 @@ object SportsDb {
     fun init(ctx: Context) {
         val p = ctx.getSharedPreferences("sportsdb", Context.MODE_PRIVATE)
         prefs = p
+        app = ctx.applicationContext
         val suffix = "|" + LocalDate.now()
         val e = p.edit()
         p.all.keys.filter { !it.endsWith(suffix) }.forEach { e.remove(it) }   // tiene solo quelli di oggi
@@ -90,8 +95,8 @@ object SportsDb {
 
     private fun get(path: String): List<JSONObject>? = try {
         val c = (URL(API + path).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 8000
-            readTimeout = 8000
+            connectTimeout = 6000
+            readTimeout = 6000
         }
         val text = try {
             c.inputStream.bufferedReader().use { it.readText() }
@@ -115,8 +120,8 @@ object SportsDb {
         teamIds[key]?.let { return it.ifEmpty { null } }
         return try {
             val c = (URL(API + "searchteams.php?t=" + URLEncoder.encode(name, "UTF-8")).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 8000
-                readTimeout = 8000
+                connectTimeout = 6000
+                readTimeout = 6000
             }
             val text = try {
                 c.inputStream.bufferedReader().use { it.readText() }
@@ -150,7 +155,7 @@ object SportsDb {
     /** Tutte le partite di calcio di un giorno (una sola richiesta, poi cache). */
     private fun day(d: LocalDate): List<JSONObject> {
         days[d]?.let { if (fresh(it)) return it.events }
-        synchronized(this) {
+        synchronized(dayLocks.getOrPut(d) { Any() }) {
             days[d]?.let { if (fresh(it)) return it.events }
             val ev = get("eventsday.php?d=$d&s=Soccer") ?: return days[d]?.events ?: emptyList()
             days[d] = Day(System.currentTimeMillis(), ev)
@@ -239,15 +244,15 @@ object SportsDb {
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
         val nearby = (-1L..1L).flatMap { day(today.plusDays(it)) }
         pick(nearby, a, b)?.let { return it }
-        // 2) ricerca per nome, ma solo partite di questi giorni
-        for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
-            val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8")) ?: continue
-            pick(ev, a, b)?.let { return it }
-        }
-        // 3) prossime e ultime partite di ciascuna squadra (copre anche le serie minori, come la Serie C)
+        // 2) prossime e ultime partite di ciascuna squadra (copre anche le serie minori, come la Serie C)
         for (name in listOf(a, b)) {
             val id = teamId(name) ?: continue
             val ev = (get("eventsnext.php?id=$id") ?: emptyList()) + (get("eventslast.php?id=$id") ?: emptyList())
+            pick(ev, a, b)?.let { return it }
+        }
+        // 3) ricerca per nome, ma solo partite di questi giorni
+        for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
+            val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8")) ?: continue
             pick(ev, a, b)?.let { return it }
         }
         return null
@@ -258,6 +263,60 @@ object SportsDb {
         val i = v?.indexOf('\t') ?: -1
         if (v == null || i < 0) return null
         return Info(v.substring(i + 1), v.substring(0, i).toLongOrNull() ?: 0L)
+    }
+
+    // Chi aspetta il risultato di una ricerca già partita (card + precaricamento non cercano due volte la stessa partita)
+    private val inflight = HashMap<String, MutableList<(Info) -> Unit>>()
+
+    private fun warm(url: String) {
+        val a = app ?: return
+        if (url.isNotEmpty()) a.imageLoader.enqueue(ImageRequest.Builder(a).data(url).build())   // scarica l'immagine in anticipo
+    }
+
+    /** Dà l'info (se la trova) a [cb] sul thread principale; senza [cb] serve solo a riscaldare cache e immagine. */
+    private fun request(ch: Channel, k: String, cb: ((Info) -> Unit)?) {
+        val known = found[k] ?: decode(prefs?.getString(k, null))
+        if (known != null) {
+            found[k] = known
+            if (cb != null) cb(known) else warm(known.thumb)
+            return
+        }
+        val t = misses[k]
+        if (t != null && System.currentTimeMillis() - t < MISS_RETRY_MS) return
+        synchronized(inflight) {
+            val waiting = inflight[k]
+            if (waiting != null) {
+                if (cb != null) waiting.add(cb)
+                return
+            }
+            inflight[k] = mutableListOf<(Info) -> Unit>().also { if (cb != null) it.add(cb) }
+        }
+        pool.execute {
+            val info = try {
+                lookup(ch.name)
+            } catch (_: Exception) {
+                null
+            }
+            if (info != null) {
+                found[k] = info
+                prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}")?.apply()
+                warm(info.thumb)
+            } else {
+                misses[k] = System.currentTimeMillis()
+            }
+            val waiting = synchronized(inflight) { inflight.remove(k) }.orEmpty()
+            if (info != null && waiting.isNotEmpty()) main.post { waiting.forEach { it(info) } }
+        }
+    }
+
+    /**
+     * Da chiamare appena si apre l'app: scarica in anticipo gli elenchi dei giorni e cerca thumb e orario
+     * di tutti gli eventi, così quando apri la sezione è già tutto pronto.
+     */
+    fun prefetch(channels: List<Channel>) {
+        val today = LocalDate.now()
+        for (d in -1L..1L) pool.execute { try { day(today.plusDays(d)) } catch (_: Exception) {} }
+        channels.distinctBy { it.name }.forEach { ch -> request(ch, "${ch.name}|$today", null) }
     }
 
     /**
@@ -283,27 +342,6 @@ object SportsDb {
                 })
             }
         }
-        val known = found[k] ?: decode(prefs?.getString(k, null))
-        if (known != null) {
-            found[k] = known
-            show(known)
-            return
-        }
-        val t = misses[k]
-        if (t != null && System.currentTimeMillis() - t < MISS_RETRY_MS) return
-        pool.execute {
-            val info = try {
-                lookup(ch.name)
-            } catch (_: Exception) {
-                null
-            }
-            if (info != null) {
-                found[k] = info
-                prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}")?.apply()
-            } else {
-                misses[k] = System.currentTimeMillis()
-            }
-            if (info != null) main.post { show(info) }
-        }
+        request(ch, k) { info -> show(info) }
     }
 }

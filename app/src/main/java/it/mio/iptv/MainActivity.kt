@@ -481,6 +481,7 @@ class MainActivity : AppCompatActivity() {
             addView(bar, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(divider, LinearLayout.LayoutParams(MATCH, dp(1)))
             addView(ScrollView(context).apply {
+                scrollbar()
                 isFillViewport = true
                 addView(cards, ViewGroup.LayoutParams(MATCH, WRAP))
             }, lp(0, 1f))
@@ -489,7 +490,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Le card della home: le sezioni create dall'admin, poi Completa e Impostazioni
+    // Precarica thumb e orari di tutti gli eventi delle sezioni live, così sono già pronti quando le apri
+    private fun prefetchLive() {
+        Thread {
+            val chans = Sections.load(prefs).filter { it.isLive }
+                .flatMap { sec -> Featured.load(prefs, sec.id).flatMap { it.channels } }
+            if (chans.isNotEmpty()) SportsDb.prefetch(chans)
+        }.start()
+    }
+
     private fun refreshHome() {
+        prefetchLive()
         homeCards.removeAllViews()
         Sections.load(prefs).forEach { sec ->
             homeCards.addView(
@@ -866,6 +877,7 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(context)
             adapter = channelAdapter
             itemAnimator = null   // niente animazioni di cambio: il focus resta sulla riga e la lista è più leggera
+            scrollbar()
             clipToPadding = false
             setPadding(dp(16), 0, dp(16), dp(16))
         }
@@ -873,6 +885,7 @@ class MainActivity : AppCompatActivity() {
         // Sezioni "eventi live": categorie con carosello orizzontale di card (al posto della lista)
         liveBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         liveScroll = ScrollView(this).apply {
+            scrollbar()
             clipToPadding = false
             setPadding(dp(12), 0, dp(12), dp(16))
             visibility = View.GONE
@@ -1159,11 +1172,6 @@ class MainActivity : AppCompatActivity() {
             chips.addView(Chip(ctx).apply {
                 ring(10)
                 scrollTopOnFocus()
-                val st = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
-                chipBackgroundColor = ColorStateList(st, intArrayOf(mvContainer(), Color.TRANSPARENT))
-                chipStrokeColor = ColorStateList(st, intArrayOf(mvAccent(), c(MR.attr.colorOutline)))
-                chipStrokeWidth = dp(1).toFloat()
-                setTextColor(ColorStateList(st, intArrayOf(mvOnContainer(), onS)))
                 id = View.generateViewId()
                 text = if (n == 1) "1 player" else "$n player"
                 isCheckable = true
@@ -1195,15 +1203,12 @@ class MainActivity : AppCompatActivity() {
                 MaterialButton(ctx).apply {
                     text = "Guarda"
                     icon = ContextCompat.getDrawable(ctx, R.drawable.ic_play)
-                    val off = arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf())
-                    backgroundTintList = ColorStateList(off, intArrayOf((onS and 0xFFFFFF) or 0x1F000000, mvAccent()))
-                    setTextColor(ColorStateList(off, intArrayOf((onS and 0xFFFFFF) or 0x61000000, mvOnAccent())))
-                    iconTint = ColorStateList(off, intArrayOf((onS and 0xFFFFFF) or 0x61000000, mvOnAccent()))
+                    iconTint = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
                     iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
                     isEnabled = multi.active().isNotEmpty()
                     // il tasto è pieno di colorPrimary: il bordo del focus è quello del tasto stesso (stroke Material)
                     // in un colore a contrasto, così si vede sempre
-                    strokeColor = ColorStateList.valueOf(mvOnAccent())
+                    strokeColor = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
                     strokeWidth = 0
                     onFocusChangeListener = View.OnFocusChangeListener { _, has -> strokeWidth = if (has) dp(4) else 0 }
                     scrollTopOnFocus()
@@ -1218,12 +1223,12 @@ class MainActivity : AppCompatActivity() {
     private fun multiSlotCard(i: Int): View {
         val ch = multi.slots[i]
         val target = i == multi.target
-        val onC = if (target) mvOnContainer() else c(MR.attr.colorOnSurface)
-        val onV = if (target) mvOnContainer() else c(MR.attr.colorOnSurfaceVariant)
+        val onC = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurface)
+        val onV = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurfaceVariant)
         val hasAudio = ch != null && i == multi.audio
         val speaker = ImageView(this).apply {
             setImageResource(if (hasAudio) R.drawable.ic_volume_on else R.drawable.ic_volume_off)
-            imageTintList = ColorStateList.valueOf(if (hasAudio) mvAccent() else onV)
+            imageTintList = ColorStateList.valueOf(if (hasAudio) c(MR.attr.colorPrimary) else onV)
             visibility = if (ch != null) View.VISIBLE else View.INVISIBLE
             setPadding(dp(4), dp(4), dp(4), dp(4))
             setOnClickListener {
@@ -1248,7 +1253,7 @@ class MainActivity : AppCompatActivity() {
         return MaterialCardView(this).apply {
             radius = dp(12).toFloat()
             cardElevation = 0f
-            setCardBackgroundColor(if (target) mvContainer() else c(MR.attr.colorSurfaceVariant))
+            setCardBackgroundColor(c(if (target) MR.attr.colorPrimaryContainer else MR.attr.colorSurfaceVariant))
             isClickable = true
             isFocusable = true
             enableFocusRing()
@@ -1457,7 +1462,7 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- Schermata admin: playlist + sezioni, categorie e canali ----------
 
-    private fun scroll(v: View): View = ScrollView(this).apply { addView(v) }
+    private fun scroll(v: View): View = ScrollView(this).apply { scrollbar(); addView(v) }
 
     // Contenitore con i margini dei dialog
     private fun padBox(vararg views: View) = LinearLayout(this).apply {
@@ -1472,12 +1477,25 @@ class MainActivity : AppCompatActivity() {
         it.show()
     }
 
-    // Colori del multi-schermo (verde acqua), scelti a mano per tema chiaro e scuro: contrasto buono in entrambi
-    private fun mvNight() = nightNow() == Configuration.UI_MODE_NIGHT_YES
-    private fun mvAccent() = if (mvNight()) 0xFF4DB6AC.toInt() else 0xFF00796B.toInt()           // tasti e icone attive
-    private fun mvOnAccent() = if (mvNight()) 0xFF00201D.toInt() else 0xFFFFFFFF.toInt()         // testo sopra il colore pieno
-    private fun mvContainer() = if (mvNight()) 0xFF00504A.toInt() else 0xFFB2DFDB.toInt()        // sfondo selezionato
-    private fun mvOnContainer() = if (mvNight()) 0xFFB2F0E8.toInt() else 0xFF00332E.toInt()      // testo sullo sfondo selezionato
+    // Barra di scorrimento a destra, sempre visibile (anche con il telecomando), per ogni lista che scorre
+    private fun <T : View> T.scrollbar(): T {
+        isVerticalScrollBarEnabled = true
+        isScrollbarFadingEnabled = false
+        scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+        scrollBarSize = dp(6)
+        if (Build.VERSION.SDK_INT >= 29) {
+            val on = c(MR.attr.colorOnSurface) and 0xFFFFFF
+            verticalScrollbarThumbDrawable = GradientDrawable().apply {
+                cornerRadius = dp(3).toFloat()
+                setColor(on or 0x99000000.toInt())
+            }
+            verticalScrollbarTrackDrawable = GradientDrawable().apply {
+                cornerRadius = dp(3).toFloat()
+                setColor(on or 0x1F000000)
+            }
+        }
+        return this
+    }
 
     // Nella sezione live: quando il focus arriva su un controllo del multi-schermo la lista risale in cima,
     // così si vede anche il titolo "Multi-schermo"
@@ -1533,7 +1551,7 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(8), dp(16), dp(96))
         }
-        adminScroll = ScrollView(this).apply { addView(adminList) }
+        adminScroll = ScrollView(this).apply { scrollbar(); addView(adminList) }
         fab = ExtendedFloatingActionButton(this).apply {
             text = "Nuova sezione"
             setIconResource(R.drawable.ic_add)
@@ -2178,6 +2196,7 @@ class MainActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
         })
         val recycler = RecyclerView(this).apply {
+            scrollbar()
             layoutManager = LinearLayoutManager(context)
             this.adapter = pickAdapter
         }
