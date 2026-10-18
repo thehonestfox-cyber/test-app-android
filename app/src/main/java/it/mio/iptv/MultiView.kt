@@ -1,11 +1,14 @@
 package it.mio.iptv
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
+import android.view.FocusFinder
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +18,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.TextView
+import android.widget.Toast
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -54,8 +58,22 @@ class MultiState {
         }
     }
 
+    /** Stesso evento = stesso URL oppure stesso nome (es. la stessa partita presente due volte nella lista). */
+    fun same(a: Channel, b: Channel) =
+        a.url == b.url || a.name.trim().equals(b.name.trim(), ignoreCase = true)
+
+    /** True se l'evento è già in riproduzione in un player visibile diverso da `except`. */
+    fun isPlaying(ch: Channel, except: Int = -1): Boolean =
+        (0 until count).any { it != except && slots[it]?.let { s -> same(s, ch) } == true }
+
     /** Mette l'evento nel player evidenziato e sposta l'evidenziazione sul prossimo vuoto. */
     fun assign(ch: Channel): Int {
+        // un evento già in riproduzione non si mette due volte: si porta solo l'audio su quel player
+        val dup = (0 until count).firstOrNull { slots[it]?.let { s -> same(s, ch) } == true }
+        if (dup != null) {
+            audio = dup
+            return dup
+        }
         val i = target.coerceIn(0, count - 1)
         slots[i] = ch
         target = (0 until count).firstOrNull { slots[it] == null } ?: i
@@ -94,7 +112,7 @@ class MultiPlayerOverlay(
 ) : FrameLayout(context) {
 
     private class Tile(
-        val box: FrameLayout,
+        val box: ViewGroup,
         val pv: PlayerView,
         val title: TextView,
         val hint: TextView,
@@ -111,10 +129,24 @@ class MultiPlayerOverlay(
     private val players = arrayOfNulls<ExoPlayer>(MultiState.MAX)
     private val playingUrl = arrayOfNulls<String>(MultiState.MAX)
     private val triedHls = BooleanArray(MultiState.MAX)
+    private val firstErr = arrayOfNulls<PlaybackException>(MultiState.MAX)
     private val countBtns = mutableListOf<TextView>()
+    private val FOCUS = 0xFFFFC107.toInt()   // colore dell'anello del focus (telecomando)
+
+    // Android TV / box senza touchscreen: più attenzione al telecomando
+    private val isTv: Boolean = run {
+        val pm = context.packageManager
+        pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK) ||
+            !pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) ||
+            (resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION
+    }
     private val grid = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    // Con il telecomando il focus non deve "scappare" sulla schermata che sta sotto il multi-schermo
+    override fun focusSearch(focused: View?, direction: Int): View? =
+        FocusFinder.getInstance().findNextFocus(this, focused, direction) ?: focused
 
     private fun oval(color: Int) = GradientDrawable().apply {
         shape = GradientDrawable.OVAL
@@ -130,6 +162,8 @@ class MultiPlayerOverlay(
             imageTintList = ColorStateList.valueOf(Color.WHITE)
             setBackgroundColor(Color.TRANSPARENT)
             setPadding(dp(10), dp(10), dp(10), dp(10))
+            foreground = focusRingDrawable(FOCUS, dp(3), true)
+            isFocusable = true
             setOnClickListener { onClose() }
         }
         val title = TextView(context).apply {
@@ -156,6 +190,8 @@ class MultiPlayerOverlay(
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setTypeface(typeface, Typeface.BOLD)
+                foreground = focusRingDrawable(FOCUS, dp(3), false, dp(16).toFloat())
+                isFocusable = true
                 setOnClickListener { setCount(n) }
             }
             countBtns.add(b)
@@ -170,6 +206,11 @@ class MultiPlayerOverlay(
             addView(title, LinearLayout.LayoutParams(WRAP, WRAP).apply { rightMargin = dp(8) })
             addView(beta, LinearLayout.LayoutParams(WRAP, WRAP))
             addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
+            if (isTv) addView(TextView(context).apply {
+                text = "OK: audio · OK lungo: menu"
+                textSize = 12f
+                setTextColor(0xB3FFFFFF.toInt())
+            }, LinearLayout.LayoutParams(WRAP, WRAP).apply { rightMargin = dp(16) })
             addView(countRow, LinearLayout.LayoutParams(WRAP, WRAP))
         }
         val column = LinearLayout(context).apply {
@@ -179,6 +220,8 @@ class MultiPlayerOverlay(
         }
         addView(column, FrameLayout.LayoutParams(MATCH, MATCH))
         rebuild()
+        // il telecomando parte dal primo riquadro
+        post { tiles[0]?.box?.requestFocus() }
     }
 
     // ---------- Numero di player ----------
@@ -211,6 +254,7 @@ class MultiPlayerOverlay(
         val n = st.count
         // i player oltre il numero scelto vengono chiusi (niente rete sprecata)
         for (i in n until MultiState.MAX) releasePlayer(i)
+        for (p in players) p?.let { limitQuality(it) }
 
         val cols = if (n == 1) 1 else 2
         val rows = (n + cols - 1) / cols
@@ -234,6 +278,9 @@ class MultiPlayerOverlay(
     }
 
     private fun makeTile(i: Int): Tile {
+        // Con 3-4 player i riquadri sono piccoli: nome e pulsanti stanno in una barra SOPRA il video,
+        // così non ne coprono nessuna parte
+        val strip = st.count >= 3
         val pv = PlayerView(context).apply {
             useController = false
             keepScreenOn = true
@@ -245,10 +292,12 @@ class MultiPlayerOverlay(
             setTypeface(typeface, Typeface.BOLD)
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
-            setPadding(dp(8), dp(4), dp(8), dp(4))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(8).toFloat()
-                setColor(0x99000000.toInt())
+            if (!strip) {
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(8).toFloat()
+                    setColor(0x99000000.toInt())
+                }
             }
         }
         val hint = TextView(context).apply {
@@ -272,6 +321,11 @@ class MultiPlayerOverlay(
             setPadding(dp(6), dp(6), dp(6), dp(6))
         }
         more.setOnClickListener { showMenu(i, more) }
+        if (isTv) {
+            // col telecomando basta un solo punto di focus per riquadro (OK = audio, OK lungo = menu)
+            vol.isFocusable = false
+            more.isFocusable = false
+        }
         val border = View(context).apply {
             background = GradientDrawable().apply {
                 setStroke(dp(3), GREEN)
@@ -279,24 +333,55 @@ class MultiPlayerOverlay(
             }
             visibility = View.GONE
         }
-        val box = FrameLayout(context).apply {
-            setBackgroundColor(Color.BLACK)
-            setPadding(dp(1), dp(1), dp(1), dp(1))
-            addView(pv, FrameLayout.LayoutParams(MATCH, MATCH))
-            addView(hint, FrameLayout.LayoutParams(MATCH, MATCH))
-            addView(spin, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.CENTER))
-            addView(border, FrameLayout.LayoutParams(MATCH, MATCH))
-            addView(title, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
-                setMargins(dp(6), dp(6), dp(48), 0)
-            })
-            addView(vol, FrameLayout.LayoutParams(dp(32), dp(32), Gravity.BOTTOM or Gravity.START).apply {
-                setMargins(dp(6), 0, 0, dp(6))
-            })
-            addView(more, FrameLayout.LayoutParams(dp(36), dp(36), Gravity.TOP or Gravity.END).apply {
-                setMargins(0, dp(4), dp(4), 0)
-            })
-            setOnClickListener { onTileTap(i) }
+        val box: ViewGroup = if (strip) {
+            val caption = LinearLayout(context).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundColor(0xFF161616.toInt())
+                setPadding(dp(4), 0, dp(4), 0)
+                addView(vol, LinearLayout.LayoutParams(dp(26), dp(26)))
+                addView(title, LinearLayout.LayoutParams(0, WRAP, 1f).apply { setMargins(dp(6), 0, dp(6), 0) })
+                addView(more, LinearLayout.LayoutParams(dp(26), dp(26)))
+            }
+            val video = FrameLayout(context).apply {
+                addView(pv, FrameLayout.LayoutParams(MATCH, MATCH))
+                addView(hint, FrameLayout.LayoutParams(MATCH, MATCH))
+                addView(spin, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.CENTER))
+                addView(border, FrameLayout.LayoutParams(MATCH, MATCH))
+            }
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundColor(Color.BLACK)
+                setPadding(dp(1), dp(1), dp(1), dp(1))
+                addView(caption, LinearLayout.LayoutParams(MATCH, dp(30)))
+                addView(video, LinearLayout.LayoutParams(MATCH, 0, 1f))
+            }
+        } else {
+            FrameLayout(context).apply {
+                setBackgroundColor(Color.BLACK)
+                setPadding(dp(1), dp(1), dp(1), dp(1))
+                addView(pv, FrameLayout.LayoutParams(MATCH, MATCH))
+                addView(hint, FrameLayout.LayoutParams(MATCH, MATCH))
+                addView(spin, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.CENTER))
+                addView(border, FrameLayout.LayoutParams(MATCH, MATCH))
+                addView(title, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
+                    setMargins(dp(6), dp(6), dp(48), 0)
+                })
+                addView(vol, FrameLayout.LayoutParams(dp(32), dp(32), Gravity.BOTTOM or Gravity.START).apply {
+                    setMargins(dp(6), 0, 0, dp(6))
+                })
+                addView(more, FrameLayout.LayoutParams(dp(36), dp(36), Gravity.TOP or Gravity.END).apply {
+                    setMargins(0, dp(4), dp(4), 0)
+                })
+            }
         }
+        // tocco / OK: audio (o scelta evento se vuoto); tocco lungo / OK lungo: menu del riquadro
+        box.setOnClickListener { onTileTap(i) }
+        box.setOnLongClickListener {
+            showMenu(i, box)
+            true
+        }
+        box.isFocusable = true
+        box.foreground = focusRingDrawable(FOCUS, dp(3), false)
         return Tile(box, pv, title, hint, spin, vol, border)
     }
 
@@ -323,7 +408,10 @@ class MultiPlayerOverlay(
         t.hint.visibility = View.GONE
         val p = players[i] ?: newTilePlayer(i).also { players[i] = it }
         t.pv.player = p
-        if (playingUrl[i] != ch.url) start(i, ch.url, ch.url.contains(".m3u8", ignoreCase = true))
+        if (playingUrl[i] != ch.url) {
+            firstErr[i] = null
+            start(i, ch.url, ch.url.contains(".m3u8", ignoreCase = true))
+        }
     }
 
     // ---------- Player ----------
@@ -331,7 +419,7 @@ class MultiPlayerOverlay(
     private fun newTilePlayer(i: Int): ExoPlayer {
         val p = newPlayer()
         // ogni riquadro è piccolo: 720p bastano e alleggeriscono il telefono con più player accesi
-        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon().setMaxVideoSize(1280, 720).build()
+        limitQuality(p)
         p.volume = if (i == st.audio) 1f else 0f
         p.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) = onTileError(i, error)
@@ -340,6 +428,12 @@ class MultiPlayerOverlay(
             }
         })
         return p
+    }
+
+    private fun limitQuality(p: ExoPlayer) {
+        // su TV con 3-4 player i decoder hardware sono pochi: qualità più bassa per farli stare tutti
+        val (w, h) = if (isTv && st.count >= 3) 960 to 540 else 1280 to 720
+        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon().setMaxVideoSize(w, h).build()
     }
 
     private fun start(i: Int, url: String, asHls: Boolean) {
@@ -355,16 +449,21 @@ class MultiPlayerOverlay(
         p.playWhenReady = true
     }
 
-    // Se il formato non si capisce dall'URL, riprova una volta come HLS (come nel player singolo).
+    // Se il formato non si capisce dall'URL, riprova una volta come HLS (come nel player singolo),
+    // ma non per errori del decoder: lì un secondo tentativo non serve e nasconde il problema vero.
     private fun onTileError(i: Int, e: PlaybackException) {
         val url = playingUrl[i] ?: return
-        if (!triedHls[i]) {
+        if (!triedHls[i] && !Playback.isDecoderError(e)) {
+            firstErr[i] = e
             start(i, url, true)
             return
         }
+        val shown = Playback.pickError(firstErr[i], e)
         tiles[i]?.spin?.visibility = View.GONE
         tiles[i]?.hint?.apply {
-            text = "Impossibile riprodurre\n(${e.errorCodeName})"
+            text = if (Playback.isDecoderError(shown))
+                "Decoder video non disponibile\n(${shown.errorCodeName})\nProva con meno player"
+            else "Impossibile riprodurre\n(${shown.errorCodeName})"
             visibility = View.VISIBLE
         }
     }
@@ -421,13 +520,21 @@ class MultiPlayerOverlay(
     }
 
     private fun pickEvent(i: Int) {
-        val list = choices()
-        if (list.isEmpty()) return
+        // gli eventi già in riproduzione negli altri player non si possono scegliere
+        val list = choices().filter { !st.isPlaying(it, except = i) }
+        if (list.isEmpty()) {
+            Toast.makeText(context, "Tutti gli eventi sono già in riproduzione", Toast.LENGTH_SHORT).show()
+            return
+        }
         val names = Array(list.size) { k -> "${list[k].name}  ·  ${list[k].category}" }
-        val cur = list.indexOfFirst { it.url == st.slots[i]?.url }
+        val cur = list.indexOfFirst { c -> st.slots[i]?.let { st.same(it, c) } == true }
         MaterialAlertDialogBuilder(context)
             .setTitle("Player ${i + 1}")
             .setSingleChoiceItems(names, cur) { d, which ->
+                if (st.isPlaying(list[which], except = i)) {
+                    d.dismiss()
+                    return@setSingleChoiceItems
+                }
                 st.slots[i] = list[which]
                 bind(i)
                 refreshAudio()

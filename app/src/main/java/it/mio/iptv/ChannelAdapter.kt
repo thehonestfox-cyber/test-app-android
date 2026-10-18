@@ -24,24 +24,32 @@ fun logoBackground(ctx: Context, radiusDp: Int) = GradientDrawable().apply {
     setColor(0xFFF1F1F1.toInt())
 }
 
+private val skyRe = Regex("""\bSKY\b""", RegexOption.IGNORE_CASE)
+private const val LIST_LOGOS = "https://raw.githubusercontent.com/tv-logo/tv-logos/"
+
+/** Loghi da provare: per i canali Sky solo quelli della lista (assets/logos_it.txt), mai da altri siti. */
+private fun logoCandidates(ch: Channel): List<String> =
+    if (ch.category == "SKY" || skyRe.containsMatchIn(ch.name)) ch.logos.filter { it.startsWith(LIST_LOGOS) }
+    else ch.logos
+
 /** Carica il logo del canale provando gli URL uno dopo l'altro; se nessuno va, mostra l'icona TV. */
 fun loadChannelLogo(iv: ImageView, ch: Channel) {
     iv.tag = ch.url
-    showLogo(iv, ch, 0)
+    showLogo(iv, ch, logoCandidates(ch), 0)
 }
 
-private fun showLogo(iv: ImageView, ch: Channel, idx: Int) {
-    if (idx >= ch.logos.size) {
+private fun showLogo(iv: ImageView, ch: Channel, list: List<String>, idx: Int) {
+    if (idx >= list.size) {
         iv.dispose()
         iv.imageTintList = ColorStateList.valueOf(0xFF777777.toInt())
         iv.setImageResource(R.drawable.ic_tv)
         return
     }
     iv.imageTintList = null
-    iv.load(ch.logos[idx]) {
+    iv.load(list[idx]) {
         crossfade(true)
         listener(onError = { _, _ ->
-            if (iv.tag == ch.url) showLogo(iv, ch, idx + 1)
+            if (iv.tag == ch.url) showLogo(iv, ch, list, idx + 1)
         })
     }
 }

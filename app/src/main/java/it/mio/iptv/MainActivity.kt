@@ -55,6 +55,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
@@ -158,6 +159,7 @@ class MainActivity : AppCompatActivity() {
     private var query = ""
     private var currentUrl = ""
     private var triedHls = false
+    private var firstPlayError: PlaybackException? = null   // errore del primo tentativo (prima del riprovo come HLS)
     private var fullscreen = false
     private var userLive = false             // la sezione aperta è di tipo "eventi live": niente player, schermo intero alla scelta
     private var userSection: String? = null   // sezione aperta dall'utente (null = Completa)
@@ -507,7 +509,7 @@ class MainActivity : AppCompatActivity() {
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15000)
             .setReadTimeoutMs(15000)
-        return ExoPlayer.Builder(this)
+        return ExoPlayer.Builder(this, DefaultRenderersFactory(this).setEnableDecoderFallback(true))   // se il decoder hardware è occupato prova gli altri
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
             .build()
     }
@@ -693,12 +695,16 @@ class MainActivity : AppCompatActivity() {
     // Se il formato non si capisce dall'URL, riprova una volta come HLS.
     private fun onError(e: PlaybackException) {
         if (currentUrl.isEmpty()) return
-        if (!triedHls) {
+        // Riprova come HLS solo se il problema può essere il formato (non per errori del decoder)
+        if (!triedHls && !Playback.isDecoderError(e)) {
             triedHls = true
+            firstPlayError = e
             start(currentUrl, true)
             return
         }
-        setError("Impossibile riprodurre questo canale (${e.errorCodeName}).")
+        // mostra l'errore vero, non quello (fuorviante) del secondo tentativo
+        val shown = Playback.pickError(firstPlayError, e)
+        setError("Impossibile riprodurre questo canale (${shown.errorCodeName}).")
     }
 
     private fun setFullscreen(on: Boolean) {
@@ -1346,6 +1352,7 @@ class MainActivity : AppCompatActivity() {
         showControls()
         currentUrl = ch.url
         triedHls = ch.url.contains(".m3u8", ignoreCase = true)
+        firstPlayError = null
         start(ch.url, triedHls)
     }
 
