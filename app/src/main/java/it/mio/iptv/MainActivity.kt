@@ -1158,6 +1158,7 @@ class MainActivity : AppCompatActivity() {
         for (n in 1..MultiState.MAX) {
             chips.addView(Chip(ctx).apply {
                 ring(10)
+                scrollTopOnFocus()
                 id = View.generateViewId()
                 text = if (n == 1) "1 player" else "$n player"
                 isCheckable = true
@@ -1192,8 +1193,12 @@ class MainActivity : AppCompatActivity() {
                     iconTint = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
                     iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
                     isEnabled = multi.active().isNotEmpty()
-                    // il tasto è pieno di colorPrimary: l'anello dello stesso colore sparirebbe, ne serve uno a contrasto
-                    ring(24, c(MR.attr.colorOnPrimary))
+                    // il tasto è pieno di colorPrimary: il bordo del focus è quello del tasto stesso (stroke Material)
+                    // in un colore a contrasto, così si vede sempre
+                    strokeColor = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
+                    strokeWidth = 0
+                    onFocusChangeListener = View.OnFocusChangeListener { _, has -> strokeWidth = if (has) dp(4) else 0 }
+                    scrollTopOnFocus()
                     setOnClickListener { openMulti() }
                 },
                 LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) }
@@ -1239,6 +1244,7 @@ class MainActivity : AppCompatActivity() {
             isClickable = true
             isFocusable = true
             enableFocusRing()
+            scrollTopOnFocus()
             setOnClickListener {
                 multi.target = i
                 refreshLiveHeader()
@@ -1456,6 +1462,17 @@ class MainActivity : AppCompatActivity() {
     private fun showDialog(b: MaterialAlertDialogBuilder) = b.create().also {
         it.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         it.show()
+    }
+
+    // Nella sezione live: quando il focus arriva su un controllo del multi-schermo la lista risale in cima,
+    // così si vede anche il titolo "Multi-schermo"
+    private fun <T : View> T.scrollTopOnFocus(): T {
+        val prev = onFocusChangeListener
+        onFocusChangeListener = View.OnFocusChangeListener { v, has ->
+            prev?.onFocusChange(v, has)
+            if (has) liveScroll.post { liveScroll.smoothScrollTo(0, 0) }
+        }
+        return this
     }
 
     // Evidenziazione ben visibile (anello + sfondo colorato) per pulsanti, chip e righe quando hanno il focus
