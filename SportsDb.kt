@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.ImageView
 import coil.imageLoader
 import coil.load
@@ -47,6 +48,7 @@ object SportsDb {
     // della pagina del campionato, es. thesportsdb.com/league/5340-...): Serie C girone A, B, C
     private val LEAGUE_IDS = listOf("5340", "5339", "4398")
 
+    private const val TAG = "SportsDb"   // diagnostica: Logcat, filtro "SportsDb"
     private val pool = Executors.newFixedThreadPool(2)
     private val main = Handler(Looper.getMainLooper())
     private var prefs: SharedPreferences? = null
@@ -103,6 +105,8 @@ object SportsDb {
 
     // Scarica un testo; se il server risponde "troppe richieste" (429) aspetta un attimo e riprova. null = errore di rete.
     private fun http(url: String): String? {
+        val t0 = System.currentTimeMillis()
+        val what = url.removePrefix(API)
         for (attempt in 0..2) {
             try {
                 val c = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -110,15 +114,20 @@ object SportsDb {
                     readTimeout = 8000
                 }
                 try {
-                    if (c.responseCode == 429) {
+                    val code = c.responseCode
+                    if (code == 429) {
+                        Log.d(TAG, "HTTP 429 (troppe richieste) $what, attesa e nuovo tentativo ${attempt + 1}")
                         Thread.sleep(1500L * (attempt + 1))
                         continue
                     }
-                    return c.inputStream.bufferedReader().use { it.readText() }
+                    val text = c.inputStream.bufferedReader().use { it.readText() }
+                    Log.d(TAG, "GET $what -> $code, ${text.length / 1024} KB, ${System.currentTimeMillis() - t0} ms")
+                    return text
                 } finally {
                     c.disconnect()
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.d(TAG, "GET $what ERRORE ${e.javaClass.simpleName} dopo ${System.currentTimeMillis() - t0} ms (tentativo ${attempt + 1})")
             }
         }
         return null
@@ -162,6 +171,7 @@ object SportsDb {
             val next = get("eventsnextleague.php?id=$id", fail)
             val past = get("eventspastleague.php?id=$id", fail)
             val ev = (next ?: emptyList()) + (past ?: emptyList())
+            Log.d(TAG, "campionato $id: prossime=${next?.size} ultime=${past?.size} (null = errore)")
             if (next == null || past == null) {
                 // elenco incompleto (errore o limite di richieste): lo si usa ma non si tiene in cache, e si riprova tra poco
                 leagueFailAt[id] = System.currentTimeMillis()
@@ -300,26 +310,31 @@ object SportsDb {
     }
 
     private fun lookup(eventName: String, fail: BooleanArray): Info? {
-        val (a, b) = teams(eventName) ?: return null
+        val t0 = System.currentTimeMillis()
+        fun res(via: String, i: Info?): Info? {
+            Log.d(TAG, "'$eventName' -> $via, ${System.currentTimeMillis() - t0} ms, thumb=${i?.thumb?.isNotEmpty()}, orario=${i?.start?.let { it > 0 }}, errori=${fail[0]}")
+            return i
+        }
+        val (a, b) = teams(eventName) ?: return res("non è una partita", null)
         val today = LocalDate.now()
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
         val nearby = (-1L..1L).flatMap { day(today.plusDays(it)) }
         if ((-1L..1L).any { days[today.plusDays(it)] == null }) fail[0] = true
-        pick(nearby, a, b)?.let { return it }
+        pick(nearby, a, b)?.let { return res("elenco del giorno", it) }
         // 2) campionati minori letti per intero (Serie C): 2 richieste a campionato, poi tutto in cache
-        pick(LEAGUE_IDS.flatMap { leagueEvents(it, fail) }, a, b)?.let { return it }
+        for (id in LEAGUE_IDS) pick(leagueEvents(id, fail), a, b)?.let { return res("campionato $id", it) }
         // 3) ricerca per nome, ma solo partite di questi giorni
         for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
             val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8"), fail) ?: continue
-            pick(ev, a, b)?.let { return it }
+            pick(ev, a, b)?.let { return res("ricerca per nome", it) }
         }
         // 4) prossime e ultime partite di ciascuna squadra
         for (name in listOf(a, b)) {
             val id = teamId(name, fail) ?: continue
             val ev = (get("eventsnext.php?id=$id", fail) ?: emptyList()) + (get("eventslast.php?id=$id", fail) ?: emptyList())
-            pick(ev, a, b)?.let { return it }
+            pick(ev, a, b)?.let { return res("squadra $name", it) }
         }
-        return null
+        return res("NON TROVATA", null)
     }
 
     // Nella memoria del telefono: "orario<TAB>immagine" (i vecchi valori con solo l'immagine si ignorano e si rifanno)
@@ -360,7 +375,9 @@ object SportsDb {
             }
             inflight[k] = mutableListOf<(Info) -> Unit>().also { if (cb != null) it.add(cb) }
         }
+        val queuedAt = System.currentTimeMillis()
         pool.execute {
+            Log.d(TAG, "'${ch.name}' avvio ricerca (in coda da ${System.currentTimeMillis() - queuedAt} ms)")
             val fail = BooleanArray(1)
             val info = try {
                 lookup(ch.name, fail)
