@@ -18,6 +18,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
@@ -50,6 +51,7 @@ object SportsDb {
 
     private const val TAG = "SportsDb"   // diagnostica: Logcat, filtro "SportsDb"
     private val pool = Executors.newFixedThreadPool(2)
+    private val net = Executors.newCachedThreadPool()   // richieste di rete in parallelo (giorni, campionati)
     private val main = Handler(Looper.getMainLooper())
     private var prefs: SharedPreferences? = null
     private var app: Context? = null
@@ -102,6 +104,17 @@ object SportsDb {
     }
 
     // ---- rete ----
+
+    // Esegue [f] su ogni elemento in parallelo e restituisce i risultati nello stesso ordine
+    private fun <A, B> pmap(items: List<A>, f: (A) -> B): List<B> =
+        items.map { x -> net.submit(Callable { f(x) }) }.map { it.get() }
+
+    // Immagini TheSportsDB: la versione /medium (500 px) pesa una frazione dell'originale e basta per la card
+    private val imgExtRe = Regex("""\.(jpe?g|png)$""", RegexOption.IGNORE_CASE)
+    private fun sized(url: String): String {
+        val u = url.trim()
+        return if (u.contains("thesportsdb.com") && imgExtRe.containsMatchIn(u)) "$u/medium" else u
+    }
 
     // Scarica un testo; se il server risponde "troppe richieste" (429) aspetta un attimo e riprova. null = errore di rete.
     private fun http(url: String): String? {
@@ -168,8 +181,11 @@ object SportsDb {
                 fail[0] = true
                 return old
             }
-            val next = get("eventsnextleague.php?id=$id", fail)
-            val past = get("eventspastleague.php?id=$id", fail)
+            // prossime e ultime partite scaricate insieme
+            val nf = net.submit(Callable { get("eventsnextleague.php?id=$id", fail) })
+            val pf = net.submit(Callable { get("eventspastleague.php?id=$id", fail) })
+            val next = nf.get()
+            val past = pf.get()
             val ev = (next ?: emptyList()) + (past ?: emptyList())
             Log.d(TAG, "campionato $id: prossime=${next?.size} ultime=${past?.size} (null = errore)")
             if (next == null || past == null) {
@@ -318,11 +334,13 @@ object SportsDb {
         val (a, b) = teams(eventName) ?: return res("non è una partita", null)
         val today = LocalDate.now()
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
-        val nearby = (-1L..1L).flatMap { day(today.plusDays(it)) }
+        val nearby = pmap((-1L..1L).toList()) { day(today.plusDays(it)) }.flatten()   // i 3 giorni insieme
         if ((-1L..1L).any { days[today.plusDays(it)] == null }) fail[0] = true
         pick(nearby, a, b)?.let { return res("elenco del giorno", it) }
         // 2) campionati minori letti per intero (Serie C): 2 richieste a campionato, poi tutto in cache
-        for (id in LEAGUE_IDS) pick(leagueEvents(id, fail), a, b)?.let { return res("campionato $id", it) }
+        //    i 3 gironi vengono scaricati insieme, non uno dopo l'altro
+        val lg = pmap(LEAGUE_IDS) { leagueEvents(it, fail) }
+        for ((i, ev) in lg.withIndex()) pick(ev, a, b)?.let { return res("campionato ${LEAGUE_IDS[i]}", it) }
         // 3) ricerca per nome, ma solo partite di questi giorni
         for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
             val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8"), fail) ?: continue
@@ -349,7 +367,7 @@ object SportsDb {
 
     private fun warm(url: String) {
         val a = app ?: return
-        if (url.isNotEmpty()) a.imageLoader.enqueue(ImageRequest.Builder(a).data(url).build())   // scarica l'immagine in anticipo
+        if (url.isNotEmpty()) a.imageLoader.enqueue(ImageRequest.Builder(a).data(sized(url)).build())   // scarica l'immagine in anticipo
     }
 
     /** Dà l'info (se la trova) a [cb] sul thread principale; senza [cb] serve solo a riscaldare cache e immagine. */
@@ -406,6 +424,17 @@ object SportsDb {
      * (con gli stessi 2 canali di rete di prima, una partita alla volta) e scarica le immagini.
      */
     fun prefetch(channels: List<Channel>) {
+        // Serie C: giorni e gironi si scaricano subito, tutti insieme, mentre partono le ricerche delle singole partite
+        net.execute {
+            try {
+                val fail = BooleanArray(1)
+                val today = LocalDate.now()
+                val tasks = (-1L..1L).map { n -> net.submit(Callable { day(today.plusDays(n)) }) } +
+                    LEAGUE_IDS.map { id -> net.submit(Callable { leagueEvents(id, fail) }) }
+                tasks.forEach { it.get() }
+            } catch (_: Exception) {
+            }
+        }
         channels.distinctBy { it.name }.forEach { ch -> request(ch, "${ch.name}|${LocalDate.now()}", null) }
     }
 
@@ -424,11 +453,18 @@ object SportsDb {
             if (info.start > 0) onStart?.invoke(info.start)
             if (info.thumb.isEmpty()) return
             onFound?.invoke()
-            iv.load(info.thumb) {
+            fun bad() {
+                found.remove(k)
+                prefs?.edit()?.remove(k)?.apply()
+                if (iv.tag == ch.url) onFail?.invoke()
+            }
+            val small = sized(info.thumb)
+            iv.load(small) {
                 listener(onError = { _, _ ->
-                    found.remove(k)
-                    prefs?.edit()?.remove(k)?.apply()
-                    if (iv.tag == ch.url) onFail?.invoke()
+                    if (small != info.thumb && iv.tag == ch.url) {
+                        // la versione ridotta non esiste: si prova l'immagine originale
+                        iv.load(info.thumb) { listener(onError = { _, _ -> bad() }) }
+                    } else bad()
                 })
             }
         }
