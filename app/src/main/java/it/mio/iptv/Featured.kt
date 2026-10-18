@@ -30,6 +30,7 @@ object Featured {
                             put("quality", ch.quality)
                             put("url", ch.url)
                             put("logos", JSONArray(ch.logos))
+                            if (ch.time.isNotBlank()) put("time", ch.time)
                         })
                     }
                 })
@@ -53,7 +54,8 @@ object Featured {
                     quality = c.optString("quality", ""),
                     category = cat,
                     url = c.getString("url"),
-                    logos = List(lg.length()) { lg.getString(it) }
+                    logos = List(lg.length()) { lg.getString(it) },
+                    time = c.optString("time", "")
                 )
             }
             out.add(FeaturedCategory(cat, list))

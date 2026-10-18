@@ -12,6 +12,8 @@ import java.net.URL
 import java.net.URLEncoder
 import java.text.Normalizer
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -39,7 +41,10 @@ object SportsDb {
     private val main = Handler(Looper.getMainLooper())
     private var prefs: SharedPreferences? = null
 
-    private val found = ConcurrentHashMap<String, String>()    // "nome|data" -> URL
+    /** Quello che si sa di una partita: immagine (può mancare) e orario di inizio in millisecondi (0 = sconosciuto). */
+    private class Info(val thumb: String, val start: Long)
+
+    private val found = ConcurrentHashMap<String, Info>()      // "nome|data" -> info
     private val misses = ConcurrentHashMap<String, Long>()     // "nome|data" -> quando è fallita
     private class Day(val at: Long, val events: List<JSONObject>)
     private val days = ConcurrentHashMap<LocalDate, Day>()
@@ -138,8 +143,25 @@ object SportsDb {
             .map { e.optString(it, "") }
             .firstOrNull { it.isNotBlank() && it != "null" } ?: ""
 
+    // Orario di inizio: TheSportsDB lo dà in UTC (strTimestamp, oppure dateEvent + strTime)
+    private fun startOf(e: JSONObject): Long {
+        return try {
+            val ts = e.optString("strTimestamp", "")
+            val iso = if (ts.length >= 19 && ts != "null") ts.take(19).replace(' ', 'T')
+            else {
+                val d = e.optString("dateEvent", "")
+                val tm = e.optString("strTime", "")
+                if (d.length < 10 || tm.length < 8 || tm.startsWith("00:00:00")) return 0L
+                d.take(10) + "T" + tm.take(8)
+            }
+            LocalDateTime.parse(iso).toInstant(ZoneOffset.UTC).toEpochMilli()
+        } catch (_: Exception) {
+            0L
+        }
+    }
+
     /** La partita che corrisponde meglio alle due squadre (vicina a oggi); null se non c'è. */
-    private fun pick(events: List<JSONObject>, a: String, b: String): String? {
+    private fun pick(events: List<JSONObject>, a: String, b: String): Info? {
         val na = norm(a)
         val nb = norm(b)
         val today = LocalDate.now()
@@ -169,34 +191,46 @@ object SportsDb {
                 bestDist = dist
             }
         }
-        return best?.let { thumbOf(it) }
+        return best?.let { Info(thumbOf(it), startOf(it)) }
     }
 
-    private fun lookup(eventName: String): String {
-        val (a, b) = teams(eventName) ?: return ""
+    private fun lookup(eventName: String): Info? {
+        val (a, b) = teams(eventName) ?: return null
         val today = LocalDate.now()
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
         val nearby = (-1L..1L).flatMap { day(today.plusDays(it)) }
-        pick(nearby, a, b)?.takeIf { it.isNotEmpty() }?.let { return it }
+        pick(nearby, a, b)?.let { return it }
         // 2) ricerca per nome, ma solo partite di questi giorni
         for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
             val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8")) ?: continue
-            pick(ev, a, b)?.takeIf { it.isNotEmpty() }?.let { return it }
+            pick(ev, a, b)?.let { return it }
         }
-        return ""
+        return null
+    }
+
+    // Nella memoria del telefono: "orario<TAB>immagine" (i vecchi valori con solo l'immagine si ignorano e si rifanno)
+    private fun decode(v: String?): Info? {
+        val i = v?.indexOf('\t') ?: -1
+        if (v == null || i < 0) return null
+        return Info(v.substring(i + 1), v.substring(0, i).toLongOrNull() ?: 0L)
     }
 
     /**
-     * Se TheSportsDB ha l'immagine della partita la mostra nell'ImageView.
-     * onFound: viene chiamato prima di mostrarla (per adattare il layout); onFail: se l'immagine non si carica.
+     * Se TheSportsDB conosce la partita: mostra l'immagine nell'ImageView e comunica l'orario di inizio.
+     * onFound: viene chiamato prima di mostrare l'immagine (per adattare il layout); onFail: se l'immagine non si carica;
+     * onStart: orario di inizio in millisecondi (chiamato sul thread principale).
      */
-    fun loadThumb(iv: ImageView, ch: Channel, onFound: (() -> Unit)? = null, onFail: (() -> Unit)? = null) {
+    fun loadThumb(
+        iv: ImageView, ch: Channel,
+        onFound: (() -> Unit)? = null, onFail: (() -> Unit)? = null, onStart: ((Long) -> Unit)? = null
+    ) {
         val k = "${ch.name}|${LocalDate.now()}"
-        fun show(url: String) {
-            if (url.isEmpty() || iv.tag != ch.url) return
+        fun show(info: Info) {
+            if (iv.tag != ch.url) return
+            if (info.start > 0) onStart?.invoke(info.start)
+            if (info.thumb.isEmpty()) return
             onFound?.invoke()
-            iv.load(url) {
-                crossfade(true)
+            iv.load(info.thumb) {
                 listener(onError = { _, _ ->
                     found.remove(k)
                     prefs?.edit()?.remove(k)?.apply()
@@ -204,7 +238,7 @@ object SportsDb {
                 })
             }
         }
-        val known = found[k] ?: prefs?.getString(k, null)
+        val known = found[k] ?: decode(prefs?.getString(k, null))
         if (known != null) {
             found[k] = known
             show(known)
@@ -213,18 +247,18 @@ object SportsDb {
         val t = misses[k]
         if (t != null && System.currentTimeMillis() - t < MISS_RETRY_MS) return
         pool.execute {
-            val url = try {
+            val info = try {
                 lookup(ch.name)
             } catch (_: Exception) {
-                ""
+                null
             }
-            if (url.isNotEmpty()) {
-                found[k] = url
-                prefs?.edit()?.putString(k, url)?.apply()
+            if (info != null) {
+                found[k] = info
+                prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}")?.apply()
             } else {
                 misses[k] = System.currentTimeMillis()
             }
-            main.post { show(url) }
+            if (info != null) main.post { show(info) }
         }
     }
 }

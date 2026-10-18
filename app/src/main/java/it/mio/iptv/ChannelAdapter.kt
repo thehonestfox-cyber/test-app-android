@@ -47,7 +47,6 @@ private fun showLogo(iv: ImageView, ch: Channel, list: List<String>, idx: Int) {
     }
     iv.imageTintList = null
     iv.load(list[idx]) {
-        crossfade(true)
         listener(onError = { _, _ ->
             if (iv.tag == ch.url) showLogo(iv, ch, list, idx + 1)
         })
@@ -84,10 +83,18 @@ class ChannelAdapter(
         notifyDataSetChanged()
     }
 
+    // Aggiorna solo le righe che cambiano (così il focus del telecomando non salta in cima alla lista
+    // e non si ricaricano tutti i loghi mentre parte il video)
     fun select(url: String?) {
+        val old = selectedUrl
+        if (old == url) return
         selectedUrl = url
-        notifyDataSetChanged()
+        rows.forEachIndexed { i, r ->
+            if (r is Row.Item && (r.ch.url == old || r.ch.url == url)) notifyItemChanged(i)
+        }
     }
+
+    fun positionOf(url: String): Int = rows.indexOfFirst { it is Row.Item && it.ch.url == url }
 
     override fun getItemCount() = rows.size
 

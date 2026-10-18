@@ -17,7 +17,7 @@ private fun MaterialCardView.updateStroke() {
     val d = resources.displayMetrics.density
     strokeColor = MaterialColors.getColor(this, MR.attr.colorPrimary, Color.WHITE)
     strokeWidth = when {
-        isFocused -> (3 * d).toInt()
+        isFocused -> (4 * d).toInt()
         this in markedCards -> (2 * d).toInt()
         else -> 0
     }
@@ -34,17 +34,23 @@ fun MaterialCardView.setMarked(on: Boolean) {
  * Con il tocco non cambia nulla.
  */
 fun MaterialCardView.enableFocusRing() {
-    onFocusChangeListener = View.OnFocusChangeListener { v, _ -> (v as MaterialCardView).updateStroke() }
+    onFocusChangeListener = View.OnFocusChangeListener { v, focused ->
+        (v as MaterialCardView).updateStroke()
+        // leggero ingrandimento: col telecomando si vede subito quale card è selezionata
+        val z = if (focused) 1.02f else 1f
+        v.animate().scaleX(z).scaleY(z).setDuration(120).start()
+    }
 }
 
 /** Anello di focus per pulsanti rotondi o rettangoli (da usare come foreground). */
-fun focusRingDrawable(color: Int, widthPx: Int, oval: Boolean, radiusPx: Float = 0f): Drawable =
+fun focusRingDrawable(color: Int, widthPx: Int, oval: Boolean, radiusPx: Float = 0f, fill: Boolean = false): Drawable =
     StateListDrawable().apply {
         addState(intArrayOf(android.R.attr.state_focused), GradientDrawable().apply {
             shape = if (oval) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
             cornerRadius = radiusPx
             setStroke(widthPx, color)
-            setColor(Color.TRANSPARENT)
+            // fill = true: oltre all'anello, sfondo colorato semitrasparente (pulsanti piccoli, più visibili)
+            setColor(if (fill) (color and 0x00FFFFFF) or 0x40000000 else Color.TRANSPARENT)
         })
         addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
     }
