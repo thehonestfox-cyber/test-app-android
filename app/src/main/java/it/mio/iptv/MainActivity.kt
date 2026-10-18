@@ -1408,7 +1408,7 @@ class MainActivity : AppCompatActivity() {
         })
         adminList.addView(
             tv(
-                "Tocca una sezione per gestire categorie e canali. Con la matita (o tenendo premuto) cambi nome, icona, descrizione e tipo.",
+                "Tocca una sezione per gestire categorie e canali. Con la matita cambi nome, icona, descrizione e tipo; tenendo premuto la sposti su o giù.",
                 13f, c(MR.attr.colorOnSurfaceVariant)
             ).apply { setPadding(dp(4), 0, dp(4), dp(8)) }
         )
@@ -1434,11 +1434,39 @@ class MainActivity : AppCompatActivity() {
                 onDelete = del
             )
             card.setOnLongClickListener {
-                sectionDialog(i)
+                showMoveMenu(card, i, sections.size) { d -> moveSection(i, d) }
                 true
             }
             adminList.addView(card)
         }
+    }
+
+    // Menu del tocco prolungato: sposta l'elemento di una posizione su o giù (total = quanti elementi ci sono)
+    private fun showMoveMenu(anchor: View, i: Int, total: Int, move: (Int) -> Unit) {
+        if (total < 2) return
+        val m = PopupMenu(this, anchor)
+        if (i > 0) m.menu.add(0, 1, 0, "Sposta su")
+        if (i < total - 1) m.menu.add(0, 2, 1, "Sposta giù")
+        m.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> move(-1)
+                2 -> move(1)
+            }
+            true
+        }
+        m.show()
+    }
+
+    // L'ordine delle sezioni vale anche nella home
+    private fun moveSection(i: Int, delta: Int) {
+        val l = Sections.load(prefs)
+        val j = i + delta
+        if (i in l.indices && j in l.indices) {
+            val x = l.removeAt(i)
+            l.add(j, x)
+            Sections.save(prefs, l)
+        }
+        refreshAdmin()
     }
 
     private fun deleteSection(id: String) {
@@ -1682,8 +1710,12 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(WRAP, WRAP)
         )
         adminList.addView(tv(secName, 20f, c(MR.attr.colorOnSurface), true).apply {
-            setPadding(dp(4), dp(12), 0, dp(8))
+            setPadding(dp(4), dp(12), 0, dp(4))
         })
+        adminList.addView(
+            tv("Tocca per modificare, tieni premuto per spostare su o giù.", 13f, c(MR.attr.colorOnSurfaceVariant))
+                .apply { setPadding(dp(4), 0, dp(4), dp(8)) }
+        )
         adminList.addView(LinearLayout(this).apply {
             addView(
                 outlinedBtn("Importa codice") { importDialog() },
@@ -1733,6 +1765,10 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 )
+                card.setOnLongClickListener {
+                    showMoveMenu(card, j, cat.channels.size) { d -> moveChannel(i, j, d) }
+                    true
+                }
                 adminList.addView(card)
             }
         }
@@ -1743,6 +1779,21 @@ class MainActivity : AppCompatActivity() {
             val v = headers[target]
             adminScroll.post { adminScroll.smoothScrollTo(0, (v.top - dp(8)).coerceAtLeast(0)) }
         }
+    }
+
+    // Sposta un canale/evento su o giù dentro la sua categoria (l'ordine vale anche nella schermata della sezione)
+    private fun moveChannel(ci: Int, ji: Int, delta: Int) {
+        Featured.edit(prefs, adminSection) { l ->
+            val cat = l.getOrNull(ci) ?: return@edit
+            val k = ji + delta
+            if (ji in cat.channels.indices && k in cat.channels.indices) {
+                val chs = cat.channels.toMutableList()
+                val x = chs.removeAt(ji)
+                chs.add(k, x)
+                l[ci] = cat.copy(channels = chs)
+            }
+        }
+        refreshAdmin()
     }
 
     private fun collapseKey(cat: FeaturedCategory) = "$adminSection/${cat.name}"
@@ -1844,8 +1895,9 @@ class MainActivity : AppCompatActivity() {
     private fun editChannelDialog(ci: Int, ji: Int) {
         val cats = Featured.load(prefs, adminSection)
         val ch = cats.getOrNull(ci)?.channels?.getOrNull(ji) ?: return
-        val til = field("Nome $adminNoun (se vuoto usa quello della playlist)")
-        til.editText!!.setText(ch.name)
+        // il nome attuale compare in grigio finché il campo è vuoto; se resta vuoto, il nome non cambia
+        val til = field("Nome $adminNoun")
+        til.placeholderText = ch.name
         val tilUrl = field("Indirizzo (URL) del flusso")
         tilUrl.editText!!.setText(ch.url)
         val catLabel = tv("Categoria", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(4)) }
@@ -1867,7 +1919,7 @@ class MainActivity : AppCompatActivity() {
             .create()
         dlg.setOnShowListener {
             dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
+                val n = til.editText!!.text.toString().trim().ifEmpty { ch.name }
                 val u = tilUrl.editText!!.text.toString().trim()
                 if (u.isEmpty() || !u.contains("://")) {
                     toast("Inserisci un indirizzo valido (es. http://...)")
@@ -1903,7 +1955,7 @@ class MainActivity : AppCompatActivity() {
     private fun addChannelDialog(ci: Int) {
         if (Featured.load(prefs, adminSection).getOrNull(ci) == null) return
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val nameField = field("Nome $adminNoun (se vuoto usa quello della playlist)")
+        val nameField = field("Nome $adminNoun")   // scelto un canale, il suo nome compare in grigio (segnaposto)
         val search = field("Cerca nella playlist")
         val status = tv("Caricamento canali…", 13f, c(MR.attr.colorOnSurfaceVariant))
             .apply { setPadding(dp(4), dp(8), dp(4), dp(4)) }
