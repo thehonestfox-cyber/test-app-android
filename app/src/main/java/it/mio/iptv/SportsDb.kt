@@ -468,6 +468,6 @@ object SportsDb {
                 })
             }
         }
-        request(ch, k) { info -> show(info) }
+        request(ch, k, { info -> show(info) })
     }
 }
