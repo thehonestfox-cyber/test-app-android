@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
     private var inPip = false
     private var loadGen = 0
     private var adminTab = 0
-    private var adminCollapsed = false       // true = nella gestione categorie mostra solo le categorie, senza canali
+    private val collapsedCats = mutableSetOf<String>()   // categorie chiuse (sezione/nome) nella gestione admin
     private var lastLand: Boolean? = null
 
     // ---------- Avvio ----------
@@ -308,7 +308,7 @@ class MainActivity : AppCompatActivity() {
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(tv(title, 20f, onC, true))
-            addView(tv(sub, 14f, onC))
+            if (sub.isNotBlank()) addView(tv(sub, 14f, onC))
         }
         return MaterialCardView(this).apply {
             radius = dp(28).toFloat()
@@ -366,7 +366,7 @@ class MainActivity : AppCompatActivity() {
             homeCards.addView(
                 homeCard(
                     Sections.iconRes(sec.icon), sec.name,
-                    sec.description.ifBlank { "I canali scelti dall'admin" }
+                    sec.description
                 ) { showUser(sec.id) }
             )
         }
@@ -1131,9 +1131,14 @@ class MainActivity : AppCompatActivity() {
         val cats = Featured.load(prefs, adminSection)
         val secName = Sections.load(prefs).firstOrNull { it.id == adminSection }?.name ?: ""
         adminList.addView(
-            outlinedBtn("‹ Sezioni") {
+            outlinedBtn("Sezioni") {
                 adminEditing = null
                 refreshAdmin()
+            }.apply {
+                icon = ContextCompat.getDrawable(context, R.drawable.ic_chevron_left)
+                iconSize = dp(32)
+                iconTint = ColorStateList.valueOf(c(MR.attr.colorPrimary))
+                iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
             },
             LinearLayout.LayoutParams(WRAP, WRAP)
         )
@@ -1152,15 +1157,6 @@ class MainActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams(0, WRAP, 1f)
             )
         })
-        if (cats.isNotEmpty()) {
-            adminList.addView(
-                outlinedBtn(if (adminCollapsed) "Mostra anche i canali" else "Mostra solo le categorie") {
-                    adminCollapsed = !adminCollapsed
-                    refreshAdmin()
-                },
-                LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }
-            )
-        }
         if (cats.isEmpty()) {
             adminList.addView(
                 tv(
@@ -1175,7 +1171,7 @@ class MainActivity : AppCompatActivity() {
             val h = categoryHeader(i, cat, cats.size)
             headers.add(h)
             adminList.addView(h)
-            if (adminCollapsed) return@forEachIndexed
+            if (isCollapsed(cat)) return@forEachIndexed
             if (cat.channels.isEmpty()) {
                 adminList.addView(
                     tv("Nessun canale: tocca + per aggiungerne.", 13f, c(MR.attr.colorOnSurfaceVariant))
@@ -1193,7 +1189,6 @@ class MainActivity : AppCompatActivity() {
                         refreshAdmin()
                     }
                 }
-                (card.layoutParams as LinearLayout.LayoutParams).leftMargin = dp(12)
                 adminList.addView(card)
             }
         }
@@ -1206,6 +1201,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun collapseKey(cat: FeaturedCategory) = "$adminSection/${cat.name}"
+    private fun isCollapsed(cat: FeaturedCategory) = collapseKey(cat) in collapsedCats
+
     private fun categoryHeader(i: Int, cat: FeaturedCategory, total: Int): View {
         val tint = c(MR.attr.colorOnSurfaceVariant)
         val more = iconBtn(R.drawable.ic_more, tint, dp(10), null) {}
@@ -1216,6 +1214,16 @@ class MainActivity : AppCompatActivity() {
             addView(
                 tv("${cat.name} · ${cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
                 LinearLayout.LayoutParams(0, WRAP, 1f)
+            )
+            addView(
+                iconBtn(
+                    if (isCollapsed(cat)) R.drawable.ic_expand_more else R.drawable.ic_expand_less,
+                    tint, dp(10), null
+                ) {
+                    if (!collapsedCats.remove(collapseKey(cat))) collapsedCats.add(collapseKey(cat))
+                    refreshAdmin()
+                },
+                LinearLayout.LayoutParams(dp(44), dp(44))
             )
             addView(
                 iconBtn(R.drawable.ic_add, tint, dp(10), null) { addChannelDialog(i) },
