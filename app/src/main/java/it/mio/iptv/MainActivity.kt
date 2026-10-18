@@ -1039,6 +1039,7 @@ class MainActivity : AppCompatActivity() {
         val badge = liveBadge()
         val manual = manualStart(ch.time)
         if (manual > 0) paintTag(badge, manual)
+        var badgesRow: View? = null
         val thumb = FrameLayout(this).apply {
             val logo = ImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
@@ -1060,6 +1061,25 @@ class MainActivity : AppCompatActivity() {
             }, onStart = { start ->
                 // l'orario viene da TheSportsDB, a meno che l'admin non ne abbia scritto uno a mano
                 if (manual == 0L) paintTag(badge, start)
+            }, onBadges = { home, away ->
+                // TheSportsDB non ha l'immagine della partita: si mostrano gli stemmi delle due squadre
+                if (badgesRow == null) {
+                    val row = LinearLayout(context).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER
+                        background = logoBackground(context, 12)
+                        listOf(home, away).filter { it.isNotEmpty() }.forEach { u ->
+                            val b = ImageView(context).apply {
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                                setPadding(dp(10), dp(12), dp(10), dp(12))
+                            }
+                            SportsDb.loadBadge(b, u)
+                            addView(b, LinearLayout.LayoutParams(0, MATCH, 1f))
+                        }
+                    }
+                    badgesRow = row
+                    addView(row, 1, FrameLayout.LayoutParams(MATCH, MATCH))
+                }
             })
             addView(badge, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
                 setMargins(dp(8), dp(8), 0, 0)
@@ -2304,6 +2324,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 dlg.dismiss()
+                prefetchLive()   // cerca subito thumb e orario del nuovo evento
                 refreshAdmin()
             }
         }
@@ -2369,6 +2390,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     dlg.dismiss()
+                    prefetchLive()   // cerca subito thumb e orario del nuovo evento
                     refreshAdmin()
                 }
             }

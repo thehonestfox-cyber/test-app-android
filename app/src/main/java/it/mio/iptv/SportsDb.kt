@@ -57,7 +57,7 @@ object SportsDb {
     private var app: Context? = null
 
     /** Quello che si sa di una partita: immagine (può mancare) e orario di inizio in millisecondi (0 = sconosciuto). */
-    private class Info(val thumb: String, val start: Long)
+    private class Info(val thumb: String, val start: Long, val home: String = "", val away: String = "")
 
     private val found = ConcurrentHashMap<String, Info>()      // "nome|data" -> info
     private val misses = ConcurrentHashMap<String, Long>()     // "nome|data" -> quando è fallita
@@ -111,9 +111,9 @@ object SportsDb {
 
     // Immagini TheSportsDB: la versione /medium (500 px) pesa una frazione dell'originale e basta per la card
     private val imgExtRe = Regex("""\.(jpe?g|png)$""", RegexOption.IGNORE_CASE)
-    private fun sized(url: String): String {
+    private fun sized(url: String, size: String = "medium"): String {
         val u = url.trim()
-        return if (u.contains("thesportsdb.com") && imgExtRe.containsMatchIn(u)) "$u/medium" else u
+        return if (u.contains("thesportsdb.com") && imgExtRe.containsMatchIn(u)) "$u/$size" else u
     }
 
     // Scarica un testo; se il server risponde "troppe richieste" (429) aspetta un attimo e riprova. null = errore di rete.
@@ -274,6 +274,9 @@ object SportsDb {
             .map { e.optString(it, "") }
             .firstOrNull { it.isNotBlank() && it != "null" } ?: ""
 
+    private fun badgeOf(e: JSONObject, key: String): String =
+        e.optString(key, "").let { if (it.isBlank() || it == "null") "" else it }
+
     // Orario di inizio: TheSportsDB lo dà in UTC (strTimestamp, oppure dateEvent + strTime)
     private fun startOf(e: JSONObject): Long {
         return try {
@@ -322,7 +325,7 @@ object SportsDb {
                 bestDist = dist
             }
         }
-        return best?.let { Info(thumbOf(it), startOf(it)) }
+        return best?.let { Info(thumbOf(it), startOf(it), badgeOf(it, "strHomeTeamBadge"), badgeOf(it, "strAwayTeamBadge")) }
     }
 
     private fun lookup(eventName: String, fail: BooleanArray): Info? {
@@ -337,15 +340,17 @@ object SportsDb {
         val nearby = pmap((-1L..1L).toList()) { day(today.plusDays(it)) }.flatten()   // i 3 giorni insieme
         if ((-1L..1L).any { days[today.plusDays(it)] == null }) fail[0] = true
         pick(nearby, a, b)?.let { return res("elenco del giorno", it) }
-        // 2) campionati minori letti per intero (Serie C): 2 richieste a campionato, poi tutto in cache
-        //    i 3 gironi vengono scaricati insieme, non uno dopo l'altro
-        val lg = pmap(LEAGUE_IDS) { leagueEvents(it, fail) }
-        for ((i, ev) in lg.withIndex()) pick(ev, a, b)?.let { return res("campionato ${LEAGUE_IDS[i]}", it) }
-        // 3) ricerca per nome, ma solo partite di questi giorni
-        for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
-            val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8"), fail) ?: continue
+        // 2) ricerca per nome dell'evento (es. "Pescara vs Ostiamare", anche invertito) e gironi di Serie C,
+        //    tutto insieme in un solo giro di richieste; il nome dell'evento ha la precedenza
+        val searches = listOf("${a}_vs_${b}", "${b}_vs_${a}").map { q ->
+            net.submit(Callable { get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8"), fail) })
+        }
+        val leagueJobs = LEAGUE_IDS.map { id -> net.submit(Callable { leagueEvents(id, fail) }) }
+        for (j in searches) {
+            val ev = j.get() ?: continue
             pick(ev, a, b)?.let { return res("ricerca per nome", it) }
         }
+        for ((i, j) in leagueJobs.withIndex()) pick(j.get(), a, b)?.let { return res("campionato ${LEAGUE_IDS[i]}", it) }
         // 4) prossime e ultime partite di ciascuna squadra
         for (name in listOf(a, b)) {
             val id = teamId(name, fail) ?: continue
@@ -357,9 +362,9 @@ object SportsDb {
 
     // Nella memoria del telefono: "orario<TAB>immagine" (i vecchi valori con solo l'immagine si ignorano e si rifanno)
     private fun decode(v: String?): Info? {
-        val i = v?.indexOf('\t') ?: -1
-        if (v == null || i < 0) return null
-        return Info(v.substring(i + 1), v.substring(0, i).toLongOrNull() ?: 0L)
+        if (v == null || v.indexOf('\t') < 0) return null
+        val p = v.split('\t')
+        return Info(p[1], p[0].toLongOrNull() ?: 0L, p.getOrElse(2) { "" }, p.getOrElse(3) { "" })
     }
 
     // Chi aspetta il risultato di una ricerca già partita (card e precaricamento non cercano due volte la stessa partita)
@@ -370,12 +375,26 @@ object SportsDb {
         if (url.isNotEmpty()) a.imageLoader.enqueue(ImageRequest.Builder(a).data(sized(url)).build())   // scarica l'immagine in anticipo
     }
 
+    private fun warmBadge(url: String) {
+        val a = app ?: return
+        if (url.isNotEmpty()) a.imageLoader.enqueue(ImageRequest.Builder(a).data(sized(url, "small")).build())
+    }
+
+    /** Stemma di una squadra (versione ridotta) in un ImageView. */
+    fun loadBadge(iv: ImageView, url: String) {
+        iv.load(sized(url, "small"))
+    }
+
     /** Dà l'info (se la trova) a [cb] sul thread principale; senza [cb] serve solo a riscaldare cache e immagine. */
     private fun request(ch: Channel, k: String, cb: ((Info) -> Unit)?, attempt: Int = 0) {
         val known = found[k] ?: decode(prefs?.getString(k, null))
         if (known != null) {
             found[k] = known
-            if (cb != null) cb(known) else warm(known.thumb)
+            if (cb != null) cb(known) else {
+                warm(known.thumb)
+                warmBadge(known.home)
+                warmBadge(known.away)
+            }
             return
         }
         val t = misses[k]
@@ -405,8 +424,10 @@ object SportsDb {
             }
             if (info != null) {
                 found[k] = info
-                prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}")?.apply()
+                prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}\t${info.home}\t${info.away}")?.apply()
                 warm(info.thumb)
+                warmBadge(info.home)
+                warmBadge(info.away)
             } else {
                 // errore di rete / limite di richieste: si riprova tra 20 secondi invece che tra 5 minuti
                 misses[k] = if (fail[0]) System.currentTimeMillis() - MISS_RETRY_MS + 20_000L else System.currentTimeMillis()
@@ -445,13 +466,18 @@ object SportsDb {
      */
     fun loadThumb(
         iv: ImageView, ch: Channel,
-        onFound: (() -> Unit)? = null, onFail: (() -> Unit)? = null, onStart: ((Long) -> Unit)? = null
+        onFound: (() -> Unit)? = null, onFail: (() -> Unit)? = null, onStart: ((Long) -> Unit)? = null,
+        onBadges: ((String, String) -> Unit)? = null
     ) {
         val k = "${ch.name}|${LocalDate.now()}"
         fun show(info: Info) {
             if (iv.tag != ch.url) return
             if (info.start > 0) onStart?.invoke(info.start)
-            if (info.thumb.isEmpty()) return
+            if (info.thumb.isEmpty()) {
+                // niente immagine della partita (succede spesso in Serie C): si mostrano gli stemmi delle due squadre
+                if (info.home.isNotEmpty() || info.away.isNotEmpty()) onBadges?.invoke(info.home, info.away)
+                return
+            }
             onFound?.invoke()
             fun bad() {
                 found.remove(k)
