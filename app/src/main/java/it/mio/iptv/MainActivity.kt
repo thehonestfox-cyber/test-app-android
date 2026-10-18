@@ -907,9 +907,15 @@ class MainActivity : AppCompatActivity() {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 setPadding(dp(24), dp(16), dp(24), dp(16))
                 background = logoBackground(context, 12)
+                clipToOutline = true   // arrotonda anche l'immagine a tutto riquadro
             }
             addView(logo, FrameLayout.LayoutParams(MATCH, MATCH))
-            loadChannelLogo(logo, ch)
+            loadChannelLogo(logo, ch)   // intanto il logo del canale; se TheSportsDB ha il thumb della partita lo sostituisce
+            SportsDb.loadThumb(logo, ch) {
+                logo.scaleType = ImageView.ScaleType.CENTER_CROP
+                logo.setPadding(0, 0, 0, 0)
+                logo.imageTintList = null
+            }
             addView(liveBadge(), FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
                 setMargins(dp(8), dp(8), 0, 0)
             })
