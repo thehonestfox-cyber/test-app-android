@@ -130,6 +130,7 @@ class ChannelAdapter(
             cardElevation = 0f
             isClickable = true
             isFocusable = true
+            enableFocusRing()
             addView(row)
             layoutParams = RecyclerView.LayoutParams(MATCH, WRAP).apply { topMargin = dp(6) }
         }

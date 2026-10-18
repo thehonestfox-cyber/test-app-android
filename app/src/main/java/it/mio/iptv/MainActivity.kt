@@ -26,6 +26,7 @@ import android.util.Rational
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -206,6 +207,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        SportsDb.init(applicationContext)
         setupPlayer()
         buildHome()
         buildUser()
@@ -332,6 +334,11 @@ class MainActivity : AppCompatActivity() {
                 shape = GradientDrawable.OVAL
                 setColor(bg)
             } else selectable()
+            // anello visibile quando il focus arriva dal telecomando
+            foreground = focusRingDrawable(
+                if (tint == Color.WHITE) Color.WHITE else c(MR.attr.colorPrimary), dp(3), true
+            )
+            isFocusable = true
             setOnClickListener { onClick() }
         }
 
@@ -400,6 +407,7 @@ class MainActivity : AppCompatActivity() {
             if (onClick != null) {
                 isClickable = true
                 isFocusable = true
+                enableFocusRing()
                 setOnClickListener { onClick() }
             }
             addView(row)
@@ -420,6 +428,7 @@ class MainActivity : AppCompatActivity() {
             setCardBackgroundColor(c(MR.attr.colorSecondaryContainer))
             isClickable = true
             isFocusable = true
+            enableFocusRing(1.03f)
             setOnClickListener { onClick() }
             addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER_VERTICAL
@@ -593,6 +602,39 @@ class MainActivity : AppCompatActivity() {
             }
         })
         playerBox.setOnTouchListener { _, e -> gd.onTouchEvent(e) }
+
+        // Telecomando: con il focus sul player, OK = play/pausa, ◀ ▶ = -10 s / +10 s (se il video è riavvolgibile)
+        playerBox.isFocusable = true
+        playerBox.foreground = focusRingDrawable(Color.WHITE, dp(3), false)
+        playerBox.setOnKeyListener { _, code, ev ->
+            if (ev.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+            when (code) {
+                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                    togglePlay()
+                    showControls()
+                    true
+                }
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT ->
+                    if (player.isCurrentMediaItemSeekable) {
+                        seekBy(if (code == KeyEvent.KEYCODE_DPAD_LEFT) -10000L else 10000L)
+                        showControls()
+                        true
+                    } else false
+                else -> false
+            }
+        }
+    }
+
+    // Tasti multimediali del telecomando (play/pausa, avanti, indietro) funzionano ovunque
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (currentChannel != null) when (keyCode) {
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> { togglePlay(); showControls(); return true }
+            KeyEvent.KEYCODE_MEDIA_PLAY -> { if (!player.isPlaying) togglePlay(); return true }
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> { if (player.isPlaying) togglePlay(); return true }
+            KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> { seekBy(10000L); return true }
+            KeyEvent.KEYCODE_MEDIA_REWIND -> { seekBy(-10000L); return true }
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     private val hideRun = Runnable {
@@ -664,6 +706,7 @@ class MainActivity : AppCompatActivity() {
         if (on == fullscreen) return
         fullscreen = on
         applyUserLayout()
+        if (on) playerBox.requestFocus()   // a schermo intero il telecomando comanda subito il player
         fsBtn.setImageResource(if (on) R.drawable.ic_fullscreen_exit else R.drawable.ic_fullscreen)
         requestedOrientation = if (on) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -911,11 +954,16 @@ class MainActivity : AppCompatActivity() {
             }
             addView(logo, FrameLayout.LayoutParams(MATCH, MATCH))
             loadChannelLogo(logo, ch)   // intanto il logo del canale; se TheSportsDB ha il thumb della partita lo sostituisce
-            SportsDb.loadThumb(logo, ch) {
+            SportsDb.loadThumb(logo, ch, onFound = {
                 logo.scaleType = ImageView.ScaleType.CENTER_CROP
                 logo.setPadding(0, 0, 0, 0)
                 logo.imageTintList = null
-            }
+            }, onFail = {
+                // l'immagine non si è caricata: torna il logo del canale
+                logo.scaleType = ImageView.ScaleType.FIT_CENTER
+                logo.setPadding(dp(24), dp(16), dp(24), dp(16))
+                loadChannelLogo(logo, ch)
+            })
             addView(liveBadge(), FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
                 setMargins(dp(8), dp(8), 0, 0)
             })
@@ -940,6 +988,7 @@ class MainActivity : AppCompatActivity() {
             setCardBackgroundColor(c(MR.attr.colorSurfaceVariant))
             isClickable = true
             isFocusable = true
+            enableFocusRing(1.04f)
             setOnClickListener { onChannelTap(ch) }
             addView(col)
             layoutParams = LinearLayout.LayoutParams(dp(236), WRAP).apply { rightMargin = dp(12) }
@@ -1094,6 +1143,7 @@ class MainActivity : AppCompatActivity() {
             setCardBackgroundColor(c(if (target) MR.attr.colorPrimaryContainer else MR.attr.colorSurfaceVariant))
             isClickable = true
             isFocusable = true
+            enableFocusRing()
             setOnClickListener {
                 multi.target = i
                 refreshLiveHeader()
@@ -1897,55 +1947,128 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // Modifica di un canale/evento già aggiunto: nome, indirizzo del flusso e categoria
+    // Ricerca + elenco dei canali della playlist: lo usano sia "Aggiungi" sia "Modifica"
+    private class PickerViews(
+        val search: TextInputLayout, val status: TextView,
+        val recycler: RecyclerView, val adapter: ChannelAdapter
+    )
+
+    private fun playlistPicker(onPick: (Channel) -> Unit): PickerViews {
+        val search = field("Cerca nella playlist")
+        val status = tv("Caricamento canali…", 13f, c(MR.attr.colorOnSurfaceVariant))
+            .apply { setPadding(dp(4), dp(8), dp(4), dp(4)) }
+        var list = listOf<Channel>()
+        var order = listOf<String>()
+        lateinit var pickAdapter: ChannelAdapter
+        pickAdapter = ChannelAdapter(this) { ch ->
+            pickAdapter.select(ch.url)
+            onPick(ch)
+        }
+        fun refilter() {
+            val q = search.editText!!.text.toString().trim().lowercase()
+            pickAdapter.submit(rowsOf(list.filter { q.isEmpty() || it.name.lowercase().contains(q) }, order))
+        }
+        search.editText!!.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) = refilter()
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
+        val recycler = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(context)
+            this.adapter = pickAdapter
+        }
+        loadPlaylistChannels { all, errors, final ->
+            list = all
+            order = Categorizer.sortCategories(list.map { it.category }.toSet())
+            status.text = when {
+                !final -> "${list.size} canali · aggiornamento…"
+                list.isEmpty() && errors == 0 -> "Nessun canale: aggiungi prima una playlist."
+                errors > 0 -> "Errore nel caricamento di $errors playlist · ${list.size} canali"
+                else -> "${list.size} canali · tocca per scegliere"
+            }
+            refilter()
+        }
+        return PickerViews(search, status, recycler, pickAdapter)
+    }
+
+    // Modifica di un canale/evento già aggiunto: nome (già scritto, modificabile o cancellabile),
+    // categoria e, se vuoi, un altro canale della playlist al posto di quello attuale
     private fun editChannelDialog(ci: Int, ji: Int) {
         val cats = Featured.load(prefs, adminSection)
         val ch = cats.getOrNull(ci)?.channels?.getOrNull(ji) ?: return
-        // il nome attuale compare in grigio finché il campo è vuoto; se resta vuoto, il nome non cambia
+        val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
         val til = field("Nome $adminNoun")
-        til.placeholderText = ch.name
-        val tilUrl = field("Indirizzo (URL) del flusso")
-        tilUrl.editText!!.setText(ch.url)
+        til.endIconMode = TextInputLayout.END_ICON_CLEAR_TEXT   // tasto per cancellare tutto (anche col telecomando)
+        til.editText!!.apply {
+            setText(ch.name)
+            setSelectAllOnFocus(true)   // si può scrivere subito per sostituirlo, o cancellarlo con un tasto
+        }
+        til.placeholderText = ch.name   // se lo lasci vuoto, resta questo nome
+
+        var picked: Channel? = null
+        val pk = playlistPicker { p ->
+            picked = p
+            til.placeholderText = p.name   // se il nome è vuoto, prende il nome del canale scelto
+        }
+        pk.adapter.select(ch.url)          // il canale attuale risulta già selezionato
+        pk.search.hint = "Cambia canale: cerca nella playlist"
+
         val catLabel = tv("Categoria", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(4)) }
-        var picked = ci
+        var pickedCat = ci
         val group = android.widget.RadioGroup(this).apply { orientation = LinearLayout.VERTICAL }
         cats.forEachIndexed { k, cat ->
             group.addView(MaterialRadioButton(this).apply {
                 id = View.generateViewId()
                 text = cat.name
                 isChecked = k == ci
-                setOnClickListener { picked = k }
+                setOnClickListener { pickedCat = k }
             })
+        }
+
+        val listH = (resources.displayMetrics.heightPixels * (if (land) 0.45f else 0.4f)).toInt()
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(8), dp(24), 0)
+            addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(catLabel)
+            addView(group)
+            addView(pk.search, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) })
+            addView(pk.status)
+            addView(pk.recycler, LinearLayout.LayoutParams(MATCH, listH))
         }
         val dlg = MaterialAlertDialogBuilder(this)
             .setTitle("Modifica $adminNoun")
-            .setView(scroll(padBox(til, tilUrl, catLabel, group)))
+            .setView(scroll(box))
             .setPositiveButton("Salva", null)
             .setNegativeButton("Annulla", null)
             .create()
         dlg.setOnShowListener {
             dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                val n = til.editText!!.text.toString().trim().ifEmpty { ch.name }
-                val u = tilUrl.editText!!.text.toString().trim()
-                if (u.isEmpty() || !u.contains("://")) {
-                    toast("Inserisci un indirizzo valido (es. http://...)")
-                    return@setOnClickListener
-                }
+                val p = picked
+                val n = til.editText!!.text.toString().trim().ifEmpty { p?.name ?: ch.name }
                 Featured.edit(prefs, adminSection) { l ->
                     val from = l.getOrNull(ci)
-                    val dest = l.getOrNull(picked)
+                    val dest = l.getOrNull(pickedCat)
                     if (from != null && dest != null && ji < from.channels.size) {
                         val old = from.channels[ji]
-                        val logos = (old.logos + listOfNotNull(Logos.repoUrl(n))).distinct()
-                        val upd = old.copy(name = n, url = u, category = dest.name, logos = logos)
-                        if (picked == ci) {
+                        val logos = ((p?.logos ?: old.logos) + listOfNotNull(Logos.repoUrl(n))).distinct()
+                        val upd = old.copy(
+                            name = n,
+                            rawName = p?.rawName ?: old.rawName,
+                            quality = p?.quality ?: old.quality,
+                            url = p?.url ?: old.url,
+                            category = dest.name,
+                            logos = logos
+                        )
+                        if (pickedCat == ci) {
                             val chs = from.channels.toMutableList()
                             chs[ji] = upd
                             l[ci] = from.copy(channels = chs)
                         } else {
                             // spostato in un'altra categoria: va in fondo a quella
                             l[ci] = from.copy(channels = from.channels.filterIndexed { k, _ -> k != ji })
-                            l[picked] = dest.copy(channels = dest.channels + upd)
+                            l[pickedCat] = dest.copy(channels = dest.channels + upd)
                         }
                     }
                 }
@@ -1962,40 +2085,20 @@ class MainActivity : AppCompatActivity() {
         if (Featured.load(prefs, adminSection).getOrNull(ci) == null) return
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val nameField = field("Nome $adminNoun")   // scelto un canale, il suo nome compare in grigio (segnaposto)
-        val search = field("Cerca nella playlist")
-        val status = tv("Caricamento canali…", 13f, c(MR.attr.colorOnSurfaceVariant))
-            .apply { setPadding(dp(4), dp(8), dp(4), dp(4)) }
         var picked: Channel? = null
-        var list = listOf<Channel>()
-        var order = listOf<String>()
-        lateinit var pickAdapter: ChannelAdapter
-        pickAdapter = ChannelAdapter(this) { ch ->
+        val pk = playlistPicker { ch ->
             picked = ch
-            pickAdapter.select(ch.url)
             nameField.placeholderText = ch.name
-        }
-        fun refilter() {
-            val q = search.editText!!.text.toString().trim().lowercase()
-            pickAdapter.submit(rowsOf(list.filter { q.isEmpty() || it.name.lowercase().contains(q) }, order))
-        }
-        search.editText!!.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) = refilter()
-            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-        })
-        val recycler = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(context)
-            this.adapter = pickAdapter
         }
         // In orizzontale nome e ricerca stanno affiancati, così resta spazio per la lista
         val fieldsRow = LinearLayout(this).apply {
             orientation = if (land) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             if (land) {
                 addView(nameField, LinearLayout.LayoutParams(0, WRAP, 1f).apply { rightMargin = dp(12) })
-                addView(search, LinearLayout.LayoutParams(0, WRAP, 1f))
+                addView(pk.search, LinearLayout.LayoutParams(0, WRAP, 1f))
             } else {
                 addView(nameField, LinearLayout.LayoutParams(MATCH, WRAP))
-                addView(search, LinearLayout.LayoutParams(MATCH, WRAP))
+                addView(pk.search, LinearLayout.LayoutParams(MATCH, WRAP))
             }
         }
         val listH = (resources.displayMetrics.heightPixels * (if (land) 0.45f else 0.4f)).toInt()
@@ -2003,19 +2106,8 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(8), dp(24), 0)
             addView(fieldsRow, LinearLayout.LayoutParams(MATCH, WRAP))
-            addView(status)
-            addView(recycler, LinearLayout.LayoutParams(MATCH, listH))
-        }
-        loadPlaylistChannels { all, errors, final ->
-            list = all
-            order = Categorizer.sortCategories(list.map { it.category }.toSet())
-            status.text = when {
-                !final -> "${list.size} canali · aggiornamento…"
-                list.isEmpty() && errors == 0 -> "Nessun canale: aggiungi prima una playlist."
-                errors > 0 -> "Errore nel caricamento di $errors playlist · ${list.size} canali"
-                else -> "${list.size} canali · tocca per scegliere"
-            }
-            refilter()
+            addView(pk.status)
+            addView(pk.recycler, LinearLayout.LayoutParams(MATCH, listH))
         }
         val dlg = MaterialAlertDialogBuilder(this)
             .setTitle("Aggiungi $adminNoun")
