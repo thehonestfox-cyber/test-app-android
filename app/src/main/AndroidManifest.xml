@@ -8,6 +8,9 @@
 
     <application
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:banner="@drawable/tv_banner"
         android:label="IPTV Player"
         android:theme="@style/Theme.IPTV"
         android:usesCleartextTraffic="true">
@@ -16,6 +19,8 @@
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode"
             android:windowSoftInputMode="adjustResize"
             android:supportsPictureInPicture="true"
+            android:banner="@drawable/tv_banner"
+            android:icon="@mipmap/ic_launcher"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

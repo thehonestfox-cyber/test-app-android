@@ -55,6 +55,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -502,16 +503,18 @@ class MainActivity : AppCompatActivity() {
     // ---------- Player in stile YouTube ----------
 
     // Un nuovo ExoPlayer con le stesse impostazioni di rete (serve anche ai player del multi-schermo).
-    private fun newExo(): ExoPlayer {
+    // light = true per i player del multi-schermo: buffer più piccoli, così la TV fa meno fatica
+    private fun newExo(light: Boolean = false): ExoPlayer {
         // User-Agent da lettore IPTV: molti server rifiutano quello di default.
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15000)
             .setReadTimeoutMs(15000)
-        return ExoPlayer.Builder(this, DefaultRenderersFactory(this).setEnableDecoderFallback(true))   // se il decoder hardware è occupato prova gli altri
+        val b = ExoPlayer.Builder(this, DefaultRenderersFactory(this).setEnableDecoderFallback(true))   // se il decoder hardware è occupato prova gli altri
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
-            .build()
+        if (light) b.setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(5000, 15000, 1500, 3000).build())
+        return b.build()
     }
 
     private fun setupPlayer() {
@@ -1200,7 +1203,7 @@ class MainActivity : AppCompatActivity() {
         }
         player.stop()
         currentChannel = null
-        val o = MultiPlayerOverlay(this, multi, { newExo() }, { multiChoices() }, { closeMulti() })
+        val o = MultiPlayerOverlay(this, multi, { newExo(true) }, { multiChoices() }, { closeMulti() })
         multiOverlay = o
         root.addView(o, ViewGroup.LayoutParams(MATCH, MATCH))
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE

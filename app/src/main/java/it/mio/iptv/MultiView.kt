@@ -16,9 +16,9 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -254,7 +254,7 @@ class MultiPlayerOverlay(
         val n = st.count
         // i player oltre il numero scelto vengono chiusi (niente rete sprecata)
         for (i in n until MultiState.MAX) releasePlayer(i)
-        for (p in players) p?.let { limitQuality(it) }
+        for (k in players.indices) players[k]?.let { applyPrefs(k, it) }
 
         val cols = if (n == 1) 1 else 2
         val rows = (n + cols - 1) / cols
@@ -419,7 +419,7 @@ class MultiPlayerOverlay(
     private fun newTilePlayer(i: Int): ExoPlayer {
         val p = newPlayer()
         // ogni riquadro è piccolo: 720p bastano e alleggeriscono il telefono con più player accesi
-        limitQuality(p)
+        applyPrefs(i, p)
         p.volume = if (i == st.audio) 1f else 0f
         p.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) = onTileError(i, error)
@@ -430,10 +430,22 @@ class MultiPlayerOverlay(
         return p
     }
 
-    private fun limitQuality(p: ExoPlayer) {
-        // su TV con 3-4 player i decoder hardware sono pochi: qualità più bassa per farli stare tutti
-        val (w, h) = if (isTv && st.count >= 3) 960 to 540 else 1280 to 720
-        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon().setMaxVideoSize(w, h).build()
+    /**
+     * Alleggerisce i player (su TV niente "lag"): solo il player con l'audio ha qualità piena,
+     * gli altri hanno una risoluzione più bassa e non decodificano l'audio.
+     */
+    private fun applyPrefs(i: Int, p: ExoPlayer) {
+        val on = i == st.audio
+        val (w, h) = when {
+            !isTv -> 1280 to 720
+            st.count == 1 -> 1920 to 1080
+            st.count == 2 -> if (on) 1280 to 720 else 854 to 480
+            else -> if (on) 960 to 540 else 640 to 360
+        }
+        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+            .setMaxVideoSize(w, h)
+            .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, !on)
+            .build()
     }
 
     private fun start(i: Int, url: String, asHls: Boolean) {
@@ -484,7 +496,10 @@ class MultiPlayerOverlay(
     /** Solo il player scelto ha il volume; gli altri sono muti. Il riquadro attivo ha il bordo verde. */
     private fun refreshAudio() {
         st.fixAudio()
-        for (i in 0 until MultiState.MAX) players[i]?.volume = if (i == st.audio) 1f else 0f
+        for (i in 0 until MultiState.MAX) players[i]?.let {
+            it.volume = if (i == st.audio) 1f else 0f
+            applyPrefs(i, it)
+        }
         for (i in 0 until st.count) {
             val t = tiles[i] ?: continue
             val filled = st.slots[i] != null
@@ -498,25 +513,30 @@ class MultiPlayerOverlay(
 
     // ---------- Menu e scelta evento ----------
 
-    private fun showMenu(i: Int, anchor: View) {
+    // Dialogo al centro dello schermo (il PopupMenu usciva in alto e si vedeva poco con il telecomando)
+    private fun showMenu(i: Int, @Suppress("UNUSED_PARAMETER") anchor: View) {
         val filled = st.slots[i] != null
-        val m = PopupMenu(context, anchor)
-        if (filled && i != st.audio) m.menu.add(0, 1, 0, "Ascolta questo player")
-        m.menu.add(0, 2, 1, if (filled) "Cambia evento" else "Scegli evento")
-        if (filled) m.menu.add(0, 3, 2, "Svuota player")
-        m.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                1 -> setAudio(i)
-                2 -> pickEvent(i)
-                3 -> {
-                    st.clear(i)
-                    bind(i)
-                    refreshAudio()
-                }
-            }
-            true
+        val labels = mutableListOf<String>()
+        val acts = mutableListOf<() -> Unit>()
+        if (filled && i != st.audio) {
+            labels.add("Ascolta questo player")
+            acts.add { setAudio(i) }
         }
-        m.show()
+        labels.add(if (filled) "Cambia evento" else "Scegli evento")
+        acts.add { pickEvent(i) }
+        if (filled) {
+            labels.add("Svuota player")
+            acts.add {
+                st.clear(i)
+                bind(i)
+                refreshAudio()
+            }
+        }
+        MaterialAlertDialogBuilder(context)
+            .setTitle("Player ${i + 1}")
+            .setItems(labels.toTypedArray()) { _, which -> acts[which]() }
+            .setNegativeButton("Annulla", null)
+            .show()
     }
 
     private fun pickEvent(i: Int) {

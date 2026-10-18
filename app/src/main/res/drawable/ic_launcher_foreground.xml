@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- schermo TV -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,34h48a4,4 0,0 1,4 4v28a4,4 0,0 1,-4 4H30a4,4 0,0 1,-4 -4V38a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#1B1F3B"
+        android:pathData="M31,39h46v26H31z" />
+    <!-- tasto play -->
+    <path
+        android:fillColor="#FF5252"
+        android:pathData="M48,45l14,7l-14,7z" />
+    <!-- piedino -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,73h20v3H44z" />
+</vector>
