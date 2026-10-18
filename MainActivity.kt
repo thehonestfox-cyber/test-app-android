@@ -490,7 +490,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Le card della home: le sezioni create dall'admin, poi Completa e Impostazioni
+    // Precarica thumb e orari degli eventi delle sezioni live, così sono già pronti quando le apri
+    private fun prefetchLive() {
+        Thread {
+            val chans = Sections.load(prefs).filter { it.isLive }
+                .flatMap { sec -> Featured.load(prefs, sec.id).flatMap { it.channels } }
+            if (chans.isNotEmpty()) SportsDb.prefetch(chans)
+        }.start()
+    }
+
     private fun refreshHome() {
+        prefetchLive()
         homeCards.removeAllViews()
         Sections.load(prefs).forEach { sec ->
             homeCards.addView(
