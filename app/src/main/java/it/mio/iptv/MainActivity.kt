@@ -1192,7 +1192,8 @@ class MainActivity : AppCompatActivity() {
                     iconTint = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
                     iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
                     isEnabled = multi.active().isNotEmpty()
-                    ring(24)
+                    // il tasto è pieno di colorPrimary: l'anello dello stesso colore sparirebbe, ne serve uno a contrasto
+                    ring(24, c(MR.attr.colorOnPrimary))
                     setOnClickListener { openMulti() }
                 },
                 LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) }
@@ -1260,6 +1261,8 @@ class MainActivity : AppCompatActivity() {
         ui.post {
             refreshLiveHeader()
             liveSelect(null)
+            // si risale in cima, così si vede subito "Multi-schermo" con i player
+            liveScroll.post { liveScroll.smoothScrollTo(0, 0) }
         }
     }
 
@@ -1456,8 +1459,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Evidenziazione ben visibile (anello + sfondo colorato) per pulsanti, chip e righe quando hanno il focus
-    private fun <T : View> T.ring(radiusDp: Int): T {
-        val d = focusRingDrawable(c(MR.attr.colorPrimary), dp(3), false, dp(radiusDp).toFloat(), fill = true)
+    private fun <T : View> T.ring(radiusDp: Int, color: Int = c(MR.attr.colorPrimary)): T {
+        val d = focusRingDrawable(color, dp(3), false, dp(radiusDp).toFloat(), fill = true)
         // i pulsanti Material hanno margini interni (inset) sopra/sotto: l'anello li segue, così combacia col pulsante
         foreground = if (this is MaterialButton) InsetDrawable(d, 0, insetTop, 0, insetBottom) else d
         // i chip hanno un'area di tocco più grande del chip: la tolgo, così l'anello è grande quanto il chip

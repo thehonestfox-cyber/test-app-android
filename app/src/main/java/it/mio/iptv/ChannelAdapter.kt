@@ -7,10 +7,12 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.dispose
 import coil.load
@@ -96,6 +98,18 @@ class ChannelAdapter(
 
     fun positionOf(url: String): Int = rows.indexOfFirst { it is Row.Item && it.ch.url == url }
 
+    // Se sopra la riga con il focus c'è un'intestazione tagliata o fuori vista, la lista scorre fino a mostrarla
+    private fun revealHeaderAbove(v: View) {
+        val rv = v.parent as? RecyclerView ?: return
+        val pos = rv.getChildAdapterPosition(v)
+        if (pos <= 0 || rows.getOrNull(pos - 1) !is Row.Header) return
+        rv.post {
+            val lm = rv.layoutManager as? LinearLayoutManager ?: return@post
+            val header = lm.findViewByPosition(pos - 1)
+            if (header == null || header.top < 0) lm.scrollToPositionWithOffset(pos - 1, 0)
+        }
+    }
+
     override fun getItemCount() = rows.size
 
     override fun getItemViewType(position: Int) = if (rows[position] is Row.Header) 0 else 1
@@ -148,6 +162,13 @@ class ChannelAdapter(
             enableFocusRing()
             addView(row)
             layoutParams = RecyclerView.LayoutParams(MATCH, WRAP).apply { topMargin = dp(6) }
+        }
+        // Le intestazioni di categoria non prendono il focus: salendo col telecomando la lista non le
+        // scopriva più e la prima categoria restava nascosta sopra. Qui la si riporta in vista.
+        val ring = card.onFocusChangeListener
+        card.onFocusChangeListener = View.OnFocusChangeListener { v, has ->
+            ring?.onFocusChange(v, has)
+            if (has) revealHeaderAbove(v)
         }
         return ItemHolder(card, logo, name, sub)
     }
