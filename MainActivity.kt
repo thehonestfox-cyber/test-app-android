@@ -15,6 +15,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -55,6 +56,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -81,7 +83,16 @@ import java.net.URL
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 import com.google.android.material.R as MR
+
+/** Punti di focus di una riga dell'admin, da sinistra a destra (serve per navigare bene col telecomando). */
+private class FocusRow(val items: List<View>)
 
 // Contenitore che mantiene il rapporto 16:9 (come il player di YouTube)
 private class Ratio(ctx: Context) : FrameLayout(ctx) {
@@ -338,7 +349,7 @@ class MainActivity : AppCompatActivity() {
             } else selectable()
             // anello visibile quando il focus arriva dal telecomando
             foreground = focusRingDrawable(
-                if (tint == Color.WHITE) Color.WHITE else c(MR.attr.colorPrimary), dp(3), true
+                if (tint == Color.WHITE) Color.WHITE else c(MR.attr.colorPrimary), dp(3), true, fill = true
             )
             isFocusable = true
             setOnClickListener { onClick() }
@@ -387,20 +398,20 @@ class MainActivity : AppCompatActivity() {
                 ellipsize = TextUtils.TruncateAt.END
             })
         }
+        val editBtn = onEdit?.let { f ->
+            iconBtn(R.drawable.ic_edit, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { f() }
+        }
+        val delBtn = onDelete?.let { f ->
+            iconBtn(R.drawable.ic_delete, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { f() }
+        }
         val row = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(12), dp(8), dp(12))
             addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
-            if (onEdit != null) addView(
-                iconBtn(R.drawable.ic_edit, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { onEdit() },
-                LinearLayout.LayoutParams(dp(44), dp(44))
-            )
-            if (onDelete != null) addView(
-                iconBtn(R.drawable.ic_delete, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { onDelete() },
-                LinearLayout.LayoutParams(dp(44), dp(44))
-            )
+            if (editBtn != null) addView(editBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
+            if (delBtn != null) addView(delBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
         }
-        return MaterialCardView(this).apply {
+        val card = MaterialCardView(this).apply {
             radius = dp(16).toFloat()
             cardElevation = 0f
             setCardBackgroundColor(
@@ -415,6 +426,9 @@ class MainActivity : AppCompatActivity() {
             addView(row)
             layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }
         }
+        // per il telecomando: la riga (card + matita + cestino) è una fila di punti di focus collegati
+        card.tag = FocusRow(listOfNotNull(if (onClick != null) card else null, editBtn, delBtn))
+        return card
     }
 
     private fun homeCard(icon: Int, title: String, sub: String, onClick: () -> Unit): View {
@@ -502,16 +516,22 @@ class MainActivity : AppCompatActivity() {
     // ---------- Player in stile YouTube ----------
 
     // Un nuovo ExoPlayer con le stesse impostazioni di rete (serve anche ai player del multi-schermo).
-    private fun newExo(): ExoPlayer {
+    // light = true per i player del multi-schermo: buffer più piccoli, così la TV fa meno fatica
+    private fun newExo(light: Boolean = false): ExoPlayer {
         // User-Agent da lettore IPTV: molti server rifiutano quello di default.
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15000)
             .setReadTimeoutMs(15000)
-        return ExoPlayer.Builder(this, DefaultRenderersFactory(this).setEnableDecoderFallback(true))   // se il decoder hardware è occupato prova gli altri
+        // decoder: se quello hardware è occupato prova gli altri; coda asincrona = video più fluido anche su telefoni meno recenti
+        val rf = DefaultRenderersFactory(this)
+            .setEnableDecoderFallback(true)
+            .forceEnableMediaCodecAsynchronousQueueing()
+        val b = ExoPlayer.Builder(this, rf)
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
-            .build()
+        if (light) b.setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(5000, 15000, 1500, 3000).build())
+        return b.build()   // qualità lasciata di default; solo il multi-schermo la riduce (vedi MultiView)
     }
 
     private fun setupPlayer() {
@@ -720,11 +740,28 @@ class MainActivity : AppCompatActivity() {
             ctl.hide(WindowInsetsCompat.Type.systemBars())
             ctl.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
+            val last = currentChannel?.url
             ctl.show(WindowInsetsCompat.Type.systemBars())
             if (userLive && currentView === userView) {
                 player.stop()
                 currentChannel = null
                 liveSelect(null)
+            }
+            restoreFocus(last)
+        }
+    }
+
+    // Dopo lo schermo intero il telecomando riparte dal canale/evento che stavi guardando (non dall'inizio della lista)
+    private fun restoreFocus(url: String?) {
+        if (url == null || currentView !== userView) return
+        ui.post {
+            if (userLive) liveCards.firstOrNull { it.second == url }?.first?.requestFocus()
+            else {
+                val pos = channelAdapter.positionOf(url)
+                if (pos >= 0) {
+                    channelList.scrollToPosition(pos)
+                    channelList.post { channelList.findViewHolderForAdapterPosition(pos)?.itemView?.requestFocus() }
+                }
             }
         }
     }
@@ -828,6 +865,7 @@ class MainActivity : AppCompatActivity() {
         channelList = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(context)
             adapter = channelAdapter
+            itemAnimator = null   // niente animazioni di cambio: il focus resta sulla riga e la lista è più leggera
             clipToPadding = false
             setPadding(dp(16), 0, dp(16), dp(16))
         }
@@ -949,7 +987,45 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Tag in alto a sinistra: LIVE se l'evento è in corso (o l'orario non si sa), altrimenti l'orario di inizio
+    private fun paintTag(t: TextView, start: Long) {
+        val now = System.currentTimeMillis()
+        val zone = ZoneId.systemDefault()
+        val live = start <= 0L || (now >= start && now < start + 3 * 3_600_000L)
+        t.text = if (live) "LIVE" else timeLabel(start, zone)
+        (t.background as? GradientDrawable)?.setColor(
+            when {
+                live -> 0xFFE53935.toInt()          // rosso: in corso
+                now < start -> 0xFF1E88E5.toInt()   // blu: deve ancora iniziare
+                else -> 0xFF757575.toInt()          // grigio: finito
+            }
+        )
+    }
+
+    private fun timeLabel(ms: Long, zone: ZoneId): String {
+        val dt = Instant.ofEpochMilli(ms).atZone(zone)
+        val hm = dt.format(DateTimeFormatter.ofPattern("HH:mm"))
+        return when (ChronoUnit.DAYS.between(LocalDate.now(zone), dt.toLocalDate())) {
+            0L -> hm
+            1L -> "Domani $hm"
+            -1L -> "Ieri $hm"
+            else -> dt.format(DateTimeFormatter.ofPattern("EEE d MMM HH:mm", Locale.ITALIAN))
+        }
+    }
+
+    // Orario scritto a mano dall'admin ("20:45", di oggi); 0 = non impostato
+    private fun manualStart(time: String): Long {
+        val m = Regex("""^(\d{1,2}):(\d{2})$""").find(time.trim()) ?: return 0L
+        val h = m.groupValues[1].toInt()
+        val mi = m.groupValues[2].toInt()
+        if (h > 23 || mi > 59) return 0L
+        return LocalDate.now().atTime(h, mi).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
+
     private fun liveCard(ch: Channel): View {
+        val badge = liveBadge()
+        val manual = manualStart(ch.time)
+        if (manual > 0) paintTag(badge, manual)
         val thumb = FrameLayout(this).apply {
             val logo = ImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
@@ -968,8 +1044,11 @@ class MainActivity : AppCompatActivity() {
                 logo.scaleType = ImageView.ScaleType.FIT_CENTER
                 logo.setPadding(dp(24), dp(16), dp(24), dp(16))
                 loadChannelLogo(logo, ch)
+            }, onStart = { start ->
+                // l'orario viene da TheSportsDB, a meno che l'admin non ne abbia scritto uno a mano
+                if (manual == 0L) paintTag(badge, start)
             })
-            addView(liveBadge(), FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
+            addView(badge, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
                 setMargins(dp(8), dp(8), 0, 0)
             })
         }
@@ -1078,6 +1157,8 @@ class MainActivity : AppCompatActivity() {
         }
         for (n in 1..MultiState.MAX) {
             chips.addView(Chip(ctx).apply {
+                ring(10)
+                scrollTopOnFocus()
                 id = View.generateViewId()
                 text = if (n == 1) "1 player" else "$n player"
                 isCheckable = true
@@ -1112,6 +1193,12 @@ class MainActivity : AppCompatActivity() {
                     iconTint = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
                     iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
                     isEnabled = multi.active().isNotEmpty()
+                    // il tasto è pieno di colorPrimary: il bordo del focus è quello del tasto stesso (stroke Material)
+                    // in un colore a contrasto, così si vede sempre
+                    strokeColor = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
+                    strokeWidth = 0
+                    onFocusChangeListener = View.OnFocusChangeListener { _, has -> strokeWidth = if (has) dp(4) else 0 }
+                    scrollTopOnFocus()
                     setOnClickListener { openMulti() }
                 },
                 LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) }
@@ -1157,6 +1244,7 @@ class MainActivity : AppCompatActivity() {
             isClickable = true
             isFocusable = true
             enableFocusRing()
+            scrollTopOnFocus()
             setOnClickListener {
                 multi.target = i
                 refreshLiveHeader()
@@ -1179,6 +1267,8 @@ class MainActivity : AppCompatActivity() {
         ui.post {
             refreshLiveHeader()
             liveSelect(null)
+            // si risale in cima, così si vede subito "Multi-schermo" con i player
+            liveScroll.post { liveScroll.smoothScrollTo(0, 0) }
         }
     }
 
@@ -1200,7 +1290,7 @@ class MainActivity : AppCompatActivity() {
         }
         player.stop()
         currentChannel = null
-        val o = MultiPlayerOverlay(this, multi, { newExo() }, { multiChoices() }, { closeMulti() })
+        val o = MultiPlayerOverlay(this, multi, { newExo(true) }, { multiChoices() }, { closeMulti() })
         multiOverlay = o
         root.addView(o, ViewGroup.LayoutParams(MATCH, MATCH))
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -1296,6 +1386,7 @@ class MainActivity : AppCompatActivity() {
         chipGroup.removeAllViews()
         fun add(label: String, cat: String?) {
             chipGroup.addView(Chip(this).apply {
+                ring(10)
                 id = View.generateViewId()
                 text = label
                 isCheckable = true
@@ -1373,10 +1464,32 @@ class MainActivity : AppCompatActivity() {
         it.show()
     }
 
+    // Nella sezione live: quando il focus arriva su un controllo del multi-schermo la lista risale in cima,
+    // così si vede anche il titolo "Multi-schermo"
+    private fun <T : View> T.scrollTopOnFocus(): T {
+        val prev = onFocusChangeListener
+        onFocusChangeListener = View.OnFocusChangeListener { v, has ->
+            prev?.onFocusChange(v, has)
+            if (has) liveScroll.post { liveScroll.smoothScrollTo(0, 0) }
+        }
+        return this
+    }
+
+    // Evidenziazione ben visibile (anello + sfondo colorato) per pulsanti, chip e righe quando hanno il focus
+    private fun <T : View> T.ring(radiusDp: Int, color: Int = c(MR.attr.colorPrimary)): T {
+        val d = focusRingDrawable(color, dp(3), false, dp(radiusDp).toFloat(), fill = true)
+        // i pulsanti Material hanno margini interni (inset) sopra/sotto: l'anello li segue, così combacia col pulsante
+        foreground = if (this is MaterialButton) InsetDrawable(d, 0, insetTop, 0, insetBottom) else d
+        // i chip hanno un'area di tocco più grande del chip: la tolgo, così l'anello è grande quanto il chip
+        if (this is Chip) setEnsureMinTouchTargetSize(false)
+        return this
+    }
+
     private fun outlinedBtn(label: String, onClick: () -> Unit) =
         MaterialButton(this, null, MR.attr.materialButtonOutlinedStyle).apply {
             text = label
             setOnClickListener { onClick() }
+            ring(24)
         }
 
     private fun buildAdmin() {
@@ -1459,6 +1572,47 @@ class MainActivity : AppCompatActivity() {
         } else {
             fab.text = "Nuova categoria"
             refreshFeatured()
+        }
+        linkRows(adminList)
+    }
+
+    private fun hasFocusable(v: View): Boolean =
+        v.isFocusable || (v is ViewGroup && (0 until v.childCount).any { hasFocusable(v.getChildAt(it)) })
+
+    /**
+     * Telecomando: collega i punti di focus delle righe dell'admin.
+     * Destra/sinistra passano da card a matita a cestino; su/giù restano sulla stessa colonna
+     * (cestino → cestino, matita → matita), senza "giri" per arrivare ai pulsanti.
+     */
+    private fun linkRows(container: ViewGroup) {
+        fun idOf(v: View): Int {
+            if (v.id == View.NO_ID) v.id = View.generateViewId()
+            return v.id
+        }
+        var prev: List<View>? = null
+        for (k in 0 until container.childCount) {
+            val child = container.getChildAt(k)
+            val items = (child.tag as? FocusRow)?.items?.takeIf { it.isNotEmpty() }
+            if (items == null) {
+                // un pulsante "libero" in mezzo (es. Aggiungi playlist) interrompe il collegamento: resta raggiungibile
+                if (hasFocusable(child)) prev = null
+                continue
+            }
+            items.forEachIndexed { n, v ->
+                if (n > 0) v.nextFocusLeftId = idOf(items[n - 1])
+                if (n < items.size - 1) v.nextFocusRightId = idOf(items[n + 1])
+            }
+            prev?.let { a ->
+                a.forEachIndexed { n, v ->
+                    val fromEnd = a.size - 1 - n
+                    v.nextFocusDownId = idOf(items[maxOf(items.size - 1 - fromEnd, 0)])
+                }
+                items.forEachIndexed { n, v ->
+                    val fromEnd = items.size - 1 - n
+                    v.nextFocusUpId = idOf(a[maxOf(a.size - 1 - fromEnd, 0)])
+                }
+            }
+            prev = items
         }
     }
 
@@ -1661,6 +1815,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(14), dp(4), dp(14))
             background = selectableBounded()
+            ring(12)
             isClickable = true
             isFocusable = true
             setOnClickListener { onClick() }
@@ -1763,6 +1918,29 @@ class MainActivity : AppCompatActivity() {
     // Nelle sezioni live i "canali" sono eventi: stessa gestione, solo i testi cambiano
     private val adminNoun: String
         get() = if (Sections.load(prefs).firstOrNull { it.id == adminSection }?.isLive == true) "evento" else "canale"
+
+    private val adminLive: Boolean
+        get() = Sections.load(prefs).firstOrNull { it.id == adminSection }?.isLive == true
+
+    // Campo "Orario" (solo negli eventi): vuoto = l'orario si prende da TheSportsDB
+    private fun timeField(initial: String): TextInputLayout = field("Orario (es. 20:45)").apply {
+        helperText = "Se vuoto, l'orario viene preso da TheSportsDB"
+        endIconMode = TextInputLayout.END_ICON_CLEAR_TEXT
+        editText!!.apply {
+            inputType = android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_TIME
+            setText(initial)
+        }
+    }
+
+    // "" = vuoto, null = scritto male, altrimenti "HH:mm"
+    private fun readTime(til: TextInputLayout): String? {
+        val t = til.editText!!.text.toString().trim().replace('.', ':')
+        if (t.isEmpty()) return ""
+        val m = Regex("""^(\d{1,2}):(\d{2})$""").find(t) ?: return null
+        val h = m.groupValues[1].toInt()
+        val mi = m.groupValues[2].toInt()
+        return if (h > 23 || mi > 59) null else "%02d:%02d".format(h, mi)
+    }
 
     private fun refreshFeatured() {
         val cats = Featured.load(prefs, adminSection)
@@ -1873,6 +2051,14 @@ class MainActivity : AppCompatActivity() {
         val tint = c(MR.attr.colorOnSurfaceVariant)
         val more = iconBtn(R.drawable.ic_more, tint, dp(10), null) {}
         more.setOnClickListener { showCategoryMenu(more, i, cat, total) }
+        val collapse = iconBtn(
+            if (isCollapsed(cat)) R.drawable.ic_expand_more else R.drawable.ic_expand_less,
+            tint, dp(10), null
+        ) {
+            if (!collapsedCats.remove(collapseKey(cat))) collapsedCats.add(collapseKey(cat))
+            refreshAdmin()
+        }
+        val add = iconBtn(R.drawable.ic_add, tint, dp(10), null) { addChannelDialog(i) }
         return LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(20), 0, 0)
@@ -1880,21 +2066,10 @@ class MainActivity : AppCompatActivity() {
                 tv("${cat.name} · ${cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
                 LinearLayout.LayoutParams(0, WRAP, 1f)
             )
-            addView(
-                iconBtn(
-                    if (isCollapsed(cat)) R.drawable.ic_expand_more else R.drawable.ic_expand_less,
-                    tint, dp(10), null
-                ) {
-                    if (!collapsedCats.remove(collapseKey(cat))) collapsedCats.add(collapseKey(cat))
-                    refreshAdmin()
-                },
-                LinearLayout.LayoutParams(dp(44), dp(44))
-            )
-            addView(
-                iconBtn(R.drawable.ic_add, tint, dp(10), null) { addChannelDialog(i) },
-                LinearLayout.LayoutParams(dp(44), dp(44))
-            )
+            addView(collapse, LinearLayout.LayoutParams(dp(44), dp(44)))
+            addView(add, LinearLayout.LayoutParams(dp(44), dp(44)))
             addView(more, LinearLayout.LayoutParams(dp(44), dp(44)))
+            tag = FocusRow(listOf(collapse, add, more))
         }
     }
 
@@ -2019,6 +2194,7 @@ class MainActivity : AppCompatActivity() {
             setSelectAllOnFocus(true)   // si può scrivere subito per sostituirlo, o cancellarlo con un tasto
         }
         til.placeholderText = ch.name   // se lo lasci vuoto, resta questo nome
+        val timeTil = if (adminLive) timeField(ch.time) else null
 
         var picked: Channel? = null
         val pk = playlistPicker { p ->
@@ -2045,6 +2221,7 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(8), dp(24), 0)
             addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
+            timeTil?.let { addView(it, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }) }
             addView(catLabel)
             addView(group)
             addView(pk.search, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) })
@@ -2061,6 +2238,11 @@ class MainActivity : AppCompatActivity() {
             dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                 val p = picked
                 val n = til.editText!!.text.toString().trim().ifEmpty { p?.name ?: ch.name }
+                val tm = if (timeTil != null) readTime(timeTil) else ch.time
+                if (tm == null) {
+                    toast("Orario non valido (es. 20:45)")
+                    return@setOnClickListener
+                }
                 Featured.edit(prefs, adminSection) { l ->
                     val from = l.getOrNull(ci)
                     val dest = l.getOrNull(pickedCat)
@@ -2073,7 +2255,8 @@ class MainActivity : AppCompatActivity() {
                             quality = p?.quality ?: old.quality,
                             url = p?.url ?: old.url,
                             category = dest.name,
-                            logos = logos
+                            logos = logos,
+                            time = tm
                         )
                         if (pickedCat == ci) {
                             val chs = from.channels.toMutableList()
@@ -2099,6 +2282,7 @@ class MainActivity : AppCompatActivity() {
         if (Featured.load(prefs, adminSection).getOrNull(ci) == null) return
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val nameField = field("Nome $adminNoun")   // scelto un canale, il suo nome compare in grigio (segnaposto)
+        val timeTil = if (adminLive) timeField("") else null
         var picked: Channel? = null
         val pk = playlistPicker { ch ->
             picked = ch
@@ -2120,6 +2304,7 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(8), dp(24), 0)
             addView(fieldsRow, LinearLayout.LayoutParams(MATCH, WRAP))
+            timeTil?.let { addView(it, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }) }
             addView(pk.status)
             addView(pk.recycler, LinearLayout.LayoutParams(MATCH, listH))
         }
@@ -2136,11 +2321,16 @@ class MainActivity : AppCompatActivity() {
                     toast("Scegli un canale dalla playlist")
                 } else {
                     val nm = nameField.editText!!.text.toString().trim().ifEmpty { p.name }
+                    val tm = if (timeTil != null) readTime(timeTil) else ""
+                    if (tm == null) {
+                        toast("Orario non valido (es. 20:45)")
+                        return@setOnClickListener
+                    }
                     Featured.edit(prefs, adminSection) { l ->
                         val cat = l.getOrNull(ci)
                         if (cat != null) {
                             val logos = (p.logos + listOfNotNull(Logos.repoUrl(nm))).distinct()
-                            val ch = Channel(nm, p.rawName, p.quality, cat.name, p.url, logos)
+                            val ch = Channel(nm, p.rawName, p.quality, cat.name, p.url, logos, tm)
                             l[ci] = cat.copy(channels = cat.channels + ch)
                         }
                     }
