@@ -39,7 +39,7 @@ object SportsDb {
     private const val WINDOW_DAYS = 2L          // distanza massima (in giorni) della partita da oggi
     private const val MISS_RETRY_MS = 5 * 60_000L
 
-    private val pool = Executors.newFixedThreadPool(4)
+    private val pool = Executors.newFixedThreadPool(3)
     private val main = Handler(Looper.getMainLooper())
     private var prefs: SharedPreferences? = null
     private var app: Context? = null
@@ -93,41 +93,60 @@ object SportsDb {
 
     // ---- rete ----
 
-    private fun get(path: String): List<JSONObject>? = try {
-        val c = (URL(API + path).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 6000
-            readTimeout = 6000
+    // Scarica un testo; se il server dice "troppe richieste" (429) aspetta un attimo e riprova. null = errore di rete.
+    private fun http(url: String): String? {
+        for (attempt in 0..2) {
+            try {
+                val c = (URL(url).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 6000
+                    readTimeout = 6000
+                }
+                try {
+                    if (c.responseCode == 429) {
+                        Thread.sleep(1500L * (attempt + 1))
+                        continue
+                    }
+                    return c.inputStream.bufferedReader().use { it.readText() }
+                } finally {
+                    c.disconnect()
+                }
+            } catch (_: Exception) {
+            }
         }
-        val text = try {
-            c.inputStream.bufferedReader().use { it.readText() }
-        } finally {
-            c.disconnect()
+        return null
+    }
+
+    // fail[0] diventa true se la richiesta è fallita per un errore di rete (così non la si scambia per "partita non trovata")
+    private fun get(path: String, fail: BooleanArray? = null): List<JSONObject>? {
+        val text = http(API + path)
+        if (text == null) {
+            fail?.set(0, true)
+            return null
         }
-        val j = JSONObject(text)
-        val arr = j.optJSONArray("events") ?: j.optJSONArray("event") ?: j.optJSONArray("results")
-        if (arr == null) emptyList() else List(arr.length()) { arr.getJSONObject(it) }
-    } catch (_: Exception) {
-        null   // errore di rete: non va messo in cache
+        return try {
+            val j = JSONObject(text)
+            val arr = j.optJSONArray("events") ?: j.optJSONArray("event") ?: j.optJSONArray("results")
+            if (arr == null) emptyList() else List(arr.length()) { arr.getJSONObject(it) }
+        } catch (_: Exception) {
+            fail?.set(0, true)
+            null
+        }
     }
 
     // ---- squadre: per le partite che non stanno nell'elenco del giorno (es. Serie C) ----
 
     private val teamIds = ConcurrentHashMap<String, String>()   // nome normalizzato -> idTeam ("" = non trovata)
 
-    private fun teamId(name: String): String? {
+    private fun teamId(name: String, fail: BooleanArray): String? {
         val key = norm(name)
         if (key.isEmpty()) return null
         teamIds[key]?.let { return it.ifEmpty { null } }
+        val text = http(API + "searchteams.php?t=" + URLEncoder.encode(name, "UTF-8"))
+        if (text == null) {
+            fail[0] = true
+            return null
+        }
         return try {
-            val c = (URL(API + "searchteams.php?t=" + URLEncoder.encode(name, "UTF-8")).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 6000
-                readTimeout = 6000
-            }
-            val text = try {
-                c.inputStream.bufferedReader().use { it.readText() }
-            } finally {
-                c.disconnect()
-            }
             val arr = JSONObject(text).optJSONArray("teams")
             var best = ""
             var bestScore = 0
@@ -145,7 +164,8 @@ object SportsDb {
             teamIds[key] = best
             best.ifEmpty { null }
         } catch (_: Exception) {
-            null   // errore di rete: si riprova la prossima volta
+            fail[0] = true
+            null
         }
     }
 
@@ -238,21 +258,22 @@ object SportsDb {
         return best?.let { Info(thumbOf(it), startOf(it)) }
     }
 
-    private fun lookup(eventName: String): Info? {
+    private fun lookup(eventName: String, fail: BooleanArray): Info? {
         val (a, b) = teams(eventName) ?: return null
         val today = LocalDate.now()
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
         val nearby = (-1L..1L).flatMap { day(today.plusDays(it)) }
+        if ((-1L..1L).any { days[today.plusDays(it)] == null }) fail[0] = true
         pick(nearby, a, b)?.let { return it }
-        // 2) prossime e ultime partite di ciascuna squadra (copre anche le serie minori, come la Serie C)
-        for (name in listOf(a, b)) {
-            val id = teamId(name) ?: continue
-            val ev = (get("eventsnext.php?id=$id") ?: emptyList()) + (get("eventslast.php?id=$id") ?: emptyList())
+        // 2) ricerca per nome, ma solo partite di questi giorni
+        for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
+            val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8"), fail) ?: continue
             pick(ev, a, b)?.let { return it }
         }
-        // 3) ricerca per nome, ma solo partite di questi giorni
-        for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
-            val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8")) ?: continue
+        // 3) prossime e ultime partite di ciascuna squadra (copre anche le serie minori, come la Serie C)
+        for (name in listOf(a, b)) {
+            val id = teamId(name, fail) ?: continue
+            val ev = (get("eventsnext.php?id=$id", fail) ?: emptyList()) + (get("eventslast.php?id=$id", fail) ?: emptyList())
             pick(ev, a, b)?.let { return it }
         }
         return null
@@ -292,9 +313,11 @@ object SportsDb {
             inflight[k] = mutableListOf<(Info) -> Unit>().also { if (cb != null) it.add(cb) }
         }
         pool.execute {
+            val fail = BooleanArray(1)
             val info = try {
-                lookup(ch.name)
+                lookup(ch.name, fail)
             } catch (_: Exception) {
+                fail[0] = true
                 null
             }
             if (info != null) {
@@ -302,7 +325,8 @@ object SportsDb {
                 prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}")?.apply()
                 warm(info.thumb)
             } else {
-                misses[k] = System.currentTimeMillis()
+                // errore di rete / limite di richieste: si riprova tra 20 secondi invece che tra 5 minuti
+                misses[k] = if (fail[0]) System.currentTimeMillis() - MISS_RETRY_MS + 20_000L else System.currentTimeMillis()
             }
             val waiting = synchronized(inflight) { inflight.remove(k) }.orEmpty()
             if (info != null && waiting.isNotEmpty()) main.post { waiting.forEach { it(info) } }
