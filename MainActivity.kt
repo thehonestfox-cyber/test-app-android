@@ -481,6 +481,7 @@ class MainActivity : AppCompatActivity() {
             addView(bar, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(divider, LinearLayout.LayoutParams(MATCH, dp(1)))
             addView(ScrollView(context).apply {
+                scrollbar()
                 isFillViewport = true
                 addView(cards, ViewGroup.LayoutParams(MATCH, WRAP))
             }, lp(0, 1f))
@@ -866,6 +867,7 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(context)
             adapter = channelAdapter
             itemAnimator = null   // niente animazioni di cambio: il focus resta sulla riga e la lista è più leggera
+            scrollbar()
             clipToPadding = false
             setPadding(dp(16), 0, dp(16), dp(16))
         }
@@ -873,6 +875,7 @@ class MainActivity : AppCompatActivity() {
         // Sezioni "eventi live": categorie con carosello orizzontale di card (al posto della lista)
         liveBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         liveScroll = ScrollView(this).apply {
+            scrollbar()
             clipToPadding = false
             setPadding(dp(12), 0, dp(12), dp(16))
             visibility = View.GONE
@@ -1449,7 +1452,7 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- Schermata admin: playlist + sezioni, categorie e canali ----------
 
-    private fun scroll(v: View): View = ScrollView(this).apply { addView(v) }
+    private fun scroll(v: View): View = ScrollView(this).apply { scrollbar(); addView(v) }
 
     // Contenitore con i margini dei dialog
     private fun padBox(vararg views: View) = LinearLayout(this).apply {
@@ -1462,6 +1465,26 @@ class MainActivity : AppCompatActivity() {
     private fun showDialog(b: MaterialAlertDialogBuilder) = b.create().also {
         it.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         it.show()
+    }
+
+    // Barra di scorrimento a destra, sempre visibile (anche con il telecomando), per ogni lista che scorre
+    private fun <T : View> T.scrollbar(): T {
+        isVerticalScrollBarEnabled = true
+        isScrollbarFadingEnabled = false
+        scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+        scrollBarSize = dp(6)
+        if (Build.VERSION.SDK_INT >= 29) {
+            val on = c(MR.attr.colorOnSurface) and 0xFFFFFF
+            verticalScrollbarThumbDrawable = GradientDrawable().apply {
+                cornerRadius = dp(3).toFloat()
+                setColor(on or 0x99000000.toInt())
+            }
+            verticalScrollbarTrackDrawable = GradientDrawable().apply {
+                cornerRadius = dp(3).toFloat()
+                setColor(on or 0x1F000000)
+            }
+        }
+        return this
     }
 
     // Nella sezione live: quando il focus arriva su un controllo del multi-schermo la lista risale in cima,
@@ -1518,7 +1541,7 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(8), dp(16), dp(96))
         }
-        adminScroll = ScrollView(this).apply { addView(adminList) }
+        adminScroll = ScrollView(this).apply { scrollbar(); addView(adminList) }
         fab = ExtendedFloatingActionButton(this).apply {
             text = "Nuova sezione"
             setIconResource(R.drawable.ic_add)
@@ -2163,6 +2186,7 @@ class MainActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
         })
         val recycler = RecyclerView(this).apply {
+            scrollbar()
             layoutManager = LinearLayoutManager(context)
             this.adapter = pickAdapter
         }
