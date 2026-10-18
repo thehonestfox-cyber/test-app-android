@@ -5,7 +5,21 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** Sezione della home (es. "Sport"): nome, icona e descrizione facoltativa. Le sue categorie e i suoi canali stanno in [Featured]. */
-data class Section(val id: String, val name: String, val icon: String, val description: String = "")
+data class Section(
+    val id: String,
+    val name: String,
+    val icon: String,
+    val description: String = "",
+    val type: String = CHANNELS
+) {
+    /** true = sezione di eventi live (carosello di card); false = lista di canali. */
+    val isLive: Boolean get() = type == LIVE
+
+    companion object {
+        const val CHANNELS = "channels"
+        const val LIVE = "live"
+    }
+}
 
 object Sections {
     /** Id della vecchia sezione "In evidenza", ormai rimossa: serve solo per ripulirne i dati. */
@@ -43,7 +57,8 @@ object Sections {
                 out.add(
                     Section(
                         o.getString("id"), o.getString("name"),
-                        o.optString("icon", "star"), o.optString("description", "")
+                        o.optString("icon", "star"), o.optString("description", ""),
+                        o.optString("type", Section.CHANNELS)
                     )
                 )
             }
@@ -64,7 +79,7 @@ object Sections {
         list.forEach { s ->
             arr.put(
                 JSONObject().put("id", s.id).put("name", s.name).put("icon", s.icon)
-                    .put("description", s.description)
+                    .put("description", s.description).put("type", s.type)
             )
         }
         p.edit().putString(KEY, arr.toString()).apply()

@@ -67,6 +67,7 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
+import com.google.android.material.radiobutton.MaterialRadioButton
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -136,6 +137,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nowLogo: ImageView
     private lateinit var listStatus: TextView
     private lateinit var chipGroup: ChipGroup
+    private lateinit var chipScroll: HorizontalScrollView
+    private lateinit var channelList: RecyclerView
+    private lateinit var liveScroll: ScrollView
+    private lateinit var liveBox: LinearLayout
+    private val liveCards = mutableListOf<Pair<MaterialCardView, String>>()
     private lateinit var searchField: TextInputLayout
     private lateinit var channelAdapter: ChannelAdapter
     private lateinit var adminList: LinearLayout
@@ -646,7 +652,7 @@ class MainActivity : AppCompatActivity() {
             isSingleLine = true
             setPadding(dp(16), 0, dp(16), 0)
         }
-        val chipScroll = HorizontalScrollView(this).apply {
+        chipScroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             addView(chipGroup)
         }
@@ -661,11 +667,20 @@ class MainActivity : AppCompatActivity() {
         })
 
         channelAdapter = ChannelAdapter(this) { onChannelTap(it) }
-        val recycler = RecyclerView(this).apply {
+        channelList = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(context)
             adapter = channelAdapter
             clipToPadding = false
             setPadding(dp(16), 0, dp(16), dp(16))
+        }
+
+        // Sezioni "eventi live": categorie con carosello orizzontale di card (al posto della lista)
+        liveBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        liveScroll = ScrollView(this).apply {
+            clipToPadding = false
+            setPadding(dp(12), 0, dp(12), dp(16))
+            visibility = View.GONE
+            addView(liveBox)
         }
 
         // Pannello con la lista dei canali (a sinistra in orizzontale, sotto in verticale)
@@ -674,7 +689,8 @@ class MainActivity : AppCompatActivity() {
             addView(listStatus)
             addView(chipScroll, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(searchField, LinearLayout.LayoutParams(MATCH, WRAP))
-            addView(recycler, lp(0, 1f))
+            addView(channelList, lp(0, 1f))
+            addView(liveScroll, lp(0, 1f))
         }
         // Player + info sul canale (a destra in orizzontale, sopra in verticale)
         rightColumn = LinearLayout(this).apply {
@@ -714,9 +730,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun showUser(section: String?) {
         userSection = section
+        val live = section?.let { id -> Sections.load(prefs).firstOrNull { it.id == id } }?.isLive == true
         loadGen++
         currentChannel = null
-        nowTitle.text = "Scegli un canale"
+        nowTitle.text = if (live) "Scegli un evento" else "Scegli un canale"
+        chipScroll.visibility = if (live) View.GONE else View.VISIBLE
+        searchField.visibility = if (live) View.GONE else View.VISIBLE
+        channelList.visibility = if (live) View.GONE else View.VISIBLE
+        liveScroll.visibility = if (live) View.VISIBLE else View.GONE
+        liveBox.removeAllViews()
+        liveCards.clear()
         nowSub.text = ""
         titleView.text = ""
         setError("")
@@ -733,11 +756,99 @@ class MainActivity : AppCompatActivity() {
     private fun loadFeatured(section: String) {
         val cats = Featured.load(prefs, section)
         val all = cats.flatMap { it.channels }
-        val name = Sections.load(prefs).firstOrNull { it.id == section }?.name ?: "Sezione"
+        val sec = Sections.load(prefs).firstOrNull { it.id == section }
+        val name = sec?.name ?: "Sezione"
+        val live = sec?.isLive == true
         setChannels(all, cats.filter { it.channels.isNotEmpty() }.map { it.name })
+        if (live) buildLive(cats)
+        val noun = if (live) "eventi" else "canali"
         listStatus.text =
-            if (all.isEmpty()) "Nessun canale in $name: aggiungili da Impostazioni › Admin."
-            else "$name · ${all.size} canali"
+            if (all.isEmpty()) "Nessun ${if (live) "evento" else "canale"} in $name: aggiungili da Impostazioni › Admin."
+            else "$name · ${all.size} $noun"
+    }
+
+    // ---------- Sezioni "eventi live": carosello di card per categoria ----------
+
+    private fun liveBadge() = TextView(this).apply {
+        text = "LIVE"
+        textSize = 11f
+        setTypeface(typeface, Typeface.BOLD)
+        setTextColor(Color.WHITE)
+        setPadding(dp(7), dp(2), dp(7), dp(2))
+        background = GradientDrawable().apply {
+            cornerRadius = dp(6).toFloat()
+            setColor(0xFFE53935.toInt())
+        }
+    }
+
+    private fun liveCard(ch: Channel): View {
+        val thumb = FrameLayout(this).apply {
+            val logo = ImageView(context).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setPadding(dp(24), dp(16), dp(24), dp(16))
+                background = logoBackground(context, 12)
+            }
+            addView(logo, FrameLayout.LayoutParams(MATCH, MATCH))
+            loadChannelLogo(logo, ch)
+            addView(liveBadge(), FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
+                setMargins(dp(8), dp(8), 0, 0)
+            })
+        }
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(thumb, LinearLayout.LayoutParams(MATCH, dp(124)).apply { setMargins(dp(8), dp(8), dp(8), 0) })
+            addView(tv(ch.name, 14f, c(MR.attr.colorOnSurface), true).apply {
+                minLines = 2
+                maxLines = 2
+                ellipsize = TextUtils.TruncateAt.END
+                setPadding(dp(12), dp(10), dp(12), 0)
+            })
+            addView(tv(ch.quality.ifEmpty { "Diretta" }, 12f, c(MR.attr.colorOnSurfaceVariant)).apply {
+                maxLines = 1
+                setPadding(dp(12), dp(2), dp(12), dp(12))
+            })
+        }
+        return MaterialCardView(this).apply {
+            radius = dp(16).toFloat()
+            cardElevation = 0f
+            setCardBackgroundColor(c(MR.attr.colorSurfaceVariant))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onChannelTap(ch) }
+            addView(col)
+            layoutParams = LinearLayout.LayoutParams(dp(236), WRAP).apply { rightMargin = dp(12) }
+            liveCards.add(this to ch.url)
+        }
+    }
+
+    private fun buildLive(cats: List<FeaturedCategory>) {
+        liveBox.removeAllViews()
+        liveCards.clear()
+        cats.filter { it.channels.isNotEmpty() }.forEach { cat ->
+            liveBox.addView(tv(cat.name, 20f, c(MR.attr.colorOnSurface), true).apply {
+                setPadding(dp(4), dp(16), dp(4), dp(8))
+            })
+            val row = LinearLayout(this).apply {
+                setPadding(dp(4), 0, dp(4), 0)
+                cat.channels.forEach { addView(liveCard(it)) }
+            }
+            liveBox.addView(
+                HorizontalScrollView(this).apply {
+                    isHorizontalScrollBarEnabled = false
+                    addView(row)
+                },
+                LinearLayout.LayoutParams(MATCH, WRAP)
+            )
+        }
+        liveSelect(currentChannel?.url)
+    }
+
+    // Evidenzia la card dell'evento in riproduzione
+    private fun liveSelect(url: String?) {
+        liveCards.forEach { (card, u) ->
+            card.strokeColor = c(MR.attr.colorPrimary)
+            card.strokeWidth = if (u == url) dp(2) else 0
+        }
     }
 
     // Carica le playlist in background: mostra subito quanto è già salvato (memoria/disco),
@@ -861,6 +972,7 @@ class MainActivity : AppCompatActivity() {
         loadChannelLogo(nowLogo, ch)
         spinner.visibility = View.VISIBLE
         channelAdapter.select(ch.url)
+        liveSelect(ch.url)
         showControls()
         currentUrl = ch.url
         triedHls = ch.url.contains(".m3u8", ignoreCase = true)
@@ -1004,7 +1116,8 @@ class MainActivity : AppCompatActivity() {
             val del = {
                 confirmDelete("La sezione \"${sec.name}\" e tutti i suoi canali") { deleteSection(sec.id) }
             }
-            val sub = if (sec.description.isBlank()) "$n canali" else "${sec.description} · $n canali"
+            val unit = if (sec.isLive) "eventi" else "canali"
+            val sub = if (sec.description.isBlank()) "$n $unit" else "${sec.description} · $n $unit"
             val card = itemCard(sec.name, sub, false, { adminEditing = sec.id; refreshAdmin() }, del)
             card.setOnLongClickListener {
                 sectionDialog(i)
@@ -1033,10 +1146,23 @@ class MainActivity : AppCompatActivity() {
         var icon = cur?.icon ?: Sections.ICONS.first().first
         val label = tv("Icona", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(8)) }
         val picker = iconPicker(icon) { icon = it }
+        // Il tipo si sceglie solo alla creazione
+        val typeLabel = tv("Tipo di sezione", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(4)) }
+        val radioChannels = MaterialRadioButton(this).apply { id = View.generateViewId(); text = "Lista di canali"; isChecked = true }
+        val radioLive = MaterialRadioButton(this).apply { id = View.generateViewId(); text = "Eventi live" }
+        val typeGroup = android.widget.RadioGroup(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(radioChannels)
+            addView(radioLive)
+        }
+        val body = mutableListOf<View>(til, tilDesc)
+        if (cur == null) { body.add(typeLabel); body.add(typeGroup) }
+        body.add(label)
+        body.add(picker)
         showDialog(
             MaterialAlertDialogBuilder(this)
                 .setTitle(if (cur == null) "Nuova sezione" else "Modifica sezione")
-                .setView(scroll(padBox(til, tilDesc, label, picker)))
+                .setView(scroll(padBox(*body.toTypedArray())))
                 .setPositiveButton(if (cur == null) "Aggiungi" else "Salva") { _, _ ->
                     val n = til.editText!!.text.toString().trim()
                     val desc = tilDesc.editText!!.text.toString().trim()
@@ -1044,7 +1170,9 @@ class MainActivity : AppCompatActivity() {
                     else if (list.any { it.id != cur?.id && it.name.equals(n, ignoreCase = true) })
                         toast("Esiste già una sezione con questo nome")
                     else {
-                        if (cur == null) list.add(Section(Sections.newId(), n, icon, desc))
+                        if (cur == null) list.add(
+                            Section(Sections.newId(), n, icon, desc, if (radioLive.isChecked) Section.LIVE else Section.CHANNELS)
+                        )
                         else list[index!!] = cur.copy(name = n, icon = icon, description = desc)
                         Sections.save(prefs, list)
                         refreshAdmin()
@@ -1127,6 +1255,10 @@ class MainActivity : AppCompatActivity() {
 
     // --- Tab Admin: categorie e canali di una sezione ---
 
+    // Nelle sezioni live i "canali" sono eventi: stessa gestione, solo i testi cambiano
+    private val adminNoun: String
+        get() = if (Sections.load(prefs).firstOrNull { it.id == adminSection }?.isLive == true) "evento" else "canale"
+
     private fun refreshFeatured() {
         val cats = Featured.load(prefs, adminSection)
         val secName = Sections.load(prefs).firstOrNull { it.id == adminSection }?.name ?: ""
@@ -1174,7 +1306,7 @@ class MainActivity : AppCompatActivity() {
             if (isCollapsed(cat)) return@forEachIndexed
             if (cat.channels.isEmpty()) {
                 adminList.addView(
-                    tv("Nessun canale: tocca + per aggiungerne.", 13f, c(MR.attr.colorOnSurfaceVariant))
+                    tv("Nessun ${adminNoun}: tocca + per aggiungerne.", 13f, c(MR.attr.colorOnSurfaceVariant))
                         .apply { setPadding(dp(16), dp(4), 0, 0) }
                 )
             }
@@ -1298,11 +1430,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun renameChannelDialog(ci: Int, ji: Int) {
         val ch = Featured.load(prefs, adminSection).getOrNull(ci)?.channels?.getOrNull(ji) ?: return
-        val til = field("Nome canale (se vuoto usa quello della playlist)")
+        val til = field("Nome $adminNoun (se vuoto usa quello della playlist)")
         til.editText!!.setText(ch.name)
         showDialog(
             MaterialAlertDialogBuilder(this)
-                .setTitle("Rinomina canale")
+                .setTitle("Rinomina $adminNoun")
                 .setView(scroll(padBox(til)))
                 .setPositiveButton("Salva") { _, _ ->
                     val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
@@ -1325,7 +1457,7 @@ class MainActivity : AppCompatActivity() {
     private fun addChannelDialog(ci: Int) {
         if (Featured.load(prefs, adminSection).getOrNull(ci) == null) return
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val nameField = field("Nome canale (se vuoto usa quello della playlist)")
+        val nameField = field("Nome $adminNoun (se vuoto usa quello della playlist)")
         val search = field("Cerca nella playlist")
         val status = tv("Caricamento canali…", 13f, c(MR.attr.colorOnSurfaceVariant))
             .apply { setPadding(dp(4), dp(8), dp(4), dp(4)) }
@@ -1382,7 +1514,7 @@ class MainActivity : AppCompatActivity() {
             refilter()
         }
         val dlg = MaterialAlertDialogBuilder(this)
-            .setTitle("Aggiungi canale")
+            .setTitle("Aggiungi $adminNoun")
             .setView(scroll(box))
             .setPositiveButton("Aggiungi", null)
             .setNegativeButton("Annulla", null)
