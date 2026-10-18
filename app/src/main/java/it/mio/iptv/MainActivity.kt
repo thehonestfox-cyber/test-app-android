@@ -1257,7 +1257,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshGeneral() {
         val i = themeKeys.indexOf(prefs.getString("theme", "system")).coerceAtLeast(0)
-        adminList.addView(itemCard("Aspetto", themeLabels[i], false, { themeDialog() }, null))
+        adminList.addView(settingRow(R.drawable.ic_theme, "Aspetto", themeLabels[i]) { themeDialog() })
+    }
+
+    // Riga di impostazione senza riquadro: icona + titolo + valore attuale
+    private fun settingRow(icon: Int, title: String, value: String, onClick: () -> Unit): View {
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(tv(title, 16f, c(MR.attr.colorOnSurface), true))
+            addView(tv(value, 13f, c(MR.attr.colorOnSurfaceVariant)))
+        }
+        return LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(4), dp(14), dp(4), dp(14))
+            background = selectable()
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onClick() }
+            addView(ImageView(context).apply {
+                setImageResource(icon)
+                imageTintList = ColorStateList.valueOf(c(MR.attr.colorPrimary))
+            }, LinearLayout.LayoutParams(dp(28), dp(28)).apply { rightMargin = dp(16) })
+            addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
+        }
     }
 
     // Menu con le tre modalità: scegliendone una si applica e si chiude
@@ -1273,10 +1295,13 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    // Risposta immediata: salvo, aggiorno subito la riga e applico il tema al frame successivo,
+    // così il menu si chiude senza scatti e il ricaricamento (se serve) parte a schermo libero.
     private fun setTheme(key: String) {
+        if (key == prefs.getString("theme", "system")) return
         prefs.edit().putString("theme", key).apply()
-        AppCompatDelegate.setDefaultNightMode(themeMode())   // se il tema cambia, l'activity si ricrea da sola
         refreshAdmin()
+        ui.post { AppCompatDelegate.setDefaultNightMode(themeMode()) }   // se il tema cambia davvero, l'activity si ricrea
     }
 
     // Pulsante con bordo e icona + (stesso stile per "Nuova sezione" e "Aggiungi playlist")
