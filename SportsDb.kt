@@ -161,11 +161,13 @@ object SportsDb {
             }
             val next = get("eventsnextleague.php?id=$id", fail)
             val past = get("eventspastleague.php?id=$id", fail)
-            if (next == null && past == null) {
-                leagueFailAt[id] = System.currentTimeMillis()
-                return old
-            }
             val ev = (next ?: emptyList()) + (past ?: emptyList())
+            if (next == null || past == null) {
+                // elenco incompleto (errore o limite di richieste): lo si usa ma non si tiene in cache, e si riprova tra poco
+                leagueFailAt[id] = System.currentTimeMillis()
+                fail[0] = true
+                return if (ev.isEmpty()) old else ev
+            }
             leagues[id] = LeagueData(System.currentTimeMillis(), ev)
             leagueFailAt.remove(id)
             return ev
@@ -336,7 +338,7 @@ object SportsDb {
     }
 
     /** Dà l'info (se la trova) a [cb] sul thread principale; senza [cb] serve solo a riscaldare cache e immagine. */
-    private fun request(ch: Channel, k: String, cb: ((Info) -> Unit)?) {
+    private fun request(ch: Channel, k: String, cb: ((Info) -> Unit)?, attempt: Int = 0) {
         val known = found[k] ?: decode(prefs?.getString(k, null))
         if (known != null) {
             found[k] = known
@@ -344,7 +346,12 @@ object SportsDb {
             return
         }
         val t = misses[k]
-        if (t != null && System.currentTimeMillis() - t < MISS_RETRY_MS) return
+        if (t != null && System.currentTimeMillis() - t < MISS_RETRY_MS) {
+            // attesa breve = la ricerca era fallita per un errore: la card riprova da sola appena scade
+            val wait = MISS_RETRY_MS - (System.currentTimeMillis() - t)
+            if (cb != null && wait <= 25_000L && attempt < 4) main.postDelayed({ request(ch, k, cb, attempt + 1) }, wait + 500)
+            return
+        }
         synchronized(inflight) {
             val waiting = inflight[k]
             if (waiting != null) {
@@ -371,6 +378,9 @@ object SportsDb {
             }
             val waiting = synchronized(inflight) { inflight.remove(k) }.orEmpty()
             if (info != null && waiting.isNotEmpty()) main.post { waiting.forEach { it(info) } }
+            if (info == null && fail[0] && attempt < 4 && waiting.isNotEmpty()) {
+                main.postDelayed({ waiting.forEach { w -> request(ch, k, w, attempt + 1) } }, 21_000L)   // riprova dopo l'errore
+            }
         }
     }
 
