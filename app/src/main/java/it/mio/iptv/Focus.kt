@@ -10,21 +10,31 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.R as MR
 
-/**
- * Evidenzia con un bordo la card che ha il focus (telecomando / tastiera).
- * Con il tocco non cambia nulla: il bordo compare solo quando il focus arriva dai tasti direzionali.
- */
-fun MaterialCardView.enableFocusRing(scale: Float = 1f) {
-    val px = (3 * resources.displayMetrics.density).toInt()
+private val markedCards = java.util.Collections.newSetFromMap(java.util.WeakHashMap<MaterialCardView, Boolean>())
+
+/** Bordo sottile = card "selezionata" (es. evento in riproduzione); bordo più spesso = card con il focus. */
+private fun MaterialCardView.updateStroke() {
+    val d = resources.displayMetrics.density
     strokeColor = MaterialColors.getColor(this, MR.attr.colorPrimary, Color.WHITE)
-    strokeWidth = 0
-    onFocusChangeListener = View.OnFocusChangeListener { v, focused ->
-        (v as MaterialCardView).strokeWidth = if (focused) px else 0
-        if (scale != 1f) {
-            val s = if (focused) scale else 1f
-            v.animate().scaleX(s).scaleY(s).setDuration(120).start()
-        }
+    strokeWidth = when {
+        isFocused -> (3 * d).toInt()
+        this in markedCards -> (2 * d).toInt()
+        else -> 0
     }
+}
+
+/** Segna/toglie il bordo sottile di selezione, senza disturbare il bordo del focus. */
+fun MaterialCardView.setMarked(on: Boolean) {
+    if (on) markedCards.add(this) else markedCards.remove(this)
+    updateStroke()
+}
+
+/**
+ * Evidenzia con un bordo la card che ha il focus (telecomando / tastiera), senza cambiarne le dimensioni.
+ * Con il tocco non cambia nulla.
+ */
+fun MaterialCardView.enableFocusRing() {
+    onFocusChangeListener = View.OnFocusChangeListener { v, _ -> (v as MaterialCardView).updateStroke() }
 }
 
 /** Anello di focus per pulsanti rotondi o rettangoli (da usare come foreground). */

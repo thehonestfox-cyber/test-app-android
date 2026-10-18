@@ -428,7 +428,7 @@ class MainActivity : AppCompatActivity() {
             setCardBackgroundColor(c(MR.attr.colorSecondaryContainer))
             isClickable = true
             isFocusable = true
-            enableFocusRing(1.03f)
+            enableFocusRing()
             setOnClickListener { onClick() }
             addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER_VERTICAL
@@ -605,7 +605,6 @@ class MainActivity : AppCompatActivity() {
 
         // Telecomando: con il focus sul player, OK = play/pausa, ◀ ▶ = -10 s / +10 s (se il video è riavvolgibile)
         playerBox.isFocusable = true
-        playerBox.foreground = focusRingDrawable(Color.WHITE, dp(3), false)
         playerBox.setOnKeyListener { _, code, ev ->
             if (ev.action != KeyEvent.ACTION_DOWN) return@setOnKeyListener false
             when (code) {
@@ -988,7 +987,7 @@ class MainActivity : AppCompatActivity() {
             setCardBackgroundColor(c(MR.attr.colorSurfaceVariant))
             isClickable = true
             isFocusable = true
-            enableFocusRing(1.04f)
+            enableFocusRing()
             setOnClickListener { onChannelTap(ch) }
             addView(col)
             layoutParams = LinearLayout.LayoutParams(dp(236), WRAP).apply { rightMargin = dp(12) }
@@ -1010,6 +1009,15 @@ class MainActivity : AppCompatActivity() {
             val row = LinearLayout(this).apply {
                 setPadding(dp(4), 0, dp(4), 0)
                 cat.channels.forEach { addView(liveCard(it)) }
+                // Ai bordi della riga il focus resta fermo: non passa alle altre categorie
+                if (childCount > 0) {
+                    val first = getChildAt(0)
+                    val last = getChildAt(childCount - 1)
+                    if (first.id == View.NO_ID) first.id = View.generateViewId()
+                    if (last.id == View.NO_ID) last.id = View.generateViewId()
+                    first.nextFocusLeftId = first.id
+                    last.nextFocusRightId = last.id
+                }
             }
             liveBox.addView(
                 HorizontalScrollView(this).apply {
@@ -1027,8 +1035,7 @@ class MainActivity : AppCompatActivity() {
         val picked: Set<String> =
             if (multi.count > 1) multi.active().map { it.url }.toSet() else setOfNotNull(url)
         liveCards.forEach { (card, u) ->
-            card.strokeColor = c(MR.attr.colorPrimary)
-            card.strokeWidth = if (u in picked) dp(2) else 0
+            card.setMarked(u in picked)
         }
     }
 
