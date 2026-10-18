@@ -490,7 +490,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Le card della home: le sezioni create dall'admin, poi Completa e Impostazioni
-    // Precarica thumb e orari di tutti gli eventi delle sezioni live, così sono già pronti quando le apri
+    // Precarica thumb e orari degli eventi delle sezioni live, così sono già pronti quando le apri
     private fun prefetchLive() {
         Thread {
             val chans = Sections.load(prefs).filter { it.isLive }

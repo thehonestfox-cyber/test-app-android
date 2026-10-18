@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.ImageView
 import coil.imageLoader
 import coil.load
@@ -28,9 +29,13 @@ import java.util.concurrent.Executors
  *  1. scarica UNA volta (e tiene in cache) tutte le partite di calcio di ieri/oggi/domani;
  *  2. trova la partita confrontando i nomi delle squadre in modo tollerante ("Milan" = "AC Milan",
  *     "Juve" = "Juventus", casa/trasferta anche invertiti);
- *  3. se non la trova prova la ricerca per nome, ma accetta solo partite di questi giorni
+ *  3. se non la trova guarda direttamente i campionati minori elencati in LEAGUE_IDS (Serie C):
+ *     2 richieste a campionato (prossime + ultime partite), valide per tutte le card;
+ *  4. se ancora niente prova la ricerca per nome, ma accetta solo partite di questi giorni
  *     (mai partite vecchie con lo stesso nome);
- *  4. ricorda il risultato (anche dopo la chiusura dell'app) per non rifare le richieste.
+ *  5. ricorda il risultato (anche dopo la chiusura dell'app) per non rifare le richieste.
+ *
+ * prefetch() fa tutto questo in anticipo, all'apertura dell'app, per tutte le partite delle sezioni live.
  */
 object SportsDb {
     // Chiave gratuita di test di TheSportsDB (ha un limite di richieste: per questo si usa la cache)
@@ -39,7 +44,12 @@ object SportsDb {
     private const val WINDOW_DAYS = 2L          // distanza massima (in giorni) della partita da oggi
     private const val MISS_RETRY_MS = 5 * 60_000L
 
-    private val pool = Executors.newFixedThreadPool(3)
+    // Campionati su TheSportsDB da leggere per intero (si aggiungono qui altri, copiando il numero dal link
+    // della pagina del campionato, es. thesportsdb.com/league/5340-...): Serie C girone A, B, C
+    private val LEAGUE_IDS = listOf("5340", "5339", "4398")
+
+    private const val TAG = "SportsDb"   // diagnostica: Logcat, filtro "SportsDb"
+    private val pool = Executors.newFixedThreadPool(2)
     private val main = Handler(Looper.getMainLooper())
     private var prefs: SharedPreferences? = null
     private var app: Context? = null
@@ -93,35 +103,42 @@ object SportsDb {
 
     // ---- rete ----
 
-    // Scarica un testo; se il server dice "troppe richieste" (429) aspetta un attimo e riprova. null = errore di rete.
+    // Scarica un testo; se il server risponde "troppe richieste" (429) aspetta un attimo e riprova. null = errore di rete.
     private fun http(url: String): String? {
+        val t0 = System.currentTimeMillis()
+        val what = url.removePrefix(API)
         for (attempt in 0..2) {
             try {
                 val c = (URL(url).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 6000
-                    readTimeout = 6000
+                    connectTimeout = 8000
+                    readTimeout = 8000
                 }
                 try {
-                    if (c.responseCode == 429) {
+                    val code = c.responseCode
+                    if (code == 429) {
+                        Log.d(TAG, "HTTP 429 (troppe richieste) $what, attesa e nuovo tentativo ${attempt + 1}")
                         Thread.sleep(1500L * (attempt + 1))
                         continue
                     }
-                    return c.inputStream.bufferedReader().use { it.readText() }
+                    val text = c.inputStream.bufferedReader().use { it.readText() }
+                    Log.d(TAG, "GET $what -> $code, ${text.length / 1024} KB, ${System.currentTimeMillis() - t0} ms")
+                    return text
                 } finally {
                     c.disconnect()
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.d(TAG, "GET $what ERRORE ${e.javaClass.simpleName} dopo ${System.currentTimeMillis() - t0} ms (tentativo ${attempt + 1})")
             }
         }
         return null
     }
 
-    // fail[0] diventa true se la richiesta è fallita per un errore di rete (così non la si scambia per "partita non trovata")
+    // fail[0] diventa true se la richiesta è fallita per un errore di rete (non va scambiata per "partita non trovata")
     private fun get(path: String, fail: BooleanArray? = null): List<JSONObject>? {
         val text = http(API + path)
         if (text == null) {
             fail?.set(0, true)
-            return null
+            return null   // errore di rete: non va messo in cache
         }
         return try {
             val j = JSONObject(text)
@@ -130,6 +147,40 @@ object SportsDb {
         } catch (_: Exception) {
             fail?.set(0, true)
             null
+        }
+    }
+
+    // ---- campionati interi (es. Serie C): prossime + ultime partite, in cache per tutte le card ----
+
+    private class LeagueData(val at: Long, val events: List<JSONObject>)
+    private val leagues = ConcurrentHashMap<String, LeagueData>()
+    private val leagueFailAt = ConcurrentHashMap<String, Long>()
+    private val leagueLocks = ConcurrentHashMap<String, Any>()
+
+    private fun leagueEvents(id: String, fail: BooleanArray): List<JSONObject> {
+        fun valid(l: LeagueData) = System.currentTimeMillis() - l.at < 10 * 60_000L
+        leagues[id]?.let { if (valid(it)) return it.events }
+        synchronized(leagueLocks.getOrPut(id) { Any() }) {      // una sola richiesta alla volta per campionato
+            leagues[id]?.let { if (valid(it)) return it.events }
+            val old = leagues[id]?.events ?: emptyList()
+            val failedAt = leagueFailAt[id]
+            if (failedAt != null && System.currentTimeMillis() - failedAt < 60_000L) {   // appena fallito: non insistere
+                fail[0] = true
+                return old
+            }
+            val next = get("eventsnextleague.php?id=$id", fail)
+            val past = get("eventspastleague.php?id=$id", fail)
+            val ev = (next ?: emptyList()) + (past ?: emptyList())
+            Log.d(TAG, "campionato $id: prossime=${next?.size} ultime=${past?.size} (null = errore)")
+            if (next == null || past == null) {
+                // elenco incompleto (errore o limite di richieste): lo si usa ma non si tiene in cache, e si riprova tra poco
+                leagueFailAt[id] = System.currentTimeMillis()
+                fail[0] = true
+                return if (ev.isEmpty()) old else ev
+            }
+            leagues[id] = LeagueData(System.currentTimeMillis(), ev)
+            leagueFailAt.remove(id)
+            return ev
         }
     }
 
@@ -143,7 +194,7 @@ object SportsDb {
         teamIds[key]?.let { return it.ifEmpty { null } }
         val text = http(API + "searchteams.php?t=" + URLEncoder.encode(name, "UTF-8"))
         if (text == null) {
-            fail[0] = true
+            fail[0] = true   // errore di rete: si riprova la prossima volta
             return null
         }
         return try {
@@ -259,24 +310,31 @@ object SportsDb {
     }
 
     private fun lookup(eventName: String, fail: BooleanArray): Info? {
-        val (a, b) = teams(eventName) ?: return null
+        val t0 = System.currentTimeMillis()
+        fun res(via: String, i: Info?): Info? {
+            Log.d(TAG, "'$eventName' -> $via, ${System.currentTimeMillis() - t0} ms, thumb=${i?.thumb?.isNotEmpty()}, orario=${i?.start?.let { it > 0 }}, errori=${fail[0]}")
+            return i
+        }
+        val (a, b) = teams(eventName) ?: return res("non è una partita", null)
         val today = LocalDate.now()
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
         val nearby = (-1L..1L).flatMap { day(today.plusDays(it)) }
         if ((-1L..1L).any { days[today.plusDays(it)] == null }) fail[0] = true
-        pick(nearby, a, b)?.let { return it }
-        // 2) ricerca per nome, ma solo partite di questi giorni
+        pick(nearby, a, b)?.let { return res("elenco del giorno", it) }
+        // 2) campionati minori letti per intero (Serie C): 2 richieste a campionato, poi tutto in cache
+        for (id in LEAGUE_IDS) pick(leagueEvents(id, fail), a, b)?.let { return res("campionato $id", it) }
+        // 3) ricerca per nome, ma solo partite di questi giorni
         for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
             val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8"), fail) ?: continue
-            pick(ev, a, b)?.let { return it }
+            pick(ev, a, b)?.let { return res("ricerca per nome", it) }
         }
-        // 3) prossime e ultime partite di ciascuna squadra (copre anche le serie minori, come la Serie C)
+        // 4) prossime e ultime partite di ciascuna squadra
         for (name in listOf(a, b)) {
             val id = teamId(name, fail) ?: continue
             val ev = (get("eventsnext.php?id=$id", fail) ?: emptyList()) + (get("eventslast.php?id=$id", fail) ?: emptyList())
-            pick(ev, a, b)?.let { return it }
+            pick(ev, a, b)?.let { return res("squadra $name", it) }
         }
-        return null
+        return res("NON TROVATA", null)
     }
 
     // Nella memoria del telefono: "orario<TAB>immagine" (i vecchi valori con solo l'immagine si ignorano e si rifanno)
@@ -286,7 +344,7 @@ object SportsDb {
         return Info(v.substring(i + 1), v.substring(0, i).toLongOrNull() ?: 0L)
     }
 
-    // Chi aspetta il risultato di una ricerca già partita (card + precaricamento non cercano due volte la stessa partita)
+    // Chi aspetta il risultato di una ricerca già partita (card e precaricamento non cercano due volte la stessa partita)
     private val inflight = HashMap<String, MutableList<(Info) -> Unit>>()
 
     private fun warm(url: String) {
@@ -295,7 +353,7 @@ object SportsDb {
     }
 
     /** Dà l'info (se la trova) a [cb] sul thread principale; senza [cb] serve solo a riscaldare cache e immagine. */
-    private fun request(ch: Channel, k: String, cb: ((Info) -> Unit)?) {
+    private fun request(ch: Channel, k: String, cb: ((Info) -> Unit)?, attempt: Int = 0) {
         val known = found[k] ?: decode(prefs?.getString(k, null))
         if (known != null) {
             found[k] = known
@@ -303,7 +361,12 @@ object SportsDb {
             return
         }
         val t = misses[k]
-        if (t != null && System.currentTimeMillis() - t < MISS_RETRY_MS) return
+        if (t != null && System.currentTimeMillis() - t < MISS_RETRY_MS) {
+            // attesa breve = la ricerca era fallita per un errore: la card riprova da sola appena scade
+            val wait = MISS_RETRY_MS - (System.currentTimeMillis() - t)
+            if (cb != null && wait <= 25_000L && attempt < 4) main.postDelayed({ request(ch, k, cb, attempt + 1) }, wait + 500)
+            return
+        }
         synchronized(inflight) {
             val waiting = inflight[k]
             if (waiting != null) {
@@ -312,7 +375,9 @@ object SportsDb {
             }
             inflight[k] = mutableListOf<(Info) -> Unit>().also { if (cb != null) it.add(cb) }
         }
+        val queuedAt = System.currentTimeMillis()
         pool.execute {
+            Log.d(TAG, "'${ch.name}' avvio ricerca (in coda da ${System.currentTimeMillis() - queuedAt} ms)")
             val fail = BooleanArray(1)
             val info = try {
                 lookup(ch.name, fail)
@@ -330,17 +395,18 @@ object SportsDb {
             }
             val waiting = synchronized(inflight) { inflight.remove(k) }.orEmpty()
             if (info != null && waiting.isNotEmpty()) main.post { waiting.forEach { it(info) } }
+            if (info == null && fail[0] && attempt < 4 && waiting.isNotEmpty()) {
+                main.postDelayed({ waiting.forEach { w -> request(ch, k, w, attempt + 1) } }, 21_000L)   // riprova dopo l'errore
+            }
         }
     }
 
     /**
-     * Da chiamare appena si apre l'app: scarica in anticipo gli elenchi dei giorni e cerca thumb e orario
-     * di tutti gli eventi, così quando apri la sezione è già tutto pronto.
+     * Da chiamare all'apertura dell'app: cerca in anticipo thumb e orario di tutte le partite indicate
+     * (con gli stessi 2 canali di rete di prima, una partita alla volta) e scarica le immagini.
      */
     fun prefetch(channels: List<Channel>) {
-        val today = LocalDate.now()
-        for (d in -1L..1L) pool.execute { try { day(today.plusDays(d)) } catch (_: Exception) {} }
-        channels.distinctBy { it.name }.forEach { ch -> request(ch, "${ch.name}|$today", null) }
+        channels.distinctBy { it.name }.forEach { ch -> request(ch, "${ch.name}|${LocalDate.now()}", null) }
     }
 
     /**
