@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Schede (Playlist / In evidenza) a tutta larghezza anche in orizzontale:
+    <!-- Schede (Generali / Admin) a tutta larghezza anche in orizzontale:
          Material limita di default ogni scheda a 264dp, quindi su schermi larghi restavano strette al centro. -->
     <style name="Widget.IPTV.TabLayout" parent="Widget.Material3.TabLayout">
         <item name="tabMaxWidth">0dp</item>

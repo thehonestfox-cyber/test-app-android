@@ -41,6 +41,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -156,6 +157,7 @@ class MainActivity : AppCompatActivity() {
     private var currentUrl = ""
     private var triedHls = false
     private var fullscreen = false
+    private var userLive = false             // la sezione aperta è di tipo "eventi live": niente player, schermo intero alla scelta
     private var userSection: String? = null   // sezione aperta dall'utente (null = Completa)
     private var adminEditing: String? = null  // sezione di cui l'admin sta gestendo le categorie (null = elenco sezioni)
     private val adminSection get() = adminEditing ?: Sections.DEFAULT_ID
@@ -168,6 +170,7 @@ class MainActivity : AppCompatActivity() {
     // ---------- Avvio ----------
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(themeMode())
         super.onCreate(savedInstanceState)
         DynamicColors.applyToActivityIfAvailable(this)
         Logos.init(this)
@@ -200,7 +203,24 @@ class MainActivity : AppCompatActivity() {
         buildHome()
         buildUser()
         buildAdmin()
-        show(homeView)
+        // Dopo il cambio tema l'activity si ricrea: se eri nelle Impostazioni ci torni
+        if (savedInstanceState?.getBoolean("admin") == true) {
+            adminTab = savedInstanceState.getInt("adminTab", 0)
+            showAdmin()
+        } else show(homeView)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("admin", currentView === adminView)
+        outState.putInt("adminTab", adminTab)
+    }
+
+    // Tema dell'app: "system" (come il telefono), "light" o "dark"
+    private fun themeMode() = when (prefs.getString("theme", "system")) {
+        "light" -> AppCompatDelegate.MODE_NIGHT_NO
+        "dark" -> AppCompatDelegate.MODE_NIGHT_YES
+        else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -377,7 +397,7 @@ class MainActivity : AppCompatActivity() {
             )
         }
         homeCards.addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
-        homeCards.addView(homeCard(R.drawable.ic_settings, "Impostazioni", "Playlist e sezioni della home") { showAdmin() })
+        homeCards.addView(homeCard(R.drawable.ic_settings, "Impostazioni", "Tema, playlist e sezioni della home") { showAdmin() })
     }
 
     private fun goHome() {
@@ -568,6 +588,11 @@ class MainActivity : AppCompatActivity() {
             ctl.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
             ctl.show(WindowInsetsCompat.Type.systemBars())
+            if (userLive && currentView === userView) {
+                player.stop()
+                currentChannel = null
+                liveSelect(null)
+            }
         }
     }
 
@@ -707,7 +732,9 @@ class MainActivity : AppCompatActivity() {
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val playerOnly = fullscreen || inPip
         listPanel.visibility = if (playerOnly) View.GONE else View.VISIBLE
-        infoRow.visibility = if (playerOnly) View.GONE else View.VISIBLE
+        infoRow.visibility = if (playerOnly || userLive) View.GONE else View.VISIBLE
+        // Sezione live: il player compare solo a schermo intero (o in PiP)
+        rightColumn.visibility = if (userLive && !playerOnly) View.GONE else View.VISIBLE
         playerBox.ratio = !playerOnly
         playerBox.maxH = if (land) (resources.displayMetrics.heightPixels * 0.7f).toInt() else Int.MAX_VALUE
         playerBox.layoutParams = LinearLayout.LayoutParams(MATCH, if (playerOnly) MATCH else WRAP)
@@ -725,12 +752,16 @@ class MainActivity : AppCompatActivity() {
 
     // Primo tocco: seleziona e riproduce. Tocco sul canale già selezionato: schermo intero.
     private fun onChannelTap(ch: Channel) {
-        if (currentChannel?.url == ch.url) setFullscreen(true) else playChannel(ch)
+        if (userLive) {
+            playChannel(ch)
+            setFullscreen(true)
+        } else if (currentChannel?.url == ch.url) setFullscreen(true) else playChannel(ch)
     }
 
     private fun showUser(section: String?) {
         userSection = section
         val live = section?.let { id -> Sections.load(prefs).firstOrNull { it.id == id } }?.isLive == true
+        userLive = live
         loadGen++
         currentChannel = null
         nowTitle.text = if (live) "Scegli un evento" else "Scegli un canale"
@@ -888,7 +919,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadAllChannels() {
         val gen = loadGen
         if (loadPlaylists().isEmpty()) {
-            listStatus.text = "Nessuna playlist: aggiungila da Impostazioni."
+            listStatus.text = "Nessuna playlist: aggiungila da Impostazioni › Admin."
             return
         }
         listStatus.text = "Caricamento canali…"
@@ -1012,7 +1043,7 @@ class MainActivity : AppCompatActivity() {
         }
         adminTabs = TabLayout(this).apply {
             tabGravity = TabLayout.GRAVITY_FILL
-            addTab(newTab().setText("Playlist"))
+            addTab(newTab().setText("Generali"))
             addTab(newTab().setText("Admin"))
             addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab?) {
@@ -1030,11 +1061,11 @@ class MainActivity : AppCompatActivity() {
         }
         adminScroll = ScrollView(this).apply { addView(adminList) }
         fab = ExtendedFloatingActionButton(this).apply {
-            text = "Aggiungi playlist"
+            text = "Nuova sezione"
             setIconResource(R.drawable.ic_add)
             setOnClickListener {
                 when {
-                    adminTab == 0 -> addPlaylistDialog()
+                    adminTab != 1 -> {}
                     adminEditing == null -> sectionDialog(null)
                     else -> categoryDialog(null)
                 }
@@ -1072,12 +1103,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshAdmin() {
         adminList.removeAllViews()
+        fab.visibility = if (adminTab == 1) View.VISIBLE else View.GONE
         if (adminTab == 0) {
-            fab.text = "Aggiungi playlist"
-            refreshPlaylists()
+            refreshGeneral()
         } else if (adminEditing == null) {
             fab.text = "Nuova sezione"
             refreshSections()
+            refreshPlaylists()
         } else {
             fab.text = "Nuova categoria"
             refreshFeatured()
@@ -1217,11 +1249,53 @@ class MainActivity : AppCompatActivity() {
         return grid
     }
 
-    // --- Tab Playlist ---
+    // --- Tab Generali: aspetto dell'app ---
+
+    private fun refreshGeneral() {
+        adminList.addView(tv("Aspetto", 20f, c(MR.attr.colorOnSurface), true).apply {
+            setPadding(dp(4), dp(4), 0, dp(4))
+        })
+        adminList.addView(
+            tv("Tema dell'app", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(dp(4), 0, dp(4), dp(8)) }
+        )
+        val cur = prefs.getString("theme", "system")
+        listOf(
+            Triple("system", "Come il sistema", "Segue il tema del telefono"),
+            Triple("light", "Chiaro", null),
+            Triple("dark", "Scuro", null)
+        ).forEach { (key, title, sub) ->
+            adminList.addView(itemCard(title, sub, cur == key, { setTheme(key) }, null))
+        }
+    }
+
+    private fun setTheme(key: String) {
+        prefs.edit().putString("theme", key).apply()
+        AppCompatDelegate.setDefaultNightMode(themeMode())   // se il tema cambia, l'activity si ricrea da sola
+        refreshAdmin()
+    }
+
+    // --- Playlist (nella scheda Admin) ---
 
     private fun refreshPlaylists() {
+        adminList.addView(tv("Playlist", 20f, c(MR.attr.colorOnSurface), true).apply {
+            setPadding(dp(4), dp(28), 0, dp(4))
+        })
+        adminList.addView(
+            tv("Gli indirizzi M3U da cui l'app legge i canali.", 13f, c(MR.attr.colorOnSurfaceVariant))
+                .apply { setPadding(dp(4), 0, dp(4), dp(8)) }
+        )
+        adminList.addView(
+            outlinedBtn("Aggiungi playlist") { addPlaylistDialog() }.apply {
+                icon = ContextCompat.getDrawable(context, R.drawable.ic_add)
+                iconTint = ColorStateList.valueOf(c(MR.attr.colorPrimary))
+                iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
+            },
+            LinearLayout.LayoutParams(WRAP, WRAP)
+        )
         val l = loadPlaylists()
-        if (l.isEmpty()) adminList.addView(tv("Nessuna playlist.", 14f, c(MR.attr.colorOnSurfaceVariant)))
+        if (l.isEmpty()) adminList.addView(
+            tv("Nessuna playlist.", 14f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(dp(4), dp(12), 0, 0) }
+        )
         l.forEachIndexed { i, u ->
             adminList.addView(itemCard(u, null, false, null) {
                 confirmDelete(u) {
