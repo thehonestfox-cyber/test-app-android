@@ -15,6 +15,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -530,17 +531,7 @@ class MainActivity : AppCompatActivity() {
         val b = ExoPlayer.Builder(this, rf)
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
         if (light) b.setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(5000, 15000, 1500, 3000).build())
-        val p = b.build()
-        if (!light) {
-            // niente 4K / flussi più grandi dello schermo (max 1080p): il telefono non fa fatica a decodificarli
-            val dm = resources.displayMetrics
-            val big = maxOf(dm.widthPixels, dm.heightPixels)
-            val small = minOf(dm.widthPixels, dm.heightPixels)
-            p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
-                .setMaxVideoSize(minOf(big, 1920), minOf(small, 1080))
-                .build()
-        }
-        return p
+        return b.build()   // qualità lasciata di default; solo il multi-schermo la riduce (vedi MultiView)
     }
 
     private fun setupPlayer() {
@@ -1466,7 +1457,11 @@ class MainActivity : AppCompatActivity() {
 
     // Evidenziazione ben visibile (anello + sfondo colorato) per pulsanti, chip e righe quando hanno il focus
     private fun <T : View> T.ring(radiusDp: Int): T {
-        foreground = focusRingDrawable(c(MR.attr.colorPrimary), dp(3), false, dp(radiusDp).toFloat(), fill = true)
+        val d = focusRingDrawable(c(MR.attr.colorPrimary), dp(3), false, dp(radiusDp).toFloat(), fill = true)
+        // i pulsanti Material hanno margini interni (inset) sopra/sotto: l'anello li segue, così combacia col pulsante
+        foreground = if (this is MaterialButton) InsetDrawable(d, 0, insetTop, 0, insetBottom) else d
+        // i chip hanno un'area di tocco più grande del chip: la tolgo, così l'anello è grande quanto il chip
+        if (this is Chip) setEnsureMinTouchTargetSize(false)
         return this
     }
 

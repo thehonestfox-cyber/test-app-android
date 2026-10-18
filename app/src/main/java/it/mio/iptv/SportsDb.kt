@@ -99,10 +99,49 @@ object SportsDb {
             c.disconnect()
         }
         val j = JSONObject(text)
-        val arr = j.optJSONArray("events") ?: j.optJSONArray("event")
+        val arr = j.optJSONArray("events") ?: j.optJSONArray("event") ?: j.optJSONArray("results")
         if (arr == null) emptyList() else List(arr.length()) { arr.getJSONObject(it) }
     } catch (_: Exception) {
         null   // errore di rete: non va messo in cache
+    }
+
+    // ---- squadre: per le partite che non stanno nell'elenco del giorno (es. Serie C) ----
+
+    private val teamIds = ConcurrentHashMap<String, String>()   // nome normalizzato -> idTeam ("" = non trovata)
+
+    private fun teamId(name: String): String? {
+        val key = norm(name)
+        if (key.isEmpty()) return null
+        teamIds[key]?.let { return it.ifEmpty { null } }
+        return try {
+            val c = (URL(API + "searchteams.php?t=" + URLEncoder.encode(name, "UTF-8")).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+            }
+            val text = try {
+                c.inputStream.bufferedReader().use { it.readText() }
+            } finally {
+                c.disconnect()
+            }
+            val arr = JSONObject(text).optJSONArray("teams")
+            var best = ""
+            var bestScore = 0
+            if (arr != null) for (i in 0 until arr.length()) {
+                val t = arr.getJSONObject(i)
+                if (!t.optString("strSport", "").equals("Soccer", ignoreCase = true)) continue
+                var s = sc(norm(t.optString("strTeam", "")), key)
+                if (s == 0) continue
+                if (t.optString("strCountry", "").equals("Italy", ignoreCase = true)) s += 1   // meglio le squadre italiane
+                if (s > bestScore) {
+                    best = t.optString("idTeam", "")
+                    bestScore = s
+                }
+            }
+            teamIds[key] = best
+            best.ifEmpty { null }
+        } catch (_: Exception) {
+            null   // errore di rete: si riprova la prossima volta
+        }
     }
 
     private fun fresh(d: Day) =
@@ -203,6 +242,12 @@ object SportsDb {
         // 2) ricerca per nome, ma solo partite di questi giorni
         for (q in listOf("${a}_vs_${b}", "${b}_vs_${a}")) {
             val ev = get("searchevents.php?e=" + URLEncoder.encode(q.replace(' ', '_'), "UTF-8")) ?: continue
+            pick(ev, a, b)?.let { return it }
+        }
+        // 3) prossime e ultime partite di ciascuna squadra (copre anche le serie minori, come la Serie C)
+        for (name in listOf(a, b)) {
+            val id = teamId(name) ?: continue
+            val ev = (get("eventsnext.php?id=$id") ?: emptyList()) + (get("eventslast.php?id=$id") ?: emptyList())
             pick(ev, a, b)?.let { return it }
         }
         return null

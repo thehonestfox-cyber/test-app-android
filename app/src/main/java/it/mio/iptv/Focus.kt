@@ -34,12 +34,7 @@ fun MaterialCardView.setMarked(on: Boolean) {
  * Con il tocco non cambia nulla.
  */
 fun MaterialCardView.enableFocusRing() {
-    onFocusChangeListener = View.OnFocusChangeListener { v, focused ->
-        (v as MaterialCardView).updateStroke()
-        // leggero ingrandimento: col telecomando si vede subito quale card è selezionata
-        val z = if (focused) 1.02f else 1f
-        v.animate().scaleX(z).scaleY(z).setDuration(120).start()
-    }
+    onFocusChangeListener = View.OnFocusChangeListener { v, _ -> (v as MaterialCardView).updateStroke() }
 }
 
 /** Anello di focus per pulsanti rotondi o rettangoli (da usare come foreground). */
