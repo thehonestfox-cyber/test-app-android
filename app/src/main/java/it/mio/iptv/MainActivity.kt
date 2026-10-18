@@ -168,6 +168,9 @@ class MainActivity : AppCompatActivity() {
     private var nightApplied = 0              // modalità chiaro/scuro con cui sono costruite le schermate
     private val collapsedCats = mutableSetOf<String>()   // categorie chiuse (sezione/nome) nella gestione admin
     private var lastLand: Boolean? = null
+    private val multi = MultiState()                      // multi-schermo (BETA) nelle sezioni "eventi live"
+    private var multiOverlay: MultiPlayerOverlay? = null  // schermata con i player affiancati (null = chiusa)
+    private var liveHeader: LinearLayout? = null          // intestazione della sezione live con i controlli multi-schermo
 
     // ---------- Avvio ----------
 
@@ -191,6 +194,7 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
+                    multiOverlay != null -> closeMulti()
                     fullscreen -> setFullscreen(false)
                     currentView === adminView && adminTab == 1 && adminEditing != null -> {
                         adminEditing = null
@@ -206,17 +210,27 @@ class MainActivity : AppCompatActivity() {
         buildHome()
         buildUser()
         buildAdmin()
-        // Dopo il cambio tema l'activity si ricrea: se eri nelle Impostazioni ci torni
-        if (savedInstanceState?.getBoolean("admin") == true) {
-            adminTab = savedInstanceState.getInt("adminTab", 0)
-            showAdmin()
-        } else show(homeView)
+        // Se l'activity viene ricreata (es. cambio tema deciso dal sistema) torni dove eri:
+        // nelle Impostazioni (con la sezione che stavi modificando) o nella sezione che guardavi.
+        val saved = savedInstanceState
+        when {
+            saved != null && saved.getBoolean("admin") -> {
+                adminTab = saved.getInt("adminTab", 0)
+                adminEditing = saved.getString("adminEditing")
+                showAdmin(resetEditing = false)
+            }
+            saved != null && saved.getBoolean("user") -> showUser(saved.getString("userSection"))
+            else -> show(homeView)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean("admin", currentView === adminView)
         outState.putInt("adminTab", adminTab)
+        outState.putString("adminEditing", adminEditing)
+        outState.putBoolean("user", currentView === userView)
+        outState.putString("userSection", userSection)
     }
 
     private fun nightNow() = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
@@ -236,20 +250,30 @@ class MainActivity : AppCompatActivity() {
             isAppearanceLightStatusBars = !night
             isAppearanceLightNavigationBars = !night
         }
-        val keep = currentView
+        // Da leggere PRIMA di ricostruire: dopo buildHome/buildUser/buildAdmin le schermate sono oggetti nuovi
+        // (confrontarle dopo faceva sempre cadere nel "else" e riportava alla home).
+        val wasAdmin = currentView === adminView
+        val wasUser = currentView === userView
+        val section = userSection
+        val playing = currentChannel
         (playerBox.parent as? ViewGroup)?.removeView(playerBox)   // il player resta lo stesso
         buildHome()
         buildUser()
         buildAdmin()
         lastLand = null
-        if (keep === adminView) {
-            applyAdminLayout()
-            adminTabs.getTabAt(adminTab)?.select()
-            refreshAdmin()
-            show(adminView)
-        } else {
-            refreshHome()
-            show(homeView)
+        when {
+            wasAdmin -> {
+                applyAdminLayout()
+                adminTabs.getTabAt(adminTab)?.select()
+                refreshAdmin()
+                show(adminView)
+            }
+            // sezione/lista che stavi guardando: stessa sezione, stesso canale in riproduzione (il player non si ferma)
+            wasUser -> showUser(section, playing)
+            else -> {
+                refreshHome()
+                show(homeView)
+            }
         }
     }
 
@@ -264,7 +288,7 @@ class MainActivity : AppCompatActivity() {
         super.onConfigurationChanged(newConfig)
         // Cambio chiaro/scuro (anche dal sistema): senza ricreare l'activity
         if (nightNow() != nightApplied) {
-            if (currentView === userView) recreate() else applyThemeInPlace()
+            applyThemeInPlace()
             return
         }
         if (currentView === userView) applyUserLayout()
@@ -314,6 +338,7 @@ class MainActivity : AppCompatActivity() {
     private fun show(v: View) {
         root.removeAllViews()
         root.addView(v, ViewGroup.LayoutParams(MATCH, MATCH))
+        multiOverlay?.let { root.addView(it, ViewGroup.LayoutParams(MATCH, MATCH)) }   // il multi-schermo resta sopra
         currentView = v
         updatePip()
     }
@@ -340,7 +365,7 @@ class MainActivity : AppCompatActivity() {
     // Card Material 3 usata per le righe di canali e playlist
     private fun itemCard(
         title: String, sub: String?, selected: Boolean,
-        onClick: (() -> Unit)?, onDelete: (() -> Unit)?
+        onClick: (() -> Unit)?, onEdit: (() -> Unit)? = null, onDelete: (() -> Unit)?
     ): View {
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -357,6 +382,10 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(12), dp(8), dp(12))
             addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
+            if (onEdit != null) addView(
+                iconBtn(R.drawable.ic_edit, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { onEdit() },
+                LinearLayout.LayoutParams(dp(44), dp(44))
+            )
             if (onDelete != null) addView(
                 iconBtn(R.drawable.ic_delete, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { onDelete() },
                 LinearLayout.LayoutParams(dp(44), dp(44))
@@ -451,6 +480,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun goHome() {
         player.stop()
+        if (multiOverlay != null) closeMulti()
+        multi.reset()   // i player del multi-schermo si svuotano (il numero scelto resta)
         if (fullscreen) setFullscreen(false)
         currentChannel = null
         refreshHome()
@@ -459,16 +490,21 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- Player in stile YouTube ----------
 
-    private fun setupPlayer() {
+    // Un nuovo ExoPlayer con le stesse impostazioni di rete (serve anche ai player del multi-schermo).
+    private fun newExo(): ExoPlayer {
         // User-Agent da lettore IPTV: molti server rifiutano quello di default.
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15000)
             .setReadTimeoutMs(15000)
-        player = ExoPlayer.Builder(this)
+        return ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
             .build()
+    }
+
+    private fun setupPlayer() {
+        player = newExo()
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) = onError(error)
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -801,18 +837,21 @@ class MainActivity : AppCompatActivity() {
 
     // Primo tocco: seleziona e riproduce. Tocco sul canale già selezionato: schermo intero.
     private fun onChannelTap(ch: Channel) {
-        if (userLive) {
+        if (userLive && multi.count > 1) {
+            assignToMulti(ch)   // multi-schermo: l'evento va nel player evidenziato
+        } else if (userLive) {
             playChannel(ch)
             setFullscreen(true)
         } else if (currentChannel?.url == ch.url) setFullscreen(true) else playChannel(ch)
     }
 
-    private fun showUser(section: String?) {
+    // keepPlaying: dopo un cambio tema si rimette la schermata com'era, senza fermare il canale in riproduzione
+    private fun showUser(section: String?, keepPlaying: Channel? = null) {
         userSection = section
         val live = section?.let { id -> Sections.load(prefs).firstOrNull { it.id == id } }?.isLive == true
         userLive = live
         loadGen++
-        currentChannel = null
+        currentChannel = keepPlaying
         nowTitle.text = if (live) "Scegli un evento" else "Scegli un canale"
         chipScroll.visibility = if (live) View.GONE else View.VISIBLE
         searchField.visibility = if (live) View.GONE else View.VISIBLE
@@ -828,6 +867,7 @@ class MainActivity : AppCompatActivity() {
         setChannels(emptyList())   // via subito i canali dell'altra sezione
         listStatus.text = ""
         applyUserLayout()
+        if (keepPlaying != null) showNowPlaying(keepPlaying)
         if (section != null) loadFeatured(section) else loadAllChannels()
         show(userView)
     }
@@ -904,6 +944,10 @@ class MainActivity : AppCompatActivity() {
     private fun buildLive(cats: List<FeaturedCategory>) {
         liveBox.removeAllViews()
         liveCards.clear()
+        val header = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        liveHeader = header
+        liveBox.addView(header, LinearLayout.LayoutParams(MATCH, WRAP))
+        refreshLiveHeader()
         cats.filter { it.channels.isNotEmpty() }.forEach { cat ->
             liveBox.addView(tv(cat.name, 20f, c(MR.attr.colorOnSurface), true).apply {
                 setPadding(dp(4), dp(16), dp(4), dp(8))
@@ -923,12 +967,190 @@ class MainActivity : AppCompatActivity() {
         liveSelect(currentChannel?.url)
     }
 
-    // Evidenzia la card dell'evento in riproduzione
+    // Evidenzia la card dell'evento in riproduzione (con più player: tutti gli eventi assegnati ai player)
     private fun liveSelect(url: String?) {
+        val picked: Set<String> =
+            if (multi.count > 1) multi.active().map { it.url }.toSet() else setOfNotNull(url)
         liveCards.forEach { (card, u) ->
             card.strokeColor = c(MR.attr.colorPrimary)
-            card.strokeWidth = if (u == url) dp(2) else 0
+            card.strokeWidth = if (u in picked) dp(2) else 0
         }
+    }
+
+    // ---------- Multi-schermo (BETA): da 1 a 4 player insieme, con l'audio di uno solo ----------
+
+    private fun refreshLiveHeader() {
+        val h = liveHeader ?: return
+        h.removeAllViews()
+        val onS = c(MR.attr.colorOnSurface)
+        val onV = c(MR.attr.colorOnSurfaceVariant)
+        val ctx = this
+
+        h.addView(LinearLayout(ctx).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(4), dp(12), dp(4), 0)
+            addView(tv("Multi-schermo", 16f, onS, true))
+            addView(TextView(ctx).apply {
+                text = "BETA"
+                textSize = 10f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(Color.WHITE)
+                setPadding(dp(6), dp(2), dp(6), dp(2))
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(6).toFloat()
+                    setColor(0xFFFB8C00.toInt())
+                }
+            }, LinearLayout.LayoutParams(WRAP, WRAP).apply { leftMargin = dp(8) })
+        })
+
+        val chips = ChipGroup(ctx).apply {
+            isSingleSelection = true
+            isSelectionRequired = true
+            setPadding(dp(4), 0, dp(4), 0)
+        }
+        for (n in 1..MultiState.MAX) {
+            chips.addView(Chip(ctx).apply {
+                id = View.generateViewId()
+                text = if (n == 1) "1 player" else "$n player"
+                isCheckable = true
+                isChecked = n == multi.count
+                setOnCheckedChangeListener { _, checked ->
+                    if (checked && n != multi.count) setMultiCount(n)
+                }
+            })
+        }
+        h.addView(chips, LinearLayout.LayoutParams(WRAP, WRAP))
+
+        if (multi.count > 1) {
+            h.addView(
+                tv(
+                    "Tocca un evento per metterlo nel player evidenziato. Tocca l'altoparlante per scegliere l'audio, " +
+                        "tieni premuto un player per svuotarlo.",
+                    13f, onV
+                ).apply { setPadding(dp(4), dp(4), dp(4), dp(8)) }
+            )
+            val row = LinearLayout(ctx)
+            for (i in 0 until multi.count) {
+                row.addView(
+                    multiSlotCard(i),
+                    LinearLayout.LayoutParams(0, WRAP, 1f).apply { rightMargin = if (i < multi.count - 1) dp(8) else 0 }
+                )
+            }
+            h.addView(row, LinearLayout.LayoutParams(MATCH, WRAP))
+            h.addView(
+                MaterialButton(ctx).apply {
+                    text = "Guarda"
+                    icon = ContextCompat.getDrawable(ctx, R.drawable.ic_play)
+                    iconTint = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
+                    iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
+                    isEnabled = multi.active().isNotEmpty()
+                    setOnClickListener { openMulti() }
+                },
+                LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) }
+            )
+        }
+    }
+
+    // Riquadro di un player nella lista: evidenziato se è quello che riceverà il prossimo evento
+    private fun multiSlotCard(i: Int): View {
+        val ch = multi.slots[i]
+        val target = i == multi.target
+        val onC = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurface)
+        val onV = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurfaceVariant)
+        val hasAudio = ch != null && i == multi.audio
+        val speaker = ImageView(this).apply {
+            setImageResource(if (hasAudio) R.drawable.ic_volume_on else R.drawable.ic_volume_off)
+            imageTintList = ColorStateList.valueOf(if (hasAudio) c(MR.attr.colorPrimary) else onV)
+            visibility = if (ch != null) View.VISIBLE else View.INVISIBLE
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+            setOnClickListener {
+                multi.audio = i
+                refreshLiveHeader()
+            }
+        }
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(tv("Player ${i + 1}", 12f, onV))
+            addView(tv(ch?.name ?: "Vuoto", 14f, onC, true).apply {
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            })
+        }
+        val row = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(10), dp(8), dp(4), dp(8))
+            addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
+            addView(speaker, LinearLayout.LayoutParams(dp(28), dp(28)))
+        }
+        return MaterialCardView(this).apply {
+            radius = dp(12).toFloat()
+            cardElevation = 0f
+            setCardBackgroundColor(c(if (target) MR.attr.colorPrimaryContainer else MR.attr.colorSurfaceVariant))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                multi.target = i
+                refreshLiveHeader()
+            }
+            setOnLongClickListener {
+                if (multi.slots[i] != null) {
+                    multi.clear(i)
+                    refreshLiveHeader()
+                    liveSelect(null)
+                }
+                true
+            }
+            addView(row)
+        }
+    }
+
+    private fun setMultiCount(n: Int) {
+        multi.changeCount(n)
+        // il ridisegno avviene dopo la callback del chip (non si tolgono viste mentre il chip sta cambiando)
+        ui.post {
+            refreshLiveHeader()
+            liveSelect(null)
+        }
+    }
+
+    private fun assignToMulti(ch: Channel) {
+        multi.assign(ch)
+        refreshLiveHeader()
+        liveSelect(null)
+    }
+
+    // Eventi tra cui scegliere dentro la schermata multi-schermo: quelli della sezione aperta
+    private fun multiChoices(): List<Channel> =
+        userSection?.let { s -> Featured.load(prefs, s).flatMap { it.channels } } ?: emptyList()
+
+    private fun openMulti() {
+        if (multiOverlay != null) return
+        if (multi.active().isEmpty()) {
+            toast("Scegli almeno un evento")
+            return
+        }
+        player.stop()
+        currentChannel = null
+        val o = MultiPlayerOverlay(this, multi, { newExo() }, { multiChoices() }, { closeMulti() })
+        multiOverlay = o
+        root.addView(o, ViewGroup.LayoutParams(MATCH, MATCH))
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        val ctl = WindowInsetsControllerCompat(window, window.decorView)
+        ctl.hide(WindowInsetsCompat.Type.systemBars())
+        ctl.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        updatePip()
+    }
+
+    private fun closeMulti() {
+        val o = multiOverlay ?: return
+        multiOverlay = null
+        o.release()
+        root.removeView(o)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
+        refreshLiveHeader()
+        liveSelect(null)
+        updatePip()
     }
 
     // Carica le playlist in background: mostra subito quanto è già salvato (memoria/disco),
@@ -1042,17 +1264,22 @@ class MainActivity : AppCompatActivity() {
         channelAdapter.submit(rowsOf(filtered, categories))
     }
 
-    private fun playChannel(ch: Channel) {
-        currentChannel = ch
+    // Mostra nell'interfaccia il canale scelto (titolo, logo, evidenziazione), senza toccare il player
+    private fun showNowPlaying(ch: Channel) {
         nowTitle.text = ch.name
         nowSub.text = "Diretta · ${ch.category}" + if (ch.quality.isNotEmpty()) " · ${ch.quality}" else ""
         titleView.text = ch.name
         setError("")
         nowLogo.visibility = View.VISIBLE
         loadChannelLogo(nowLogo, ch)
-        spinner.visibility = View.VISIBLE
         channelAdapter.select(ch.url)
         liveSelect(ch.url)
+    }
+
+    private fun playChannel(ch: Channel) {
+        currentChannel = ch
+        showNowPlaying(ch)
+        spinner.visibility = View.VISIBLE
         showControls()
         currentUrl = ch.url
         triedHls = ch.url.contains(".m3u8", ignoreCase = true)
@@ -1142,9 +1369,9 @@ class MainActivity : AppCompatActivity() {
         adminHeader.addView(adminTabs, LinearLayout.LayoutParams(MATCH, WRAP))
     }
 
-    private fun showAdmin() {
+    private fun showAdmin(resetEditing: Boolean = true) {
         applyAdminLayout()
-        adminEditing = null
+        if (resetEditing) adminEditing = null
         adminTabs.getTabAt(adminTab)?.select()
         refreshAdmin()
         show(adminView)
@@ -1181,7 +1408,7 @@ class MainActivity : AppCompatActivity() {
         })
         adminList.addView(
             tv(
-                "Tocca una sezione per gestire categorie e canali. Tieni premuto per cambiarne nome, icona o descrizione.",
+                "Tocca una sezione per gestire categorie e canali. Con la matita (o tenendo premuto) cambi nome, icona, descrizione e tipo.",
                 13f, c(MR.attr.colorOnSurfaceVariant)
             ).apply { setPadding(dp(4), 0, dp(4), dp(8)) }
         )
@@ -1200,7 +1427,12 @@ class MainActivity : AppCompatActivity() {
             }
             val unit = if (sec.isLive) "eventi" else "canali"
             val sub = if (sec.description.isBlank()) "$n $unit" else "${sec.description} · $n $unit"
-            val card = itemCard(sec.name, sub, false, { adminEditing = sec.id; refreshAdmin() }, del)
+            val card = itemCard(
+                title = sec.name, sub = sub, selected = false,
+                onClick = { adminEditing = sec.id; refreshAdmin() },
+                onEdit = { sectionDialog(i) },
+                onDelete = del
+            )
             card.setOnLongClickListener {
                 sectionDialog(i)
                 true
@@ -1228,17 +1460,25 @@ class MainActivity : AppCompatActivity() {
         var icon = cur?.icon ?: Sections.ICONS.first().first
         val label = tv("Icona", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(8)) }
         val picker = iconPicker(icon) { icon = it }
-        // Il tipo si sceglie solo alla creazione
+        // Il tipo si può cambiare anche dopo: categorie e canali restano gli stessi, cambia solo come si vedono
         val typeLabel = tv("Tipo di sezione", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(4)) }
-        val radioChannels = MaterialRadioButton(this).apply { id = View.generateViewId(); text = "Lista di canali"; isChecked = true }
-        val radioLive = MaterialRadioButton(this).apply { id = View.generateViewId(); text = "Eventi live" }
+        val radioChannels = MaterialRadioButton(this).apply {
+            id = View.generateViewId(); text = "Lista di canali"; isChecked = cur?.isLive != true
+        }
+        val radioLive = MaterialRadioButton(this).apply {
+            id = View.generateViewId(); text = "Eventi live"; isChecked = cur?.isLive == true
+        }
         val typeGroup = android.widget.RadioGroup(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(radioChannels)
             addView(radioLive)
         }
         val body = mutableListOf<View>(til, tilDesc)
-        if (cur == null) { body.add(typeLabel); body.add(typeGroup) }
+        body.add(typeLabel)
+        body.add(typeGroup)
+        if (cur != null) body.add(
+            tv("Cambiando tipo restano le stesse categorie e gli stessi elementi.", 12f, c(MR.attr.colorOnSurfaceVariant))
+        )
         body.add(label)
         body.add(picker)
         showDialog(
@@ -1255,7 +1495,10 @@ class MainActivity : AppCompatActivity() {
                         if (cur == null) list.add(
                             Section(Sections.newId(), n, icon, desc, if (radioLive.isChecked) Section.LIVE else Section.CHANNELS)
                         )
-                        else list[index!!] = cur.copy(name = n, icon = icon, description = desc)
+                        else list[index!!] = cur.copy(
+                            name = n, icon = icon, description = desc,
+                            type = if (radioLive.isChecked) Section.LIVE else Section.CHANNELS
+                        )
                         Sections.save(prefs, list)
                         refreshAdmin()
                     }
@@ -1475,16 +1718,21 @@ class MainActivity : AppCompatActivity() {
                 )
             }
             cat.channels.forEachIndexed { j, ch ->
-                val card = itemCard(ch.name, ch.rawName.takeIf { it != ch.name }, false, { renameChannelDialog(i, j) }) {
-                    confirmDelete(ch.name) {
-                        Featured.edit(prefs, adminSection) { l ->
-                            l.getOrNull(i)?.let { cat0 ->
-                                l[i] = cat0.copy(channels = cat0.channels.filterIndexed { k, _ -> k != j })
+                val card = itemCard(
+                    title = ch.name, sub = ch.rawName.takeIf { it != ch.name }, selected = false,
+                    onClick = { editChannelDialog(i, j) },
+                    onEdit = { editChannelDialog(i, j) },
+                    onDelete = {
+                        confirmDelete(ch.name) {
+                            Featured.edit(prefs, adminSection) { l ->
+                                l.getOrNull(i)?.let { cat0 ->
+                                    l[i] = cat0.copy(channels = cat0.channels.filterIndexed { k, _ -> k != j })
+                                }
                             }
+                            refreshAdmin()
                         }
-                        refreshAdmin()
                     }
-                }
+                )
                 adminList.addView(card)
             }
         }
@@ -1592,29 +1840,63 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun renameChannelDialog(ci: Int, ji: Int) {
-        val ch = Featured.load(prefs, adminSection).getOrNull(ci)?.channels?.getOrNull(ji) ?: return
+    // Modifica di un canale/evento già aggiunto: nome, indirizzo del flusso e categoria
+    private fun editChannelDialog(ci: Int, ji: Int) {
+        val cats = Featured.load(prefs, adminSection)
+        val ch = cats.getOrNull(ci)?.channels?.getOrNull(ji) ?: return
         val til = field("Nome $adminNoun (se vuoto usa quello della playlist)")
         til.editText!!.setText(ch.name)
-        showDialog(
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Rinomina $adminNoun")
-                .setView(scroll(padBox(til)))
-                .setPositiveButton("Salva") { _, _ ->
-                    val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
-                    Featured.edit(prefs, adminSection) { l ->
-                        val cat = l.getOrNull(ci)
-                        if (cat != null && ji < cat.channels.size) {
-                            val chs = cat.channels.toMutableList()
-                            val old = chs[ji]
-                            chs[ji] = old.copy(name = n, logos = (old.logos + listOfNotNull(Logos.repoUrl(n))).distinct())
-                            l[ci] = cat.copy(channels = chs)
+        val tilUrl = field("Indirizzo (URL) del flusso")
+        tilUrl.editText!!.setText(ch.url)
+        val catLabel = tv("Categoria", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { setPadding(0, dp(16), 0, dp(4)) }
+        var picked = ci
+        val group = android.widget.RadioGroup(this).apply { orientation = LinearLayout.VERTICAL }
+        cats.forEachIndexed { k, cat ->
+            group.addView(MaterialRadioButton(this).apply {
+                id = View.generateViewId()
+                text = cat.name
+                isChecked = k == ci
+                setOnClickListener { picked = k }
+            })
+        }
+        val dlg = MaterialAlertDialogBuilder(this)
+            .setTitle("Modifica $adminNoun")
+            .setView(scroll(padBox(til, tilUrl, catLabel, group)))
+            .setPositiveButton("Salva", null)
+            .setNegativeButton("Annulla", null)
+            .create()
+        dlg.setOnShowListener {
+            dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                val n = til.editText!!.text.toString().trim().ifEmpty { Categorizer.clean(ch.rawName).first }
+                val u = tilUrl.editText!!.text.toString().trim()
+                if (u.isEmpty() || !u.contains("://")) {
+                    toast("Inserisci un indirizzo valido (es. http://...)")
+                    return@setOnClickListener
+                }
+                Featured.edit(prefs, adminSection) { l ->
+                    val from = l.getOrNull(ci)
+                    val dest = l.getOrNull(picked)
+                    if (from != null && dest != null && ji < from.channels.size) {
+                        val old = from.channels[ji]
+                        val logos = (old.logos + listOfNotNull(Logos.repoUrl(n))).distinct()
+                        val upd = old.copy(name = n, url = u, category = dest.name, logos = logos)
+                        if (picked == ci) {
+                            val chs = from.channels.toMutableList()
+                            chs[ji] = upd
+                            l[ci] = from.copy(channels = chs)
+                        } else {
+                            // spostato in un'altra categoria: va in fondo a quella
+                            l[ci] = from.copy(channels = from.channels.filterIndexed { k, _ -> k != ji })
+                            l[picked] = dest.copy(channels = dest.channels + upd)
                         }
                     }
-                    refreshAdmin()
                 }
-                .setNegativeButton("Annulla", null)
-        )
+                dlg.dismiss()
+                refreshAdmin()
+            }
+        }
+        dlg.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        dlg.show()
     }
 
     // Nome (facoltativo) + scelta del canale dalla playlist
@@ -1834,13 +2116,21 @@ class MainActivity : AppCompatActivity() {
         null
     }
 
+    override fun onStart() {
+        super.onStart()
+        multiOverlay?.resumeAll()
+    }
+
     override fun onStop() {
         super.onStop()
         player.pause()
+        multiOverlay?.pauseAll()
     }
 
     override fun onDestroy() {
         ui.removeCallbacksAndMessages(null)
+        multiOverlay?.release()
+        multiOverlay = null
         player.release()
         super.onDestroy()
     }
