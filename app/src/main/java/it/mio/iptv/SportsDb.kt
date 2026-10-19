@@ -9,6 +9,7 @@ import android.widget.ImageView
 import coil.imageLoader
 import coil.load
 import coil.request.ImageRequest
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -57,7 +58,7 @@ object SportsDb {
     private var app: Context? = null
 
     /** Quello che si sa di una partita: immagine (può mancare) e orario di inizio in millisecondi (0 = sconosciuto). */
-    private class Info(val thumb: String, val start: Long, val home: String = "", val away: String = "")
+    private class Info(val thumb: String, val start: Long, val home: String = "", val away: String = "", val league: String = "")
 
     private val found = ConcurrentHashMap<String, Info>()      // "nome|data" -> info
     private val misses = ConcurrentHashMap<String, Long>()     // "nome|data" -> quando è fallita
@@ -163,6 +164,72 @@ object SportsDb {
         }
     }
 
+    // ---- elenco su GitHub: thumb gia' scaricate (cartella thumbs/ del repo, creata con tools/scarica_thumb.py) ----
+
+    private const val REPO_THUMBS = "https://raw.githubusercontent.com/thehonestfox-cyber/test-app-android/main/thumbs/"
+
+    private class Entry(val h: String, val a: String, val d: String, val t: Long, val file: String, val hb: String, val ab: String, val lb: String)
+    private class RepoData(val at: Long, val items: List<Entry>)
+    @Volatile private var repo: RepoData? = null
+    @Volatile private var repoFailAt = 0L
+    private val repoLock = Any()
+
+    // Scarica l'indice una volta (poi resta in memoria 15 minuti). Una sola richiesta, non conta nel limite di TheSportsDB.
+    private fun repoItems(fail: BooleanArray): List<Entry> {
+        fun valid(r: RepoData?) = r != null && System.currentTimeMillis() - r.at < 15 * 60_000L
+        repo?.let { if (valid(it)) return it.items }
+        synchronized(repoLock) {
+            repo?.let { if (valid(it)) return it.items }
+            if (System.currentTimeMillis() - repoFailAt < 60_000L) return repo?.items ?: emptyList()
+            val text = http(REPO_THUMBS + "index.json")
+            if (text == null) {
+                repoFailAt = System.currentTimeMillis()
+                return repo?.items ?: emptyList()      // niente rete / file non ancora caricato: si usa il metodo normale
+            }
+            return try {
+                val arr = JSONArray(text)
+                val list = List(arr.length()) {
+                    val o = arr.getJSONObject(it)
+                    Entry(o.optString("h", ""), o.optString("a", ""), o.optString("d", ""), o.optLong("t", 0L),
+                        o.optString("f", ""), o.optString("hb", ""), o.optString("ab", ""), o.optString("lb", ""))
+                }
+                repo = RepoData(System.currentTimeMillis(), list)
+                list
+            } catch (_: Exception) {
+                repoFailAt = System.currentTimeMillis()
+                emptyList()
+            }
+        }
+    }
+
+    // La partita dell'elenco su GitHub che corrisponde alle due squadre (vicina a oggi, anche con casa/trasferta invertiti)
+    private fun repoPick(items: List<Entry>, a: String, b: String): Info? {
+        val na = norm(a)
+        val nb = norm(b)
+        val today = LocalDate.now()
+        var best: Entry? = null
+        var bestScore = 0
+        var bestDist = Long.MAX_VALUE
+        for (e in items) {
+            val h = norm(e.h)
+            val aw = norm(e.a)
+            val d1 = sc(h, na); val d2 = sc(aw, nb)
+            val s1 = sc(h, nb); val s2 = sc(aw, na)
+            val score = maxOf(if (d1 > 0 && d2 > 0) d1 + d2 else 0, if (s1 > 0 && s2 > 0) s1 + s2 else 0)
+            if (score == 0) continue
+            val dist = try {
+                Math.abs(ChronoUnit.DAYS.between(today, LocalDate.parse(e.d)))
+            } catch (_: Exception) {
+                Long.MAX_VALUE
+            }
+            if (dist > WINDOW_DAYS) continue
+            if (score > bestScore || (score == bestScore && dist < bestDist)) {
+                best = e; bestScore = score; bestDist = dist
+            }
+        }
+        return best?.let { Info(if (it.file.isNotEmpty()) REPO_THUMBS + it.file else "", it.t, it.hb, it.ab, it.lb) }
+    }
+
     // ---- campionati interi (es. Serie C): prossime + ultime partite, in cache per tutte le card ----
 
     private class LeagueData(val at: Long, val events: List<JSONObject>)
@@ -264,6 +331,7 @@ object SportsDb {
     private fun sc(a: String, b: String): Int {
         if (a.isEmpty() || b.isEmpty()) return 0
         if (a == b) return 2
+        if (a.replace(" ", "") == b.replace(" ", "")) return 2   // "ostia mare" = "ostiamare"
         val wa = a.split(' ').toSet()
         val wb = b.split(' ').toSet()
         return if (wa.containsAll(wb) || wb.containsAll(wa)) 1 else 0
@@ -325,7 +393,7 @@ object SportsDb {
                 bestDist = dist
             }
         }
-        return best?.let { Info(thumbOf(it), startOf(it), badgeOf(it, "strHomeTeamBadge"), badgeOf(it, "strAwayTeamBadge")) }
+        return best?.let { Info(thumbOf(it), startOf(it), badgeOf(it, "strHomeTeamBadge"), badgeOf(it, "strAwayTeamBadge"), badgeOf(it, "strLeagueBadge")) }
     }
 
     private fun lookup(eventName: String, fail: BooleanArray): Info? {
@@ -336,6 +404,11 @@ object SportsDb {
         }
         val (a, b) = teams(eventName) ?: return res("non è una partita", null)
         val today = LocalDate.now()
+        // 0) elenco gia' pronto su GitHub (thumb scaricate in anticipo): una sola richiesta, immediato
+        run {
+            val r = repoPick(repoItems(fail), a, b)
+            if (r != null && (r.thumb.isNotEmpty() || r.home.isNotEmpty() || r.away.isNotEmpty())) return res("elenco GitHub", r)
+        }
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
         val nearby = pmap((-1L..1L).toList()) { day(today.plusDays(it)) }.flatten()   // i 3 giorni insieme
         if ((-1L..1L).any { days[today.plusDays(it)] == null }) fail[0] = true
@@ -364,7 +437,7 @@ object SportsDb {
     private fun decode(v: String?): Info? {
         if (v == null || v.indexOf('\t') < 0) return null
         val p = v.split('\t')
-        return Info(p[1], p[0].toLongOrNull() ?: 0L, p.getOrElse(2) { "" }, p.getOrElse(3) { "" })
+        return Info(p[1], p[0].toLongOrNull() ?: 0L, p.getOrElse(2) { "" }, p.getOrElse(3) { "" }, p.getOrElse(4) { "" })
     }
 
     // Chi aspetta il risultato di una ricerca già partita (card e precaricamento non cercano due volte la stessa partita)
@@ -375,6 +448,19 @@ object SportsDb {
         if (url.isNotEmpty()) a.imageLoader.enqueue(ImageRequest.Builder(a).data(sized(url)).build())   // scarica l'immagine in anticipo
     }
 
+    // Usa le thumb ricreate dagli stemmi (true) oppure l'immagine originale della partita quando c'e' (false)
+    private const val COMPOSED = true
+
+    private fun composed(i: Info) = COMPOSED && i.home.isNotEmpty() && i.away.isNotEmpty()
+
+    private fun warmInfo(i: Info) {
+        if (composed(i)) {
+            warmBadge(i.home); warmBadge(i.away); warmBadge(i.league)
+        } else {
+            warm(i.thumb); warmBadge(i.home); warmBadge(i.away)
+        }
+    }
+
     private fun warmBadge(url: String) {
         val a = app ?: return
         if (url.isNotEmpty()) a.imageLoader.enqueue(ImageRequest.Builder(a).data(sized(url, "small")).build())
@@ -382,8 +468,10 @@ object SportsDb {
 
     /** Stemma di una squadra (versione ridotta) in un ImageView. */
     fun loadBadge(iv: ImageView, url: String) {
-        iv.load(sized(url, "small"))
+        iv.load(badgeUrl(url))
     }
+
+    fun badgeUrl(url: String): String = sized(url, "small")
 
     /** Dà l'info (se la trova) a [cb] sul thread principale; senza [cb] serve solo a riscaldare cache e immagine. */
     private fun request(ch: Channel, k: String, cb: ((Info) -> Unit)?, attempt: Int = 0) {
@@ -391,9 +479,7 @@ object SportsDb {
         if (known != null) {
             found[k] = known
             if (cb != null) cb(known) else {
-                warm(known.thumb)
-                warmBadge(known.home)
-                warmBadge(known.away)
+                warmInfo(known)
             }
             return
         }
@@ -424,10 +510,8 @@ object SportsDb {
             }
             if (info != null) {
                 found[k] = info
-                prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}\t${info.home}\t${info.away}")?.apply()
-                warm(info.thumb)
-                warmBadge(info.home)
-                warmBadge(info.away)
+                prefs?.edit()?.putString(k, "${info.start}\t${info.thumb}\t${info.home}\t${info.away}\t${info.league}")?.apply()
+                warmInfo(info)
             } else {
                 // errore di rete / limite di richieste: si riprova tra 20 secondi invece che tra 5 minuti
                 misses[k] = if (fail[0]) System.currentTimeMillis() - MISS_RETRY_MS + 20_000L else System.currentTimeMillis()
@@ -467,15 +551,15 @@ object SportsDb {
     fun loadThumb(
         iv: ImageView, ch: Channel,
         onFound: (() -> Unit)? = null, onFail: (() -> Unit)? = null, onStart: ((Long) -> Unit)? = null,
-        onBadges: ((String, String) -> Unit)? = null
+        onBadges: ((String, String, String) -> Unit)? = null
     ) {
         val k = "${ch.name}|${LocalDate.now()}"
         fun show(info: Info) {
             if (iv.tag != ch.url) return
             if (info.start > 0) onStart?.invoke(info.start)
-            if (info.thumb.isEmpty()) {
-                // niente immagine della partita (succede spesso in Serie C): si mostrano gli stemmi delle due squadre
-                if (info.home.isNotEmpty() || info.away.isNotEmpty()) onBadges?.invoke(info.home, info.away)
+            if (composed(info) || info.thumb.isEmpty()) {
+                // thumb ricreata con stemmi delle squadre e logo del campionato (anche quando manca l'immagine della partita)
+                if (info.home.isNotEmpty() || info.away.isNotEmpty()) onBadges?.invoke(info.home, info.away, info.league)
                 return
             }
             onFound?.invoke()
