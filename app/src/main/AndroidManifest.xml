@@ -11,7 +11,7 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:banner="@drawable/tv_banner"
-        android:label="IPTV Player"
+        android:label="PEZ8"
         android:theme="@style/Theme.IPTV"
         android:usesCleartextTraffic="true">
         <activity

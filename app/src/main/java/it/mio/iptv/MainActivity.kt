@@ -464,7 +464,7 @@ class MainActivity : AppCompatActivity() {
     private fun buildHome() {
         // Barra fissa in alto con il nome dell'app (fuori dalle sezioni)
         val bar = MaterialToolbar(this).apply {
-            title = "IPTV Player"
+            title = "PEZ8"
             setNavigationIcon(R.drawable.ic_tv)
             setNavigationIconTint(c(MR.attr.colorPrimary))
             setTitleTextColor(c(MR.attr.colorOnSurface))
