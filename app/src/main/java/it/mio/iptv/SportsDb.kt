@@ -164,34 +164,46 @@ object SportsDb {
         }
     }
 
-    // ---- elenco su GitHub: thumb gia' scaricate (cartella thumbs/ del repo, creata con tools/scarica_thumb.py) ----
+    // ---- stemmi dal repo GitHub: github.com/fp-pez8/pez8-images ----
+    // index.json = elenco dei campionati con le squadre e il file dello stemma di ognuna (cartella/squadre/Nome.png)
 
-    private const val REPO_THUMBS = "https://raw.githubusercontent.com/thehonestfox-cyber/test-app-android/main/thumbs/"
+    private const val REPO = "https://raw.githubusercontent.com/fp-pez8/pez8-images/main/"
 
-    private class Entry(val h: String, val a: String, val d: String, val t: Long, val file: String, val hb: String, val ab: String, val lb: String)
-    private class RepoData(val at: Long, val items: List<Entry>)
+    // true = l'orario di inizio si cerca ancora su TheSportsDB (le thumb invece arrivano solo dal repo GitHub);
+    // false = nessuna richiesta a TheSportsDB (resta solo l'orario scritto a mano dall'admin)
+    private const val ORARIO_DA_THESPORTSDB = true
+
+    private class RepoTeam(val n: String, val file: String, val league: String)
+    private class RepoData(val at: Long, val teams: List<RepoTeam>)
     @Volatile private var repo: RepoData? = null
     @Volatile private var repoFailAt = 0L
     private val repoLock = Any()
+    private val repoCache = ConcurrentHashMap<String, Info>()   // nome evento -> stemmi trovati
 
-    // Scarica l'indice una volta (poi resta in memoria 15 minuti). Una sola richiesta, non conta nel limite di TheSportsDB.
-    private fun repoItems(fail: BooleanArray): List<Entry> {
+    // Scarica index.json una volta (poi resta in memoria 15 minuti)
+    private fun repoTeams(): List<RepoTeam> {
         fun valid(r: RepoData?) = r != null && System.currentTimeMillis() - r.at < 15 * 60_000L
-        repo?.let { if (valid(it)) return it.items }
+        repo?.let { if (valid(it)) return it.teams }
         synchronized(repoLock) {
-            repo?.let { if (valid(it)) return it.items }
-            if (System.currentTimeMillis() - repoFailAt < 60_000L) return repo?.items ?: emptyList()
-            val text = http(REPO_THUMBS + "index.json")
+            repo?.let { if (valid(it)) return it.teams }
+            if (System.currentTimeMillis() - repoFailAt < 60_000L) return repo?.teams ?: emptyList()
+            val text = http(REPO + "index.json")
             if (text == null) {
                 repoFailAt = System.currentTimeMillis()
-                return repo?.items ?: emptyList()      // niente rete / file non ancora caricato: si usa il metodo normale
+                return repo?.teams ?: emptyList()
             }
             return try {
                 val arr = JSONArray(text)
-                val list = List(arr.length()) {
-                    val o = arr.getJSONObject(it)
-                    Entry(o.optString("h", ""), o.optString("a", ""), o.optString("d", ""), o.optLong("t", 0L),
-                        o.optString("f", ""), o.optString("hb", ""), o.optString("ab", ""), o.optString("lb", ""))
+                val list = ArrayList<RepoTeam>()
+                for (i in 0 until arr.length()) {
+                    val l = arr.getJSONObject(i)
+                    val league = l.optString("campionato", "")
+                    val sq = l.optJSONArray("squadre") ?: continue
+                    for (j in 0 until sq.length()) {
+                        val t = sq.getJSONObject(j)
+                        val f = t.optString("file", "")
+                        if (f.isNotEmpty()) list.add(RepoTeam(norm(t.optString("nome", "")), f, league))
+                    }
                 }
                 repo = RepoData(System.currentTimeMillis(), list)
                 list
@@ -202,32 +214,40 @@ object SportsDb {
         }
     }
 
-    // La partita dell'elenco su GitHub che corrisponde alle due squadre (vicina a oggi, anche con casa/trasferta invertiti)
-    private fun repoPick(items: List<Entry>, a: String, b: String): Info? {
+    // Stemmi delle due squadre e logo del campionato, dal nome dell'evento (es. "Udinese - Lecce"); null se non li trova
+    private fun repoInfo(eventName: String): Info? {
+        repoCache[eventName]?.let { return it }
+        val (a, b) = teams(eventName) ?: return null
+        val list = repoTeams()
+        if (list.isEmpty()) return null
         val na = norm(a)
         val nb = norm(b)
-        val today = LocalDate.now()
-        var best: Entry? = null
-        var bestScore = 0
-        var bestDist = Long.MAX_VALUE
-        for (e in items) {
-            val h = norm(e.h)
-            val aw = norm(e.a)
-            val d1 = sc(h, na); val d2 = sc(aw, nb)
-            val s1 = sc(h, nb); val s2 = sc(aw, na)
-            val score = maxOf(if (d1 > 0 && d2 > 0) d1 + d2 else 0, if (s1 > 0 && s2 > 0) s1 + s2 else 0)
-            if (score == 0) continue
-            val dist = try {
-                Math.abs(ChronoUnit.DAYS.between(today, LocalDate.parse(e.d)))
-            } catch (_: Exception) {
-                Long.MAX_VALUE
-            }
-            if (dist > WINDOW_DAYS) continue
-            if (score > bestScore || (score == bestScore && dist < bestDist)) {
-                best = e; bestScore = score; bestDist = dist
-            }
+        val ca = list.filter { sc(it.n, na) > 0 }
+        val cb = list.filter { sc(it.n, nb) > 0 }
+        var home: RepoTeam? = null
+        var away: RepoTeam? = null
+        var best = 0
+        for (x in ca) for (y in cb) {
+            // meglio nome uguale (2) che parziale (1), e due squadre dello stesso campionato
+            val score = sc(x.n, na) + sc(y.n, nb) + (if (x.league == y.league) 3 else 0)
+            if (score > best) { best = score; home = x; away = y }
         }
-        return best?.let { Info(if (it.file.isNotEmpty()) REPO_THUMBS + it.file else "", it.t, it.hb, it.ab, it.lb) }
+        if (home == null && away == null) {
+            home = ca.maxByOrNull { sc(it.n, na) }
+            away = cb.maxByOrNull { sc(it.n, nb) }
+        }
+        val league = (home ?: away)?.league ?: return null
+        val info = Info("", 0L, home?.let { REPO + it.file } ?: "", away?.let { REPO + it.file } ?: "", REPO + league)
+        repoCache[eventName] = info
+        return info
+    }
+
+    // Cerca gli stemmi su un altro thread e dà il risultato a [cb] sul thread principale
+    private fun repoBadges(eventName: String, cb: (Info?) -> Unit) {
+        net.execute {
+            val r = try { repoInfo(eventName) } catch (_: Exception) { null }
+            main.post { cb(r) }
+        }
     }
 
     // ---- campionati interi (es. Serie C): prossime + ultime partite, in cache per tutte le card ----
@@ -404,11 +424,6 @@ object SportsDb {
         }
         val (a, b) = teams(eventName) ?: return res("non è una partita", null)
         val today = LocalDate.now()
-        // 0) elenco gia' pronto su GitHub (thumb scaricate in anticipo): una sola richiesta, immediato
-        run {
-            val r = repoPick(repoItems(fail), a, b)
-            if (r != null && (r.thumb.isNotEmpty() || r.home.isNotEmpty() || r.away.isNotEmpty())) return res("elenco GitHub", r)
-        }
         // 1) partite di ieri/oggi/domani (poche richieste, uguali per tutte le card)
         val nearby = pmap((-1L..1L).toList()) { day(today.plusDays(it)) }.flatten()   // i 3 giorni insieme
         if ((-1L..1L).any { days[today.plusDays(it)] == null }) fail[0] = true
@@ -454,11 +469,7 @@ object SportsDb {
     private fun composed(i: Info) = COMPOSED && i.home.isNotEmpty() && i.away.isNotEmpty()
 
     private fun warmInfo(i: Info) {
-        if (composed(i)) {
-            warmBadge(i.home); warmBadge(i.away); warmBadge(i.league)
-        } else {
-            warm(i.thumb); warmBadge(i.home); warmBadge(i.away)
-        }
+        // gli stemmi ora arrivano dal repo GitHub (vedi prefetch): qui non c'e' piu' niente da scaricare
     }
 
     private fun warmBadge(url: String) {
@@ -529,7 +540,12 @@ object SportsDb {
      * (con gli stessi 2 canali di rete di prima, una partita alla volta) e scarica le immagini.
      */
     fun prefetch(channels: List<Channel>) {
-        // Serie C: giorni e gironi si scaricano subito, tutti insieme, mentre partono le ricerche delle singole partite
+        // stemmi dal repo GitHub: si scaricano subito
+        channels.distinctBy { it.name }.forEach { ch ->
+            repoBadges(ch.name) { r -> if (r != null) { warmBadge(r.home); warmBadge(r.away); warmBadge(r.league) } }
+        }
+        if (!ORARIO_DA_THESPORTSDB) return
+        // orari: giorni e gironi di Serie C si scaricano subito, tutti insieme, mentre partono le ricerche delle singole partite
         net.execute {
             try {
                 val fail = BooleanArray(1)
@@ -544,9 +560,8 @@ object SportsDb {
     }
 
     /**
-     * Se TheSportsDB conosce la partita: mostra l'immagine nell'ImageView e comunica l'orario di inizio.
-     * onFound: viene chiamato prima di mostrare l'immagine (per adattare il layout); onFail: se l'immagine non si carica;
-     * onStart: orario di inizio in millisecondi (chiamato sul thread principale).
+     * Mostra le thumb ricreate con gli stemmi delle due squadre e il logo del campionato (dal repo GitHub pez8-images)
+     * tramite onBadges, e comunica l'orario di inizio (da TheSportsDB) tramite onStart sul thread principale.
      */
     fun loadThumb(
         iv: ImageView, ch: Channel,
@@ -554,30 +569,9 @@ object SportsDb {
         onBadges: ((String, String, String) -> Unit)? = null
     ) {
         val k = "${ch.name}|${LocalDate.now()}"
-        fun show(info: Info) {
-            if (iv.tag != ch.url) return
-            if (info.start > 0) onStart?.invoke(info.start)
-            if (composed(info) || info.thumb.isEmpty()) {
-                // thumb ricreata con stemmi delle squadre e logo del campionato (anche quando manca l'immagine della partita)
-                if (info.home.isNotEmpty() || info.away.isNotEmpty()) onBadges?.invoke(info.home, info.away, info.league)
-                return
-            }
-            onFound?.invoke()
-            fun bad() {
-                found.remove(k)
-                prefs?.edit()?.remove(k)?.apply()
-                if (iv.tag == ch.url) onFail?.invoke()
-            }
-            val small = sized(info.thumb)
-            iv.load(small) {
-                listener(onError = { _, _ ->
-                    if (small != info.thumb && iv.tag == ch.url) {
-                        // la versione ridotta non esiste: si prova l'immagine originale
-                        iv.load(info.thumb) { listener(onError = { _, _ -> bad() }) }
-                    } else bad()
-                })
-            }
+        repoBadges(ch.name) { r ->
+            if (r != null && iv.tag == ch.url && (r.home.isNotEmpty() || r.away.isNotEmpty())) onBadges?.invoke(r.home, r.away, r.league)
         }
-        request(ch, k, { info -> show(info) })
+        if (ORARIO_DA_THESPORTSDB) request(ch, k, { info -> if (iv.tag == ch.url && info.start > 0) onStart?.invoke(info.start) })
     }
 }
