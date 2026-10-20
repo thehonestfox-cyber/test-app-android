@@ -2078,7 +2078,7 @@ class MainActivity : AppCompatActivity() {
                 val evs = autoEvents[cat.name] ?: emptyList()
                 if (evs.isEmpty()) {
                     adminList.addView(
-                        tv("Nessun evento.", 13f, c(MR.attr.colorOnSurfaceVariant))
+                        tv("Nessun evento. ${LiveFixtures.diag[LiveFixtures.leagueOf(cat.name)] ?: "Caricamento..."}", 13f, c(MR.attr.colorOnSurfaceVariant))
                             .apply { setPadding(dp(16), dp(4), 0, 0) }
                     )
                 }

@@ -8,12 +8,10 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 
 /**
  * Eventi live creati da soli, giornata per giornata, dai siti ufficiali:
- *  - Serie A: https://www.legaseriea.it/serie-a
+ *  - Serie A: https://sport.sky.it/calcio/serie-a/calendario-risultati
  *  - Serie B: https://www.legab.it/seriebkt
  *  - Serie C: https://www.seriec.com/
  *
@@ -24,10 +22,9 @@ import java.time.ZoneOffset
 object LiveFixtures {
     private const val TAG = "Fixtures"   // diagnostica: Logcat, filtro "Fixtures"
 
-    private const val URL_A = "https://www.legaseriea.it/serie-a/calendario-risultati"
+    private const val URL_A = "https://sport.sky.it/calcio/serie-a/calendario-risultati"
     private const val URL_B = "https://www.legab.it/seriebkt"
     private const val URL_C = "https://www.seriec.com/"
-    private const val URL_A_DB = "https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4332"   // Serie A
 
     private const val UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -37,6 +34,9 @@ object LiveFixtures {
     private var prefs: SharedPreferences? = null
     private val lastFetch = HashMap<String, Long>()
     private val memory = HashMap<String, List<Fixture>>()
+
+    /** Cosa e' successo all'ultimo aggiornamento di ogni campionato (si vede nell'Admin quando non ci sono eventi). */
+    val diag = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     fun init(ctx: Context) {
         prefs = ctx.applicationContext.getSharedPreferences("fixtures_v1", Context.MODE_PRIVATE)
@@ -80,36 +80,6 @@ object LiveFixtures {
             }
         }
         return null
-    }
-
-    // ---- Serie A da TheSportsDB (se il sito della lega non da' le partite) ----
-
-    private fun serieAFromSportsDb(): List<Fixture> {
-        val txt = http(URL_A_DB) ?: return emptyList()
-        return try {
-            val arr = JSONObject(txt).optJSONArray("events") ?: return emptyList()
-            val out = ArrayList<Fixture>()
-            for (i in 0 until arr.length()) {
-                val o = arr.getJSONObject(i)
-                val home = o.optString("strHomeTeam", "")
-                val away = o.optString("strAwayTeam", "")
-                if (home.isEmpty() || away.isEmpty()) continue
-                // gli orari di TheSportsDB sono in UTC
-                val ts = o.optString("strTimestamp", "")
-                val ms = try {
-                    if (ts.isNotEmpty()) LocalDateTime.parse(ts.substringBefore('+').substringBefore('Z')).atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
-                    else LocalDateTime.parse(o.getString("dateEvent") + "T" + o.optString("strTime", "00:00:00").take(8))
-                        .atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
-                } catch (_: Exception) {
-                    continue
-                }
-                out.add(Fixture("A", o.optString("intRound", "0").toIntOrNull() ?: 0, home, away, ms))
-            }
-            out
-        } catch (e: Exception) {
-            Log.d(TAG, "Serie A: errore di lettura TheSportsDB ${e.message}")
-            emptyList()
-        }
     }
 
     // ---- ricordo delle partite gia' viste (restano anche quando il sito non le elenca piu') ----
@@ -157,24 +127,21 @@ object LiveFixtures {
         val now = System.currentTimeMillis()
         val today = LocalDate.now(FixtureParsers.ROME)
         val sources = listOf(
-            Triple<String, String, (String) -> List<Fixture>>("A", URL_A, { h -> FixtureParsers.parseSerieA(h, today) }),
+            Triple<String, String, (String) -> List<Fixture>>("A", URL_A, { h -> FixtureParsers.parseSerieA(h) }),
             Triple<String, String, (String) -> List<Fixture>>("B", URL_B, { h -> FixtureParsers.parseSerieB(h) }),
             Triple<String, String, (String) -> List<Fixture>>("C", URL_C, { h -> FixtureParsers.parseSerieC(h, today) })
         )
         for ((league, url, parse) in sources) {
             if (now - (lastFetch[league] ?: 0L) < REFRESH_MS) continue
             val html = http(url)
+            val info = StringBuilder(if (html == null) "sito: errore di rete" else "sito: letto")
             var parsed: List<Fixture> = emptyList()
             if (html != null) {
                 parsed = try { parse(html) } catch (e: Exception) { Log.d(TAG, "Serie $league: errore di lettura ${e.message}"); emptyList() }
                 Log.d(TAG, "Serie $league: ${parsed.size} partite lette da $url")
+                info.append(" (${parsed.size} partite)")
             }
-            // La pagina della Serie A e' fatta in JavaScript e non sempre ha le partite nel testo: se non se ne legge
-            // nessuna si prendono da TheSportsDB (calendario e orari della Serie A).
-            if (league == "A" && parsed.isEmpty()) {
-                parsed = serieAFromSportsDb()
-                Log.d(TAG, "Serie A: ${parsed.size} partite lette da TheSportsDB")
-            }
+            diag[league] = info.toString()
             if (html == null && parsed.isEmpty()) {
                 lastFetch[league] = now - REFRESH_MS + 30_000L    // errore di rete: si riprova tra 30 secondi
                 continue
@@ -239,7 +206,10 @@ object LiveFixtures {
     fun events(league: String, fixtures: Map<String, List<Fixture>>, playlist: List<Channel>, category: String): List<Channel> =
         (fixtures[league] ?: emptyList()).map { f ->
             val ch = findChannel(f.home, playlist, partial = league != "C")
-            val name = "${f.home} - ${f.away}"
+            // nomi ESATTAMENTE come nel repo degli stemmi (pez8-images); se la squadra non c'e' resta il nome della fonte
+            val home = SportsDb.canonicalName(f.home, league) ?: f.home
+            val away = SportsDb.canonicalName(f.away, league) ?: f.away
+            val name = "$home - $away"
             Channel(
                 name = name,
                 rawName = ch?.rawName ?: name,

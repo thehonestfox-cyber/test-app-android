@@ -102,7 +102,7 @@ object SportsDb {
 
     private const val REPO = "https://raw.githubusercontent.com/fp-pez8/pez8-images/main/"
 
-    private class RepoTeam(val n: String, val file: String, val league: String)
+    private class RepoTeam(val n: String, val file: String, val league: String, val name: String)
     private class RepoData(val at: Long, val teams: List<RepoTeam>)
     @Volatile private var repo: RepoData? = null
     @Volatile private var repoFailAt = 0L
@@ -131,7 +131,7 @@ object SportsDb {
                     for (j in 0 until sq.length()) {
                         val t = sq.getJSONObject(j)
                         val f = t.optString("file", "")
-                        if (f.isNotEmpty()) list.add(RepoTeam(norm(t.optString("nome", "")), f, league))
+                        if (f.isNotEmpty()) list.add(RepoTeam(norm(t.optString("nome", "")), f, league, t.optString("nome", "")))
                     }
                 }
                 repo = RepoData(System.currentTimeMillis(), list)
@@ -169,6 +169,36 @@ object SportsDb {
         val info = Info(home?.let { REPO + it.file } ?: "", away?.let { REPO + it.file } ?: "", REPO + league)
         repoCache[eventName] = info
         return info
+    }
+
+    /**
+     * Nome della squadra ESATTAMENTE come e' scritto nel repo pez8-images (campo "nome" di index.json), cosi' lo stemma
+     * si trova sempre. [league] = "A", "B" o "C": si cerca prima nella cartella di quel campionato.
+     * null se il repo non e' raggiungibile o la squadra non c'e'. Da chiamare su un thread a parte (usa la rete).
+     */
+    private val under23Re = Regex("""(?i)\bunder\s*23\b""")
+
+    fun canonicalName(team: String, league: String): String? {
+        val list = repoTeams()
+        if (list.isEmpty()) return null
+        val nt = norm(under23Re.replace(team, "U23"))
+        if (nt.isEmpty()) return null
+        val folder = when (league) { "A" -> "serie-a"; "B" -> "serie-b"; else -> "serie-c" }
+        val wt = nt.split(' ').toSet()
+        fun find(pool: List<RepoTeam>): String? {
+            pool.firstOrNull { sc(it.n, nt) == 2 }?.let { return it.name }
+            pool.filter { r ->
+                sc(r.n, nt) == 1 && (r.n.split(' ').toSet() intersect wt).any { it.length >= 4 }
+            }.minByOrNull { Math.abs(it.n.length - nt.length) }?.let { return it.name }
+            // abbreviazioni: "Guidonia M." -> "Guidonia Montecelio" (ogni parola uguale, o iniziale di una parola del repo)
+            val qt = nt.split(' ')
+            return pool.filter { r ->
+                val rt = r.n.split(' ')
+                qt.all { q -> rt.any { it == q || (q.length <= 3 && it.startsWith(q)) } } && qt.any { q -> q.length >= 4 && q in rt }
+            }.minByOrNull { Math.abs(it.n.length - nt.length) }?.name
+        }
+        // prima nella cartella del campionato, poi in tutto il repo (es. Pisa e Cremonese stanno in serie-b)
+        return find(list.filter { it.file.startsWith(folder) }) ?: find(list)
     }
 
     // Cerca gli stemmi su un altro thread e dà il risultato a [cb] sul thread principale

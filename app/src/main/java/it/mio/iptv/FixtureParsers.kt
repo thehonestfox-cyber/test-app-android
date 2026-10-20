@@ -2,8 +2,6 @@ package it.mio.iptv
 
 import java.text.Normalizer
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.time.ZoneId
 
 /** Una partita presa dai siti ufficiali delle leghe. [start] = inizio in millisecondi; [round] = giornata (0 = non nota). */
@@ -11,7 +9,7 @@ data class Fixture(val league: String, val round: Int, val home: String, val awa
 
 /**
  * Lettura delle pagine dei siti ufficiali (solo testo/HTML, nessuna API):
- *  - Serie A: legaseriea.it/serie-a
+ *  - Serie A: sport.sky.it/calcio/serie-a/calendario-risultati
  *  - Serie B: legab.it/seriebkt
  *  - Serie C: seriec.com
  * Niente di Android qui dentro, cosi' si puo' provare anche su un computer.
@@ -233,79 +231,62 @@ object FixtureParsers {
         return out.distinct()
     }
 
-    // ------------------------------------------------------------------ Serie A (legaseriea.it)
+    // ------------------------------------------------------------------ Serie A (sport.sky.it)
+
+    private val itMonths = mapOf(
+        "gen" to 1, "feb" to 2, "mar" to 3, "apr" to 4, "mag" to 5, "giu" to 6,
+        "lug" to 7, "ago" to 8, "set" to 9, "ott" to 10, "nov" to 11, "dic" to 12
+    )
+
+    /** "Torino Torino" (nome ripetuto per le due versioni dell'immagine) -> "Torino". */
+    private fun undouble(w: List<String>): List<String> {
+        if (w.size >= 2 && w.size % 2 == 0 && w.subList(0, w.size / 2) == w.subList(w.size / 2, w.size)) return w.subList(0, w.size / 2)
+        return w
+    }
 
     /**
-     * Pagina del calendario di legaseriea.it. Ogni partita ha un link /serie-a/match/<id>/casa-vs-ospite;
-     * la data/ora si cerca, nel codice della pagina, vicino a quel link (data ISO oppure "gg/mm/aaaa hh:mm").
-     * ATTENZIONE: scritto senza poter vedere il codice vero della pagina, quindi e' un tentativo da verificare.
+     * Calendario di sport.sky.it/calcio/serie-a/calendario-risultati (la pagina della Lega e' fatta in JavaScript e
+     * nel codice non ha le partite). Ogni partita ha un link .../partite/2026/giornata-8/torino-monza; dopo il link
+     * ci sono casa, orario (se non e' ancora iniziata, altrimenti il risultato) e ospite; la data e' nel titolo del
+     * giorno ("Sabato 24 Ott 2026") che precede le partite. Le partite gia' giocate (con risultato) si saltano.
      */
-    fun parseSerieA(html: String, today: LocalDate): List<Fixture> {
-        val linkRe = Regex("""/serie-a/match/([0-9a-f]{32})/([a-z0-9\-]+)""")
-        val occ = linkRe.findAll(html).map { Triple(it.range.first, it.groupValues[1], it.groupValues[2]) }.toList()
-        if (occ.isEmpty()) return emptyList()
-
-        class Hit(val pos: Int, val ms: Long)
-
-        val hits = ArrayList<Hit>()
-        val isoRe = Regex("""(20\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::\d\d)?(?:\.\d+)?(Z|[+-]\d\d:\d\d)?""")
-        for (m in isoRe.findAll(html)) {
-            val ms = try {
-                if (m.groupValues[6].isNotEmpty())
-                    OffsetDateTime.parse(m.value).toInstant().toEpochMilli()
-                else
-                    LocalDateTime.parse(m.value.substringBefore('Z')).atZone(ROME).toInstant().toEpochMilli()
+    fun parseSerieA(html: String): List<Fixture> {
+        val flat = blankTags(html)
+        val linkRe = Regex("""/calcio/serie-a/partite/\d{4}/giornata-(\d+)/([a-z0-9\-]+)""")
+        val links = linkRe.findAll(html).toList()
+        if (links.isEmpty()) return emptyList()
+        val headRe = Regex("""[\p{L}&;]{6,14}\s+(\d{1,2})\s+([A-Za-z]{3})\s+(20\d\d)""")
+        val heads = headRe.findAll(flat).filter { itMonths.containsKey(it.groupValues[2].lowercase()) }.toList()
+        val timeRe = Regex("""^(\d{1,2}):(\d{2})$""")
+        val out = LinkedHashMap<String, Fixture>()
+        for ((k, m) in links.withIndex()) {
+            val start = m.range.first
+            val round = m.groupValues[1].toInt()
+            val key = "$round|${m.groupValues[2]}"
+            if (out.containsKey(key)) continue
+            val head = heads.lastOrNull { it.range.first < start } ?: continue
+            var end = if (k + 1 < links.size) links[k + 1].range.first else flat.length
+            heads.firstOrNull { it.range.first > start }?.let { if (it.range.first < end) end = it.range.first }
+            val words = spaceRe.split(decode(flat.substring(start, minOf(end, flat.length)))).filter { it.isNotEmpty() }
+            val cut = words.indexOfFirst { it == "Giornata" || it == "Link" }
+            val w = if (cut >= 0) words.subList(0, cut) else words
+            val ti = w.indexOfFirst { timeRe.matches(it) }
+            if (ti <= 0) continue
+            val home = undouble(w.subList(0, ti)).joinToString(" ")
+            val away = undouble(w.subList(ti + 1, w.size)).joinToString(" ")
+            if (home.isEmpty() || away.isEmpty()) continue
+            val tm = timeRe.find(w[ti])!!
+            val h = tm.groupValues[1].toInt()
+            val mi = tm.groupValues[2].toInt()
+            if (h > 23 || mi > 59) continue
+            val date = try {
+                LocalDate.of(head.groupValues[3].toInt(), itMonths[head.groupValues[2].lowercase()]!!, head.groupValues[1].toInt())
             } catch (_: Exception) {
                 continue
             }
-            hits.add(Hit(m.range.first, ms))
+            out[key] = Fixture("A", round, home, away, toMs(date, h, mi))
         }
-        if (hits.isEmpty()) {
-            val flat = blankTags(html)
-            val itRe = Regex("""(\d{1,2})[/.](\d{1,2})[/.](20\d\d)\D{1,40}?(\d{1,2}):(\d{2})""")
-            for (m in itRe.findAll(flat)) {
-                try {
-                    val d = LocalDate.of(m.groupValues[3].toInt(), m.groupValues[2].toInt(), m.groupValues[1].toInt())
-                    hits.add(Hit(m.range.first, toMs(d, m.groupValues[4].toInt(), m.groupValues[5].toInt())))
-                } catch (_: Exception) {
-                }
-            }
-        }
-
-        // La data sta subito dopo il link della partita (o subito prima): si prova nei due modi e si tiene
-        // quello che assegna una data a piu' partite diverse. Per ogni partita vale la data piu' vicina.
-        val ends = occ.map { it.first + 70 }          // fine (circa) del link: serve a misurare la distanza
-        fun assign(dateAfterLink: Boolean): HashMap<String, Pair<Int, Long>> {
-            val res = HashMap<String, Pair<Int, Long>>()   // id -> (distanza, ms)
-            for (h in hits) {
-                val k = if (dateAfterLink) occ.indices.lastOrNull { ends[it] <= h.pos }
-                else occ.indices.firstOrNull { occ[it].first >= h.pos }
-                if (k == null) continue
-                val dist = if (dateAfterLink) h.pos - ends[k] else occ[k].first - h.pos
-                if (dist > 2500) continue
-                val id = occ[k].second
-                val cur = res[id]
-                if (cur == null || dist < cur.first) res[id] = dist to h.ms
-            }
-            return res
-        }
-        val afterMap = assign(true)
-        val beforeMap = assign(false)
-        val best = if (beforeMap.size > afterMap.size) beforeMap else afterMap
-
-        val out = ArrayList<Fixture>()
-        val from = today.minusDays(1).atStartOfDay(ROME).toInstant().toEpochMilli()
-        val to = today.plusDays(14).atStartOfDay(ROME).toInstant().toEpochMilli()
-        val seen = HashSet<String>()
-        for ((_, id, slug) in occ) {
-            if (!seen.add(id)) continue
-            val ms = best[id]?.second ?: continue
-            if (ms < from || ms > to) continue
-            val cut = slug.indexOf("-vs-")
-            if (cut <= 0) continue
-            out.add(Fixture("A", 0, slugTeam(slug.substring(0, cut)), slugTeam(slug.substring(cut + 4)), ms))
-        }
-        return out
+        return out.values.toList()
     }
 
     // ------------------------------------------------------------------ "giornata per giornata"
