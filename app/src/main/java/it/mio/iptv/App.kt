@@ -11,9 +11,14 @@ class App : Application() {
         super.onCreate()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: Activity) {
-                if (!checked && activity is MainActivity) {
-                    checked = true
-                    Updater.check(activity)
+                if (activity is MainActivity) {
+                    // appena tornato dalle impostazioni del permesso: continua l'aggiornamento
+                    if (Updater.resumePending(activity)) {
+                        checked = true
+                    } else if (!checked) {
+                        checked = true
+                        Updater.check(activity)
+                    }
                 }
             }
             override fun onActivityCreated(a: Activity, s: Bundle?) {}

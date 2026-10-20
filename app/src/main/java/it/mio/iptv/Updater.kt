@@ -48,9 +48,24 @@ object Updater {
             .show()
     }
 
+    private const val PREFS = "updater"
+    private const val PENDING = "pending_url"
+
+    /** Se l'utente era andato a concedere il permesso, riparte da solo il download. */
+    fun resumePending(act: Activity): Boolean {
+        val p = act.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+        val url = p.getString(PENDING, null) ?: return false
+        p.edit().remove(PENDING).apply()
+        if (!act.packageManager.canRequestPackageInstalls()) return false
+        download(act, url)
+        return true
+    }
+
     private fun download(act: Activity, apkUrl: String) {
         if (!act.packageManager.canRequestPackageInstalls()) {
             // serve il permesso "installa app sconosciute" per PEZ8 (una volta sola)
+            act.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+                .edit().putString(PENDING, apkUrl).apply()
             act.startActivity(
                 Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${act.packageName}"))
             )
