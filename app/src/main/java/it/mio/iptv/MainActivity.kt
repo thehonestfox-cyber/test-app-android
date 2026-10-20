@@ -221,6 +221,7 @@ class MainActivity : AppCompatActivity() {
         })
 
         SportsDb.init(applicationContext)
+        LiveFixtures.init(applicationContext)
         setupPlayer()
         buildHome()
         buildUser()
@@ -488,12 +489,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Le card della home: le sezioni create dall'admin, poi Completa e Impostazioni
-    // Precarica thumb e orari degli eventi delle sezioni live, così sono già pronti quando le apri
+    // Precarica gli stemmi degli eventi delle sezioni live e scarica le partite dei campionati automatici,
+    // così è già tutto pronto quando le apri
     private fun prefetchLive() {
         Thread {
-            val chans = Sections.load(prefs).filter { it.isLive }
-                .flatMap { sec -> Featured.load(prefs, sec.id).flatMap { it.channels } }
+            val cats = Sections.load(prefs).filter { it.isLive }.flatMap { sec -> Featured.load(prefs, sec.id) }
+            val chans = cats.filter { !LiveFixtures.isAuto(it.name) }.flatMap { it.channels }
             if (chans.isNotEmpty()) SportsDb.prefetch(chans)
+            if (cats.any { LiveFixtures.isAuto(it.name) }) LiveFixtures.refresh()
         }.start()
     }
 
@@ -934,6 +937,10 @@ class MainActivity : AppCompatActivity() {
 
     // Primo tocco: seleziona e riproduce. Tocco sul canale già selezionato: schermo intero.
     private fun onChannelTap(ch: Channel) {
+        if (ch.url.isEmpty()) {
+            toast("Nessun canale trovato per questo evento")
+            return
+        }
         if (userLive && multi.count > 1) {
             assignToMulti(ch)   // multi-schermo: l'evento va nel player evidenziato
         } else if (userLive) {
@@ -972,16 +979,59 @@ class MainActivity : AppCompatActivity() {
     // Sezione: solo i canali scelti dall'admin, nelle sue categorie e nel suo ordine
     private fun loadFeatured(section: String) {
         val cats = Featured.load(prefs, section)
-        val all = cats.flatMap { it.channels }
         val sec = Sections.load(prefs).firstOrNull { it.id == section }
         val name = sec?.name ?: "Sezione"
         val live = sec?.isLive == true
+        autoEvents = emptyMap()
+        if (live && cats.any { LiveFixtures.isAuto(it.name) }) {
+            loadLiveAuto(section, name, cats)
+            return
+        }
+        val all = cats.flatMap { it.channels }
         setChannels(all, cats.filter { it.channels.isNotEmpty() }.map { it.name })
         if (live) buildLive(cats)
         val noun = if (live) "eventi" else "canali"
         listStatus.text =
             if (all.isEmpty()) "Nessun ${if (live) "evento" else "canale"} in $name: aggiungili da Impostazioni › Admin."
             else "$name · ${all.size} $noun"
+    }
+
+    // Eventi delle categorie "Serie A / B / C" della sezione aperta, creati da soli dai siti delle leghe (per nome categoria)
+    private var autoEvents: Map<String, List<Channel>> = emptyMap()
+
+    // Le categorie della sezione live com'è adesso: quelle automatiche hanno gli eventi delle partite, le altre quelli dell'admin
+    private fun liveCats(section: String): List<FeaturedCategory> =
+        Featured.load(prefs, section).map { c ->
+            if (LiveFixtures.isAuto(c.name)) c.copy(channels = autoEvents[c.name] ?: emptyList()) else c
+        }
+
+    private fun showLiveCats(cats: List<FeaturedCategory>, name: String) {
+        val all = cats.flatMap { it.channels }
+        setChannels(all, cats.filter { it.channels.isNotEmpty() }.map { it.name })
+        buildLive(cats)
+        listStatus.text = if (all.isEmpty()) "Nessun evento in $name." else "$name · ${all.size} eventi"
+    }
+
+    // Sezione live con categorie automatiche: mostra subito gli eventi dell'admin, poi crea quelli delle partite
+    private fun loadLiveAuto(section: String, name: String, cats: List<FeaturedCategory>) {
+        val gen = loadGen
+        showLiveCats(liveCats(section), name)
+        listStatus.text = "$name · caricamento partite…"
+        loadPlaylistChannels { playlist, _, final ->
+            if (!final || gen != loadGen) return@loadPlaylistChannels
+            Thread {
+                val fx = LiveFixtures.refresh()
+                val ev = cats.filter { LiveFixtures.isAuto(it.name) }.associate { c ->
+                    c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
+                }
+                runOnUiThread {
+                    if (gen != loadGen || userSection != section) return@runOnUiThread
+                    autoEvents = ev
+                    showLiveCats(liveCats(section), name)
+                    SportsDb.prefetch(ev.values.flatten())
+                }
+            }.start()
+        }
     }
 
     // ---------- Sezioni "eventi live": carosello di card per categoria ----------
@@ -1024,19 +1074,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Orario scritto a mano dall'admin ("20:45", di oggi); 0 = non impostato
-    private fun manualStart(time: String): Long {
-        val m = Regex("""^(\d{1,2}):(\d{2})$""").find(time.trim()) ?: return 0L
-        val h = m.groupValues[1].toInt()
-        val mi = m.groupValues[2].toInt()
-        if (h > 23 || mi > 59) return 0L
-        return LocalDate.now().atTime(h, mi).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    }
-
     private fun liveCard(ch: Channel): View {
         val badge = liveBadge()
-        val manual = manualStart(ch.time)
-        if (manual > 0) paintTag(badge, manual)
+        if (ch.start > 0) paintTag(badge, ch.start)   // orario dal sito della lega; senza orario resta LIVE
+        // evento senza canale: url vuoto, quindi per logo e stemmi si usa una chiave tutta sua
+        val key = if (ch.url.isEmpty()) ch.copy(url = "evento:" + ch.name) else ch
         var badgesRow: View? = null
         val thumb = FrameLayout(this).apply {
             val logo = ImageView(context).apply {
@@ -1046,27 +1088,15 @@ class MainActivity : AppCompatActivity() {
                 clipToOutline = true   // arrotonda anche l'immagine a tutto riquadro
             }
             addView(logo, FrameLayout.LayoutParams(MATCH, MATCH))
-            loadChannelLogo(logo, ch)   // intanto il logo del canale; se ci sono gli stemmi della partita li sostituiscono
-            SportsDb.loadThumb(logo, ch, onFound = {
-                logo.scaleType = ImageView.ScaleType.CENTER_CROP
-                logo.setPadding(0, 0, 0, 0)
-                logo.imageTintList = null
-            }, onFail = {
-                // l'immagine non si è caricata: torna il logo del canale
-                logo.scaleType = ImageView.ScaleType.FIT_CENTER
-                logo.setPadding(dp(24), dp(16), dp(24), dp(16))
-                loadChannelLogo(logo, ch)
-            }, onStart = { start ->
-                // l'orario viene da Google, a meno che l'admin non ne abbia scritto uno a mano
-                if (manual == 0L) paintTag(badge, start)
-            }, onBadges = { home, away, league ->
+            loadChannelLogo(logo, key)   // intanto il logo del canale; se ci sono gli stemmi della partita li sostituiscono
+            SportsDb.loadThumb(logo, key) { home, away, league ->
                 // thumb ricreata con gli stemmi delle due squadre e il logo del campionato (repo GitHub)
                 if (badgesRow == null) {
                     val v = MatchThumb.build(context, home, away, league)
                     badgesRow = v
                     addView(v, 1, FrameLayout.LayoutParams(MATCH, MATCH))
                 }
-            })
+            }
             addView(badge, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START).apply {
                 setMargins(dp(8), dp(8), 0, 0)
             })
@@ -1080,7 +1110,7 @@ class MainActivity : AppCompatActivity() {
                 ellipsize = TextUtils.TruncateAt.END
                 setPadding(dp(12), dp(10), dp(12), 0)
             })
-            addView(tv(ch.quality.ifEmpty { "Diretta" }, 12f, c(MR.attr.colorOnSurfaceVariant)).apply {
+            addView(tv(ch.quality.ifEmpty { if (ch.url.isEmpty()) "Canale non trovato" else "Diretta" }, 12f, c(MR.attr.colorOnSurfaceVariant)).apply {
                 maxLines = 1
                 setPadding(dp(12), dp(2), dp(12), dp(12))
             })
@@ -1299,7 +1329,7 @@ class MainActivity : AppCompatActivity() {
 
     // Eventi tra cui scegliere dentro la schermata multi-schermo: quelli della sezione aperta
     private fun multiChoices(): List<Channel> =
-        userSection?.let { s -> Featured.load(prefs, s).flatMap { it.channels } } ?: emptyList()
+        userSection?.let { s -> liveCats(s).flatMap { it.channels } }?.filter { it.url.isNotEmpty() } ?: emptyList()
 
     private fun openMulti() {
         if (multiOverlay != null) return
@@ -1670,12 +1700,15 @@ class MainActivity : AppCompatActivity() {
             )
         }
         sections.forEachIndexed { i, sec ->
-            val n = Featured.load(prefs, sec.id).sumOf { it.channels.size }
+            val secCats = Featured.load(prefs, sec.id)
+            val nAuto = secCats.count { LiveFixtures.isAuto(it.name) }
+            val n = secCats.filter { !(sec.isLive && LiveFixtures.isAuto(it.name)) }.sumOf { it.channels.size }
             val del = {
                 confirmDelete("La sezione \"${sec.name}\" e tutti i suoi canali") { deleteSection(sec.id) }
             }
             val unit = if (sec.isLive) "eventi" else "canali"
-            val sub = if (sec.description.isBlank()) "$n $unit" else "${sec.description} · $n $unit"
+            val count = if (sec.isLive && nAuto > 0) "$n $unit + $nAuto automatiche" else "$n $unit"
+            val sub = if (sec.description.isBlank()) count else "${sec.description} · $count"
             val card = itemCard(
                 title = sec.name, sub = sub, selected = false,
                 onClick = { adminEditing = sec.id; refreshAdmin() },
@@ -1947,26 +1980,6 @@ class MainActivity : AppCompatActivity() {
     private val adminLive: Boolean
         get() = Sections.load(prefs).firstOrNull { it.id == adminSection }?.isLive == true
 
-    // Campo "Orario" (solo negli eventi): vuoto = l'orario si prende da Google
-    private fun timeField(initial: String): TextInputLayout = field("Orario (es. 20:45)").apply {
-        helperText = "Se vuoto, l'orario viene preso da Google"
-        endIconMode = TextInputLayout.END_ICON_CLEAR_TEXT
-        editText!!.apply {
-            inputType = android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_TIME
-            setText(initial)
-        }
-    }
-
-    // "" = vuoto, null = scritto male, altrimenti "HH:mm"
-    private fun readTime(til: TextInputLayout): String? {
-        val t = til.editText!!.text.toString().trim().replace('.', ':')
-        if (t.isEmpty()) return ""
-        val m = Regex("""^(\d{1,2}):(\d{2})$""").find(t) ?: return null
-        val h = m.groupValues[1].toInt()
-        val mi = m.groupValues[2].toInt()
-        return if (h > 23 || mi > 59) null else "%02d:%02d".format(h, mi)
-    }
-
     private fun refreshFeatured() {
         val cats = Featured.load(prefs, adminSection)
         val secName = Sections.load(prefs).firstOrNull { it.id == adminSection }?.name ?: ""
@@ -2001,6 +2014,24 @@ class MainActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams(0, WRAP, 1f)
             )
         })
+        if (adminLive) {
+            val missing = listOf("Serie A", "Serie B", "Serie C").filter { n -> cats.none { it.name.equals(n, ignoreCase = true) } }
+            if (missing.isNotEmpty()) {
+                adminList.addView(
+                    outlinedBtn("Aggiungi ${missing.joinToString(" / ")} (automatiche)") {
+                        Featured.edit(prefs, adminSection) { l -> missing.forEach { l.add(FeaturedCategory(it, emptyList())) } }
+                        refreshAdmin()
+                    },
+                    LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }
+                )
+            }
+            adminList.addView(
+                tv(
+                    "Le categorie \"Serie A\", \"Serie B\" e \"Serie C\" si riempiono da sole, giornata per giornata, con orari dai siti ufficiali delle leghe. Serie A e B usano il canale col nome della squadra di casa (FHD, o HD se manca).",
+                    13f, c(MR.attr.colorOnSurfaceVariant)
+                ).apply { setPadding(dp(4), dp(8), dp(4), 0) }
+            )
+        }
         if (cats.isEmpty()) {
             adminList.addView(
                 tv(
@@ -2015,6 +2046,7 @@ class MainActivity : AppCompatActivity() {
             val h = categoryHeader(i, cat, cats.size)
             headers.add(h)
             adminList.addView(h)
+            if (adminLive && LiveFixtures.isAuto(cat.name)) return@forEachIndexed   // eventi automatici: non si modificano
             if (isCollapsed(cat)) return@forEachIndexed
             if (cat.channels.isEmpty()) {
                 adminList.addView(
@@ -2083,18 +2115,20 @@ class MainActivity : AppCompatActivity() {
             if (!collapsedCats.remove(collapseKey(cat))) collapsedCats.add(collapseKey(cat))
             refreshAdmin()
         }
+        // Serie A / B / C in una sezione live: gli eventi si creano da soli, niente "+"
+        val auto = adminLive && LiveFixtures.isAuto(cat.name)
         val add = iconBtn(R.drawable.ic_add, tint, dp(10), null) { addChannelDialog(i) }
         return LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(20), 0, 0)
             addView(
-                tv("${cat.name} · ${cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
+                tv(if (auto) "${cat.name} · automatica" else "${cat.name} · ${cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
                 LinearLayout.LayoutParams(0, WRAP, 1f)
             )
-            addView(collapse, LinearLayout.LayoutParams(dp(44), dp(44)))
-            addView(add, LinearLayout.LayoutParams(dp(44), dp(44)))
+            if (!auto) addView(collapse, LinearLayout.LayoutParams(dp(44), dp(44)))
+            if (!auto) addView(add, LinearLayout.LayoutParams(dp(44), dp(44)))
             addView(more, LinearLayout.LayoutParams(dp(44), dp(44)))
-            tag = FocusRow(listOf(collapse, add, more))
+            tag = FocusRow(if (auto) listOf(more) else listOf(collapse, add, more))
         }
     }
 
@@ -2220,7 +2254,6 @@ class MainActivity : AppCompatActivity() {
             setSelectAllOnFocus(true)   // si può scrivere subito per sostituirlo, o cancellarlo con un tasto
         }
         til.placeholderText = ch.name   // se lo lasci vuoto, resta questo nome
-        val timeTil = if (adminLive) timeField(ch.time) else null
 
         var picked: Channel? = null
         val pk = playlistPicker { p ->
@@ -2247,7 +2280,6 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(8), dp(24), 0)
             addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
-            timeTil?.let { addView(it, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }) }
             addView(catLabel)
             addView(group)
             addView(pk.search, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) })
@@ -2264,11 +2296,6 @@ class MainActivity : AppCompatActivity() {
             dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                 val p = picked
                 val n = til.editText!!.text.toString().trim().ifEmpty { p?.name ?: ch.name }
-                val tm = if (timeTil != null) readTime(timeTil) else ch.time
-                if (tm == null) {
-                    toast("Orario non valido (es. 20:45)")
-                    return@setOnClickListener
-                }
                 Featured.edit(prefs, adminSection) { l ->
                     val from = l.getOrNull(ci)
                     val dest = l.getOrNull(pickedCat)
@@ -2281,8 +2308,7 @@ class MainActivity : AppCompatActivity() {
                             quality = p?.quality ?: old.quality,
                             url = p?.url ?: old.url,
                             category = dest.name,
-                            logos = logos,
-                            time = tm
+                            logos = logos
                         )
                         if (pickedCat == ci) {
                             val chs = from.channels.toMutableList()
@@ -2296,7 +2322,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 dlg.dismiss()
-                prefetchLive()   // cerca subito thumb e orario del nuovo evento
+                prefetchLive()   // scarica subito gli stemmi del nuovo evento
                 refreshAdmin()
             }
         }
@@ -2309,7 +2335,6 @@ class MainActivity : AppCompatActivity() {
         if (Featured.load(prefs, adminSection).getOrNull(ci) == null) return
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val nameField = field("Nome $adminNoun")   // scelto un canale, il suo nome compare in grigio (segnaposto)
-        val timeTil = if (adminLive) timeField("") else null
         var picked: Channel? = null
         val pk = playlistPicker { ch ->
             picked = ch
@@ -2331,7 +2356,6 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(8), dp(24), 0)
             addView(fieldsRow, LinearLayout.LayoutParams(MATCH, WRAP))
-            timeTil?.let { addView(it, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }) }
             addView(pk.status)
             addView(pk.recycler, LinearLayout.LayoutParams(MATCH, listH))
         }
@@ -2348,21 +2372,16 @@ class MainActivity : AppCompatActivity() {
                     toast("Scegli un canale dalla playlist")
                 } else {
                     val nm = nameField.editText!!.text.toString().trim().ifEmpty { p.name }
-                    val tm = if (timeTil != null) readTime(timeTil) else ""
-                    if (tm == null) {
-                        toast("Orario non valido (es. 20:45)")
-                        return@setOnClickListener
-                    }
                     Featured.edit(prefs, adminSection) { l ->
                         val cat = l.getOrNull(ci)
                         if (cat != null) {
                             val logos = (p.logos + listOfNotNull(Logos.repoUrl(nm))).distinct()
-                            val ch = Channel(nm, p.rawName, p.quality, cat.name, p.url, logos, tm)
+                            val ch = Channel(nm, p.rawName, p.quality, cat.name, p.url, logos)
                             l[ci] = cat.copy(channels = cat.channels + ch)
                         }
                     }
                     dlg.dismiss()
-                    prefetchLive()   // cerca subito thumb e orario del nuovo evento
+                    prefetchLive()   // scarica subito gli stemmi del nuovo evento
                     refreshAdmin()
                 }
             }
