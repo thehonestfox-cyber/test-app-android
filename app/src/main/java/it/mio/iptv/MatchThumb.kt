@@ -1,10 +1,13 @@
 package it.mio.iptv
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +16,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import coil.imageLoader
 import coil.request.ImageRequest
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 
 /**
  * Thumb della partita ricreata dagli stemmi: sfondo diviso in due con i colori delle squadre,
@@ -83,15 +88,51 @@ object MatchThumb {
     private fun shade(c: Int, f: Float): Int =
         Color.rgb((Color.red(c) * f).toInt(), (Color.green(c) * f).toInt(), (Color.blue(c) * f).toInt())
 
+    // Colore dominante di ogni stemma: calcolato una volta sola, in un thread a parte, e ricordato
+    // (anche dopo la chiusura dell'app) cosi' lo sfondo e' subito del colore giusto, senza lampi grigi.
+    private const val NONE = Int.MIN_VALUE            // stemma senza un colore utile
+    private val colors = ConcurrentHashMap<String, Int>()
+    private val waiting = HashMap<String, MutableList<(Int) -> Unit>>()   // solo thread principale
+    private val worker = Executors.newSingleThreadExecutor()
+    private val main = Handler(Looper.getMainLooper())
+    private var store: SharedPreferences? = null
+
+    private fun store(ctx: Context): SharedPreferences =
+        store ?: ctx.applicationContext.getSharedPreferences("badge_colors", Context.MODE_PRIVATE).also { store = it }
+
+    /** Calcola in anticipo il colore di uno stemma (da chiamare sul thread principale). */
+    fun preColor(ctx: Context, url: String) = dominantColor(ctx, url) { }
+
     private fun dominantColor(ctx: Context, url: String, cb: (Int) -> Unit) {
         if (url.isEmpty()) return
+        val st = store(ctx)
+        val known = colors[url] ?: if (st.contains(url)) st.getInt(url, NONE).also { colors[url] = it } else null
+        if (known != null) {
+            if (known != NONE) cb(known)
+            return
+        }
+        val list = waiting[url]
+        if (list != null) {      // stesso stemma gia' in elaborazione: aspetta lo stesso risultato
+            list.add(cb)
+            return
+        }
+        waiting[url] = mutableListOf(cb)
         val req = ImageRequest.Builder(ctx)
             .data(SportsDb.badgeUrl(url))
             .allowHardware(false)          // serve la bitmap leggibile pixel per pixel
-            .size(64)
-            .target(onSuccess = { d ->
+            .size(48)
+            .target(onError = { waiting.remove(url) }, onSuccess = { d ->
                 val bm = (d as? BitmapDrawable)?.bitmap
-                if (bm != null) pickColor(bm)?.let(cb)
+                if (bm == null) {
+                    waiting.remove(url)
+                } else {
+                    worker.execute {
+                        val c = pickColor(bm)
+                        colors[url] = c ?: NONE
+                        st.edit().putInt(url, c ?: NONE).apply()
+                        main.post { waiting.remove(url)?.forEach { w -> if (c != null) w(c) } }
+                    }
+                }
             })
             .build()
         ctx.imageLoader.enqueue(req)

@@ -11,7 +11,7 @@ data class Channel(
     val category: String,    // es. "Canali TV", "SKY"
     val url: String,
     val logos: List<String>, // URL da provare in ordine
-    val time: String = ""    // orario di inizio scritto a mano (es. "20:45"); vuoto = si prende da TheSportsDB
+    val time: String = ""    // orario di inizio scritto a mano (es. "20:45"); vuoto = si prende da Google
 )
 
 /** Legge una playlist M3U e crea i Channel (con categoria e logo automatici). */

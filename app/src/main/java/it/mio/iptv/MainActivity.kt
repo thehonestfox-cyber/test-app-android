@@ -1046,7 +1046,7 @@ class MainActivity : AppCompatActivity() {
                 clipToOutline = true   // arrotonda anche l'immagine a tutto riquadro
             }
             addView(logo, FrameLayout.LayoutParams(MATCH, MATCH))
-            loadChannelLogo(logo, ch)   // intanto il logo del canale; se TheSportsDB ha il thumb della partita lo sostituisce
+            loadChannelLogo(logo, ch)   // intanto il logo del canale; se ci sono gli stemmi della partita li sostituiscono
             SportsDb.loadThumb(logo, ch, onFound = {
                 logo.scaleType = ImageView.ScaleType.CENTER_CROP
                 logo.setPadding(0, 0, 0, 0)
@@ -1057,10 +1057,10 @@ class MainActivity : AppCompatActivity() {
                 logo.setPadding(dp(24), dp(16), dp(24), dp(16))
                 loadChannelLogo(logo, ch)
             }, onStart = { start ->
-                // l'orario viene da TheSportsDB, a meno che l'admin non ne abbia scritto uno a mano
+                // l'orario viene da Google, a meno che l'admin non ne abbia scritto uno a mano
                 if (manual == 0L) paintTag(badge, start)
             }, onBadges = { home, away, league ->
-                // thumb ricreata con gli stemmi delle due squadre e il logo del campionato (TheSportsDB)
+                // thumb ricreata con gli stemmi delle due squadre e il logo del campionato (repo GitHub)
                 if (badgesRow == null) {
                     val v = MatchThumb.build(context, home, away, league)
                     badgesRow = v
@@ -1483,83 +1483,9 @@ class MainActivity : AppCompatActivity() {
         it.show()
     }
 
-    // Barra di scorrimento sottile e grigia, sempre visibile ma solo da vedere: non si può toccare
-    // né trascinare. La disegno io sopra al contenitore (come semplice disegno, che non riceve tocchi)
-    // al posto di quella di sistema.
+    // Nessuna barra di scorrimento (slider): le liste scorrono solo col dito o col telecomando
     private fun <T : View> T.scrollbar(): T {
         isVerticalScrollBarEnabled = false
-        val target = this
-        val thumb = object : android.graphics.drawable.Drawable() {
-            private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-            private val rect = android.graphics.RectF()
-
-            override fun draw(canvas: android.graphics.Canvas) {
-                if (!target.isShown) return
-                val range: Int
-                val offset: Int
-                val extent: Int
-                when (target) {
-                    is RecyclerView -> {
-                        range = target.computeVerticalScrollRange()
-                        offset = target.computeVerticalScrollOffset()
-                        extent = target.computeVerticalScrollExtent()
-                    }
-                    is ScrollView -> {
-                        val child = target.getChildAt(0) ?: return
-                        range = child.height + target.paddingTop + target.paddingBottom
-                        offset = target.scrollY
-                        extent = target.height
-                    }
-                    else -> return
-                }
-                if (extent <= 0 || range <= extent) return   // niente da scorrere: nessuna barra
-                val inset = dp(4)
-                val track = target.height - 2 * inset
-                if (track <= 0) return
-                val thumbH = (track.toLong() * extent / range).toInt().coerceIn(dp(28), track)
-                val maxOffset = range - extent
-                val top = target.top + inset +
-                    ((track - thumbH).toLong() * offset.coerceIn(0, maxOffset) / maxOffset).toInt()
-                val right = (target.right - dp(2)).toFloat()
-                rect.set(right - dp(3), top.toFloat(), right, (top + thumbH).toFloat())
-                paint.color = (c(MR.attr.colorOnSurface) and 0xFFFFFF) or 0x66000000
-                canvas.drawRoundRect(rect, dp(2).toFloat(), dp(2).toFloat(), paint)
-            }
-
-            override fun setAlpha(alpha: Int) {}
-            override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {}
-            @Suppress("OVERRIDE_DEPRECATION")
-            override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
-        }
-
-        var host: ViewGroup? = null
-        fun redraw() { host?.invalidate() }
-
-        addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-            override fun onViewAttachedToWindow(v: View) {
-                host?.overlay?.remove(thumb)
-                host = v.parent as? ViewGroup
-                host?.overlay?.add(thumb)
-                host?.invalidate()
-            }
-
-            override fun onViewDetachedFromWindow(v: View) {
-                host?.overlay?.remove(thumb)
-                host = null
-            }
-        })
-        if (isAttachedToWindow) {
-            host = parent as? ViewGroup
-            host?.overlay?.add(thumb)
-        }
-
-        when (this) {
-            is ScrollView -> setOnScrollChangeListener { _, _, _, _, _ -> redraw() }
-            is RecyclerView -> addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) = redraw()
-            })
-        }
-        addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> redraw() }
         return this
     }
 
@@ -2021,9 +1947,9 @@ class MainActivity : AppCompatActivity() {
     private val adminLive: Boolean
         get() = Sections.load(prefs).firstOrNull { it.id == adminSection }?.isLive == true
 
-    // Campo "Orario" (solo negli eventi): vuoto = l'orario si prende da TheSportsDB
+    // Campo "Orario" (solo negli eventi): vuoto = l'orario si prende da Google
     private fun timeField(initial: String): TextInputLayout = field("Orario (es. 20:45)").apply {
-        helperText = "Se vuoto, l'orario viene preso da TheSportsDB"
+        helperText = "Se vuoto, l'orario viene preso da Google"
         endIconMode = TextInputLayout.END_ICON_CLEAR_TEXT
         editText!!.apply {
             inputType = android.text.InputType.TYPE_CLASS_DATETIME or android.text.InputType.TYPE_DATETIME_VARIATION_TIME

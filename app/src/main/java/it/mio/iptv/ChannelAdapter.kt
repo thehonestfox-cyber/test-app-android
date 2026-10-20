@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.dispose
 import coil.load
+import java.util.concurrent.ConcurrentHashMap
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.R as MR
@@ -34,10 +35,22 @@ private fun logoCandidates(ch: Channel): List<String> =
     if (ch.category == "SKY" || skyRe.containsMatchIn(ch.name)) ch.logos.filter { it.startsWith(LIST_LOGOS) }
     else ch.logos
 
-/** Carica il logo del canale provando gli URL uno dopo l'altro; se nessuno va, mostra l'icona TV. */
+private val logoGood = ConcurrentHashMap<String, String>()   // canale -> logo che si e' caricato
+private val logoBad = ConcurrentHashMap<String, Long>()       // logo -> quando e' fallito
+private const val BAD_MS = 10 * 60_000L
+
+/**
+ * Carica il logo del canale provando gli URL uno dopo l'altro; se nessuno va, mostra l'icona TV.
+ * Ricorda il logo che ha funzionato (si riparte da quello) e salta per 10 minuti quelli falliti,
+ * cosi' non si rifanno richieste inutili a ogni riga o card che si ricostruisce.
+ */
 fun loadChannelLogo(iv: ImageView, ch: Channel) {
     iv.tag = ch.url
-    showLogo(iv, ch, logoCandidates(ch), 0)
+    val good = logoGood[ch.url]
+    val now = System.currentTimeMillis()
+    val list = if (good != null) listOf(good)
+    else logoCandidates(ch).filter { (logoBad[it] ?: 0L) + BAD_MS < now }
+    showLogo(iv, ch, list, 0)
 }
 
 private fun showLogo(iv: ImageView, ch: Channel, list: List<String>, idx: Int) {
@@ -48,10 +61,17 @@ private fun showLogo(iv: ImageView, ch: Channel, list: List<String>, idx: Int) {
         return
     }
     iv.imageTintList = null
-    iv.load(list[idx]) {
-        listener(onError = { _, _ ->
-            if (iv.tag == ch.url) showLogo(iv, ch, list, idx + 1)
-        })
+    val url = list[idx]
+    iv.load(url) {
+        crossfade(false)
+        listener(
+            onSuccess = { _, _ -> logoGood[ch.url] = url },
+            onError = { _, _ ->
+                logoBad[url] = System.currentTimeMillis()
+                if (logoGood[ch.url] == url) logoGood.remove(ch.url)
+                if (iv.tag == ch.url) showLogo(iv, ch, list, idx + 1)
+            }
+        )
     }
 }
 
