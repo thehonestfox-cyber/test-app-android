@@ -1483,23 +1483,83 @@ class MainActivity : AppCompatActivity() {
         it.show()
     }
 
-    // Barra di scorrimento a destra, sempre visibile (anche con il telecomando), per ogni lista che scorre
+    // Barra di scorrimento sottile e grigia, sempre visibile ma solo da vedere: non si può toccare
+    // né trascinare. La disegno io sopra al contenitore (come semplice disegno, che non riceve tocchi)
+    // al posto di quella di sistema.
     private fun <T : View> T.scrollbar(): T {
-        isVerticalScrollBarEnabled = true
-        isScrollbarFadingEnabled = false
-        scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
-        scrollBarSize = dp(6)
-        if (Build.VERSION.SDK_INT >= 29) {
-            val on = c(MR.attr.colorOnSurface) and 0xFFFFFF
-            verticalScrollbarThumbDrawable = GradientDrawable().apply {
-                cornerRadius = dp(3).toFloat()
-                setColor(on or 0x99000000.toInt())
+        isVerticalScrollBarEnabled = false
+        val target = this
+        val thumb = object : android.graphics.drawable.Drawable() {
+            private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+            private val rect = android.graphics.RectF()
+
+            override fun draw(canvas: android.graphics.Canvas) {
+                if (!target.isShown) return
+                val range: Int
+                val offset: Int
+                val extent: Int
+                when (target) {
+                    is RecyclerView -> {
+                        range = target.computeVerticalScrollRange()
+                        offset = target.computeVerticalScrollOffset()
+                        extent = target.computeVerticalScrollExtent()
+                    }
+                    is ScrollView -> {
+                        val child = target.getChildAt(0) ?: return
+                        range = child.height + target.paddingTop + target.paddingBottom
+                        offset = target.scrollY
+                        extent = target.height
+                    }
+                    else -> return
+                }
+                if (extent <= 0 || range <= extent) return   // niente da scorrere: nessuna barra
+                val inset = dp(4)
+                val track = target.height - 2 * inset
+                if (track <= 0) return
+                val thumbH = (track.toLong() * extent / range).toInt().coerceIn(dp(28), track)
+                val maxOffset = range - extent
+                val top = target.top + inset +
+                    ((track - thumbH).toLong() * offset.coerceIn(0, maxOffset) / maxOffset).toInt()
+                val right = (target.right - dp(2)).toFloat()
+                rect.set(right - dp(3), top.toFloat(), right, (top + thumbH).toFloat())
+                paint.color = (c(MR.attr.colorOnSurface) and 0xFFFFFF) or 0x66000000
+                canvas.drawRoundRect(rect, dp(2).toFloat(), dp(2).toFloat(), paint)
             }
-            verticalScrollbarTrackDrawable = GradientDrawable().apply {
-                cornerRadius = dp(3).toFloat()
-                setColor(on or 0x1F000000)
-            }
+
+            override fun setAlpha(alpha: Int) {}
+            override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {}
+            @Suppress("OVERRIDE_DEPRECATION")
+            override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
         }
+
+        var host: ViewGroup? = null
+        fun redraw() { host?.invalidate() }
+
+        addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                host?.overlay?.remove(thumb)
+                host = v.parent as? ViewGroup
+                host?.overlay?.add(thumb)
+                host?.invalidate()
+            }
+
+            override fun onViewDetachedFromWindow(v: View) {
+                host?.overlay?.remove(thumb)
+                host = null
+            }
+        })
+        if (isAttachedToWindow) {
+            host = parent as? ViewGroup
+            host?.overlay?.add(thumb)
+        }
+
+        when (this) {
+            is ScrollView -> setOnScrollChangeListener { _, _, _, _, _ -> redraw() }
+            is RecyclerView -> addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) = redraw()
+            })
+        }
+        addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> redraw() }
         return this
     }
 
