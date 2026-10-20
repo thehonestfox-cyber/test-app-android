@@ -465,8 +465,6 @@ class MainActivity : AppCompatActivity() {
         // Barra fissa in alto con il nome dell'app (fuori dalle sezioni)
         val bar = MaterialToolbar(this).apply {
             title = "PEZ8"
-            setNavigationIcon(R.drawable.ic_tv)
-            setNavigationIconTint(c(MR.attr.colorPrimary))
             setTitleTextColor(c(MR.attr.colorOnSurface))
         }
         val divider = View(this).apply { setBackgroundColor(c(MR.attr.colorOutlineVariant)) }
