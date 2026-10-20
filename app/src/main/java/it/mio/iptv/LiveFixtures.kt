@@ -8,6 +8,8 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 /**
  * Eventi live creati da soli, giornata per giornata, dai siti ufficiali:
@@ -25,6 +27,7 @@ object LiveFixtures {
     private const val URL_A = "https://www.legaseriea.it/serie-a/calendario-risultati"
     private const val URL_B = "https://www.legab.it/seriebkt"
     private const val URL_C = "https://www.seriec.com/"
+    private const val URL_A_DB = "https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4332"   // Serie A
 
     private const val UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -79,6 +82,36 @@ object LiveFixtures {
         return null
     }
 
+    // ---- Serie A da TheSportsDB (se il sito della lega non da' le partite) ----
+
+    private fun serieAFromSportsDb(): List<Fixture> {
+        val txt = http(URL_A_DB) ?: return emptyList()
+        return try {
+            val arr = JSONObject(txt).optJSONArray("events") ?: return emptyList()
+            val out = ArrayList<Fixture>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val home = o.optString("strHomeTeam", "")
+                val away = o.optString("strAwayTeam", "")
+                if (home.isEmpty() || away.isEmpty()) continue
+                // gli orari di TheSportsDB sono in UTC
+                val ts = o.optString("strTimestamp", "")
+                val ms = try {
+                    if (ts.isNotEmpty()) LocalDateTime.parse(ts.substringBefore('+').substringBefore('Z')).atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
+                    else LocalDateTime.parse(o.getString("dateEvent") + "T" + o.optString("strTime", "00:00:00").take(8))
+                        .atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
+                } catch (_: Exception) {
+                    continue
+                }
+                out.add(Fixture("A", o.optString("intRound", "0").toIntOrNull() ?: 0, home, away, ms))
+            }
+            out
+        } catch (e: Exception) {
+            Log.d(TAG, "Serie A: errore di lettura TheSportsDB ${e.message}")
+            emptyList()
+        }
+    }
+
     // ---- ricordo delle partite gia' viste (restano anche quando il sito non le elenca piu') ----
 
     private fun toJson(l: List<Fixture>) = JSONArray().also { arr ->
@@ -131,13 +164,22 @@ object LiveFixtures {
         for ((league, url, parse) in sources) {
             if (now - (lastFetch[league] ?: 0L) < REFRESH_MS) continue
             val html = http(url)
-            if (html == null) {
+            var parsed: List<Fixture> = emptyList()
+            if (html != null) {
+                parsed = try { parse(html) } catch (e: Exception) { Log.d(TAG, "Serie $league: errore di lettura ${e.message}"); emptyList() }
+                Log.d(TAG, "Serie $league: ${parsed.size} partite lette da $url")
+            }
+            // La pagina della Serie A e' fatta in JavaScript e non sempre ha le partite nel testo: se non se ne legge
+            // nessuna si prendono da TheSportsDB (calendario e orari della Serie A).
+            if (league == "A" && parsed.isEmpty()) {
+                parsed = serieAFromSportsDb()
+                Log.d(TAG, "Serie A: ${parsed.size} partite lette da TheSportsDB")
+            }
+            if (html == null && parsed.isEmpty()) {
                 lastFetch[league] = now - REFRESH_MS + 30_000L    // errore di rete: si riprova tra 30 secondi
                 continue
             }
             lastFetch[league] = now
-            val parsed = try { parse(html) } catch (e: Exception) { Log.d(TAG, "Serie $league: errore di lettura ${e.message}"); emptyList() }
-            Log.d(TAG, "Serie $league: ${parsed.size} partite lette da $url")
             if (parsed.isNotEmpty()) store(league, parsed)
         }
         return current()

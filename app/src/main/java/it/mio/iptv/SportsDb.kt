@@ -219,13 +219,12 @@ object SportsDb {
 
     fun badgeUrl(url: String): String = sized(url, "small")
 
-    /** Scarica in anticipo gli stemmi (e calcola i colori di sfondo) degli eventi indicati. */
+    /** Scarica in anticipo gli stemmi degli eventi indicati. */
     fun prefetch(channels: List<Channel>) {
         channels.distinctBy { it.name }.forEach { ch ->
             repoBadges(ch.name) { r ->
                 if (r != null) {
                     warmBadge(r.home); warmBadge(r.away); warmBadge(r.league)
-                    app?.let { MatchThumb.preColor(it, r.home); MatchThumb.preColor(it, r.away) }
                 }
             }
         }

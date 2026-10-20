@@ -1092,7 +1092,7 @@ class MainActivity : AppCompatActivity() {
             SportsDb.loadThumb(logo, key) { home, away, league ->
                 // thumb ricreata con gli stemmi delle due squadre e il logo del campionato (repo GitHub)
                 if (badgesRow == null) {
-                    val v = MatchThumb.build(context, home, away, league)
+                    val v = MatchThumb.build(context, home, away, league, ch.name)
                     badgesRow = v
                     addView(v, 1, FrameLayout.LayoutParams(MATCH, MATCH))
                 }
@@ -1701,13 +1701,14 @@ class MainActivity : AppCompatActivity() {
         }
         sections.forEachIndexed { i, sec ->
             val secCats = Featured.load(prefs, sec.id)
-            val nAuto = secCats.count { LiveFixtures.isAuto(it.name) }
-            val n = secCats.filter { !(sec.isLive && LiveFixtures.isAuto(it.name)) }.sumOf { it.channels.size }
+            val n = secCats.sumOf { c0 ->
+                if (sec.isLive && LiveFixtures.isAuto(c0.name)) autoEvents[c0.name]?.size ?: 0 else c0.channels.size
+            }
             val del = {
                 confirmDelete("La sezione \"${sec.name}\" e tutti i suoi canali") { deleteSection(sec.id) }
             }
             val unit = if (sec.isLive) "eventi" else "canali"
-            val count = if (sec.isLive && nAuto > 0) "$n $unit + $nAuto automatiche" else "$n $unit"
+            val count = "$n $unit"
             val sub = if (sec.description.isBlank()) count else "${sec.description} · $count"
             val card = itemCard(
                 title = sec.name, sub = sub, selected = false,
@@ -1980,8 +1981,33 @@ class MainActivity : AppCompatActivity() {
     private val adminLive: Boolean
         get() = Sections.load(prefs).firstOrNull { it.id == adminSection }?.isLive == true
 
+    private var adminAutoLoading = false
+
+    // Admin di una sezione live: carica (una volta) gli eventi delle categorie Serie A/B/C per mostrarli nell'elenco
+    private fun ensureAdminAutoEvents(cats: List<FeaturedCategory>) {
+        val autos = cats.filter { LiveFixtures.isAuto(it.name) }
+        if (autos.isEmpty() || adminAutoLoading || autos.all { autoEvents.containsKey(it.name) }) return
+        adminAutoLoading = true
+        val section = adminSection
+        loadPlaylistChannels { playlist, _, final ->
+            if (!final) return@loadPlaylistChannels
+            Thread {
+                val fx = LiveFixtures.refresh()
+                val ev = autos.associate { c ->
+                    c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
+                }
+                runOnUiThread {
+                    adminAutoLoading = false
+                    autoEvents = autoEvents + ev
+                    if (adminEditing == section) refreshAdmin()
+                }
+            }.start()
+        }
+    }
+
     private fun refreshFeatured() {
         val cats = Featured.load(prefs, adminSection)
+        if (adminLive) ensureAdminAutoEvents(cats)
         val secName = Sections.load(prefs).firstOrNull { it.id == adminSection }?.name ?: ""
         adminList.addView(
             outlinedBtn("Sezioni") {
@@ -2018,7 +2044,7 @@ class MainActivity : AppCompatActivity() {
             val missing = listOf("Serie A", "Serie B", "Serie C").filter { n -> cats.none { it.name.equals(n, ignoreCase = true) } }
             if (missing.isNotEmpty()) {
                 adminList.addView(
-                    outlinedBtn("Aggiungi ${missing.joinToString(" / ")} (automatiche)") {
+                    outlinedBtn("Aggiungi ${missing.joinToString(" / ")}") {
                         Featured.edit(prefs, adminSection) { l -> missing.forEach { l.add(FeaturedCategory(it, emptyList())) } }
                         refreshAdmin()
                     },
@@ -2027,7 +2053,7 @@ class MainActivity : AppCompatActivity() {
             }
             adminList.addView(
                 tv(
-                    "Le categorie \"Serie A\", \"Serie B\" e \"Serie C\" si riempiono da sole, giornata per giornata, con orari dai siti ufficiali delle leghe. Serie A e B usano il canale col nome della squadra di casa (FHD, o HD se manca).",
+                    "Le categorie \"Serie A\", \"Serie B\" e \"Serie C\" mostrano gli eventi della giornata con i loro orari. Il canale è quello col nome della squadra di casa (FHD, o HD se manca).",
                     13f, c(MR.attr.colorOnSurfaceVariant)
                 ).apply { setPadding(dp(4), dp(8), dp(4), 0) }
             )
@@ -2046,8 +2072,26 @@ class MainActivity : AppCompatActivity() {
             val h = categoryHeader(i, cat, cats.size)
             headers.add(h)
             adminList.addView(h)
-            if (adminLive && LiveFixtures.isAuto(cat.name)) return@forEachIndexed   // eventi automatici: non si modificano
             if (isCollapsed(cat)) return@forEachIndexed
+            if (adminLive && LiveFixtures.isAuto(cat.name)) {
+                // stessi riquadri degli eventi inseriti a mano (si rigenerano da soli, quindi senza matita/cestino)
+                val evs = autoEvents[cat.name] ?: emptyList()
+                if (evs.isEmpty()) {
+                    adminList.addView(
+                        tv("Nessun evento.", 13f, c(MR.attr.colorOnSurfaceVariant))
+                            .apply { setPadding(dp(16), dp(4), 0, 0) }
+                    )
+                }
+                evs.forEach { ch ->
+                    adminList.addView(
+                        itemCard(
+                            title = ch.name, sub = ch.rawName.takeIf { it != ch.name }, selected = false,
+                            onClick = null, onEdit = null, onDelete = null
+                        )
+                    )
+                }
+                return@forEachIndexed
+            }
             if (cat.channels.isEmpty()) {
                 adminList.addView(
                     tv("Nessun ${adminNoun}: tocca + per aggiungerne.", 13f, c(MR.attr.colorOnSurfaceVariant))
@@ -2115,20 +2159,20 @@ class MainActivity : AppCompatActivity() {
             if (!collapsedCats.remove(collapseKey(cat))) collapsedCats.add(collapseKey(cat))
             refreshAdmin()
         }
-        // Serie A / B / C in una sezione live: gli eventi si creano da soli, niente "+"
+        // Serie A / B / C in una sezione live: gli eventi arrivano da soli, quindi niente "+"
         val auto = adminLive && LiveFixtures.isAuto(cat.name)
         val add = iconBtn(R.drawable.ic_add, tint, dp(10), null) { addChannelDialog(i) }
         return LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(20), 0, 0)
             addView(
-                tv(if (auto) "${cat.name} · automatica" else "${cat.name} · ${cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
+                tv("${cat.name} · ${if (auto) autoEvents[cat.name]?.size ?: 0 else cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
                 LinearLayout.LayoutParams(0, WRAP, 1f)
             )
-            if (!auto) addView(collapse, LinearLayout.LayoutParams(dp(44), dp(44)))
+            addView(collapse, LinearLayout.LayoutParams(dp(44), dp(44)))
             if (!auto) addView(add, LinearLayout.LayoutParams(dp(44), dp(44)))
             addView(more, LinearLayout.LayoutParams(dp(44), dp(44)))
-            tag = FocusRow(if (auto) listOf(more) else listOf(collapse, add, more))
+            tag = FocusRow(if (auto) listOf(collapse, more) else listOf(collapse, add, more))
         }
     }
 
