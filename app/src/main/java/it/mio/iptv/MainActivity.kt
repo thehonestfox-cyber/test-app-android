@@ -1835,12 +1835,12 @@ class MainActivity : AppCompatActivity() {
 
     // --- Tab Generali: aspetto dell'app ---
 
-    private val themeKeys = listOf("system", "light", "dark")
-    private val themeLabels = arrayOf("Come il sistema", "Chiaro", "Scuro")
+    private val themeKeys = listOf("light", "dark", "system")
+    private val themeLabels = arrayOf("Chiaro", "Scuro", "Predefinito di sistema")
 
     private fun refreshGeneral() {
         val i = themeKeys.indexOf(prefs.getString("theme", "system")).coerceAtLeast(0)
-        adminList.addView(settingRow(R.drawable.ic_theme, "Aspetto", themeLabels[i]) { themeDialog() })
+        adminList.addView(settingRow(R.drawable.ic_theme, "Tema", themeLabels[i]) { themeDialog() })
     }
 
     // Riga di impostazione senza riquadro: icona + titolo + valore attuale
@@ -1870,7 +1870,7 @@ class MainActivity : AppCompatActivity() {
     private fun themeDialog() {
         val cur = themeKeys.indexOf(prefs.getString("theme", "system")).coerceAtLeast(0)
         MaterialAlertDialogBuilder(this)
-            .setTitle("Aspetto")
+            .setTitle("Tema")
             .setSingleChoiceItems(themeLabels, cur) { d, which ->
                 d.dismiss()
                 setTheme(themeKeys[which])
