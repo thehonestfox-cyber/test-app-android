@@ -15,7 +15,7 @@ import kotlin.concurrent.thread
 
 /** Controlla l'ultima release GitHub e propone l'aggiornamento. */
 object Updater {
-    private const val REPO = "fp-pez8/test-app-android"
+    private const val REPO = "thehonestfox-cyber/test-app-android"
 
     fun check(act: Activity) {
         thread {
