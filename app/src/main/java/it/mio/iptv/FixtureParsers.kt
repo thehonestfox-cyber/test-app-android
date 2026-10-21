@@ -7,11 +7,14 @@ import java.time.ZoneId
 /** Una partita presa dai siti ufficiali delle leghe. [start] = inizio in millisecondi; [round] = giornata (0 = non nota). */
 data class Fixture(val league: String, val round: Int, val home: String, val away: String, val start: Long)
 
+/** Una riga della guida Sky alla Serie C: "LIVORNO-GROSSETO" e i canali Sky dove si vede (es. "Sky Sport Arena", "Sky Sport 251"). */
+data class SkyMatch(val teams: String, val channels: List<String>)
+
 /**
  * Lettura delle pagine dei siti ufficiali (solo testo/HTML, nessuna API):
  *  - Serie A: sport.sky.it/calcio/serie-a/calendario-risultati
  *  - Serie B: legab.it/seriebkt
- *  - Serie C: seriec.com
+ *  - Serie C: seriec.com (partite) + sport.sky.it (canale Sky di ogni partita)
  * Niente di Android qui dentro, cosi' si puo' provare anche su un computer.
  */
 object FixtureParsers {
@@ -285,6 +288,48 @@ object FixtureParsers {
                 continue
             }
             out[key] = Fixture("A", round, home, away, toMs(date, h, mi))
+        }
+        return out.values.toList()
+    }
+
+    // ------------------------------------------------------------------ Canali Sky della Serie C (sport.sky.it)
+
+    private val skyLinkRe =
+        Regex("""/calcio/serie-c/(\d{4})/(\d{2})/(\d{2})/serie-c-partite-sky-[a-z0-9\-]*giornata-(\d+)""")
+    private val blockEndRe = Regex("""(?is)</(?:li|p|h[1-6]|div|tr|ul|ol)\s*>|<br\s*/?>""")
+    private val skyLineRe = Regex("""(?i)([^\n,]{3,70}?)\s*,\s*in diretta su\s+([^\n]+)""")
+    private val skyChanRe = Regex("""(?i)\bSky\s+Sp(?:ort|ot)\s+([A-Za-zÀ-ÿ]+|\d{1,3})\b""")
+    private val bulletRe = Regex("""[*•]""")
+
+    /** Indirizzi degli articoli "Serie C, il calendario della N^ giornata su Sky" trovati in una pagina di sport.sky.it. */
+    fun skyGuideLinks(html: String): List<String> =
+        skyLinkRe.findAll(html).map { "https://sport.sky.it" + it.value }.distinct().toList()
+
+    /** Per mettere gli articoli dal piu' recente: data (aaaammgg) e numero della giornata. */
+    fun skyLinkStamp(url: String): Long {
+        val m = skyLinkRe.find(url) ?: return 0L
+        return (m.groupValues[1] + m.groupValues[2] + m.groupValues[3]).toLong() * 100L + m.groupValues[4].toLong()
+    }
+
+    /**
+     * Articolo della guida Sky: righe tipo "LIVORNO-GROSSETO, in diretta su Sky Sport Arena e Sky Sport 251".
+     * Ogni riga diventa una partita con l'elenco dei canali Sky (anche se la pagina scrive "Sky Spot 252").
+     * Le righe senza i due nomi o senza canali Sky si saltano.
+     */
+    fun parseSkyGuide(html: String): List<SkyMatch> {
+        var t = scriptRe.replace(html, " ")
+        t = commentRe.replace(t, " ")
+        t = blockEndRe.replace(t, "\n")
+        t = tagRe.replace(t, "")
+        t = decode(t)
+        val out = LinkedHashMap<String, SkyMatch>()
+        for (line in t.lines()) {
+            val m = skyLineRe.find(line) ?: continue
+            val teams = bulletRe.replace(m.groupValues[1], "").replace(spaceRe, " ").trim().trim('-', ' ')
+            if (!teams.contains('-') && !teams.contains('\u2013')) continue
+            val chans = skyChanRe.findAll(m.groupValues[2]).map { "Sky Sport " + pretty(it.groupValues[1]) }.distinct().toList()
+            if (chans.isEmpty()) continue
+            out.putIfAbsent(fold(teams), SkyMatch(teams, chans))
         }
         return out.values.toList()
     }

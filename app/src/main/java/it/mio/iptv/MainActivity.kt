@@ -2053,7 +2053,7 @@ class MainActivity : AppCompatActivity() {
             }
             adminList.addView(
                 tv(
-                    "Le categorie \"Serie A\", \"Serie B\" e \"Serie C\" mostrano gli eventi della giornata con i loro orari. Il canale è quello col nome della squadra di casa (FHD, o HD se manca).",
+                    "Le categorie \"Serie A\", \"Serie B\" e \"Serie C\" mostrano gli eventi della giornata con i loro orari. Il canale è quello col nome della squadra di casa (FHD, o HD se manca); in Serie C è quello che Sky indica per la partita (Sky Sport 251, 252…), se c'è nella playlist. Puoi modificare o togliere ogni evento: la scelta resta anche quando l'elenco si aggiorna.",
                     13f, c(MR.attr.colorOnSurfaceVariant)
                 ).apply { setPadding(dp(4), dp(8), dp(4), 0) }
             )
@@ -2074,11 +2074,12 @@ class MainActivity : AppCompatActivity() {
             adminList.addView(h)
             if (isCollapsed(cat)) return@forEachIndexed
             if (adminLive && LiveFixtures.isAuto(cat.name)) {
-                // stessi riquadri degli eventi inseriti a mano (si rigenerano da soli, quindi senza matita/cestino)
+                // stessi riquadri degli eventi inseriti a mano; si rigenerano da soli, ma modifica e rimozione si ricordano per partita
+                val league = LiveFixtures.leagueOf(cat.name)!!
                 val evs = autoEvents[cat.name] ?: emptyList()
                 if (evs.isEmpty()) {
                     adminList.addView(
-                        tv("Nessun evento. ${LiveFixtures.diag[LiveFixtures.leagueOf(cat.name)] ?: "Caricamento..."}", 13f, c(MR.attr.colorOnSurfaceVariant))
+                        tv("Nessun evento. ${LiveFixtures.diag[league] ?: "Caricamento..."}", 13f, c(MR.attr.colorOnSurfaceVariant))
                             .apply { setPadding(dp(16), dp(4), 0, 0) }
                     )
                 }
@@ -2086,8 +2087,27 @@ class MainActivity : AppCompatActivity() {
                     adminList.addView(
                         itemCard(
                             title = ch.name, sub = ch.rawName.takeIf { it != ch.name }, selected = false,
-                            onClick = null, onEdit = null, onDelete = null
+                            onClick = { editAutoEventDialog(cat.name, ch) },
+                            onEdit = { editAutoEventDialog(cat.name, ch) },
+                            onDelete = {
+                                confirmDelete(ch.name) {
+                                    LiveFixtures.removeEvent(league, ch.evKey)
+                                    autoEvents = autoEvents + (cat.name to (autoEvents[cat.name] ?: emptyList()).filter { it.evKey != ch.evKey })
+                                    refreshAdmin()
+                                }
+                            }
                         )
+                    )
+                }
+                val removedN = LiveFixtures.removedCount(league)
+                if (removedN > 0) {
+                    adminList.addView(
+                        outlinedBtn("Ripristina ${if (removedN == 1) "1 evento rimosso" else "$removedN eventi rimossi"}") {
+                            LiveFixtures.restoreRemoved(league)
+                            autoEvents = autoEvents - cat.name    // si rigenerano tutti
+                            refreshAdmin()
+                        },
+                        LinearLayout.LayoutParams(WRAP, WRAP).apply { topMargin = dp(8); leftMargin = dp(16) }
                     )
                 }
                 return@forEachIndexed
@@ -2368,6 +2388,72 @@ class MainActivity : AppCompatActivity() {
                 dlg.dismiss()
                 prefetchLive()   // scarica subito gli stemmi del nuovo evento
                 refreshAdmin()
+            }
+        }
+        dlg.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        dlg.show()
+    }
+
+    // Modifica di un evento automatico (Serie A/B/C): nome e/o canale. Si ricorda per quella partita anche dopo gli aggiornamenti;
+    // "Ripristina" (se già modificato) lo riporta com'è generato da solo
+    private fun editAutoEventDialog(catName: String, ch: Channel) {
+        val league = LiveFixtures.leagueOf(catName) ?: return
+        val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+        val til = field("Nome $adminNoun")
+        til.endIconMode = TextInputLayout.END_ICON_CLEAR_TEXT
+        til.editText!!.apply {
+            setText(ch.name)
+            setSelectAllOnFocus(true)
+        }
+        til.placeholderText = ch.name   // se lo lasci vuoto, resta questo nome
+
+        var picked: Channel? = null
+        val pk = playlistPicker { p -> picked = p }
+        pk.adapter.select(ch.url)          // il canale attuale risulta già selezionato
+        pk.search.hint = "Cambia canale: cerca nella playlist"
+
+        val listH = (resources.displayMetrics.heightPixels * (if (land) 0.45f else 0.4f)).toInt()
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(8), dp(24), 0)
+            addView(til, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(pk.search, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) })
+            addView(pk.status)
+            addView(pk.recycler, LinearLayout.LayoutParams(MATCH, listH))
+        }
+        val edited = LiveFixtures.hasOverride(league, ch.evKey)
+        val builder = MaterialAlertDialogBuilder(this)
+            .setTitle("Modifica $adminNoun")
+            .setView(scroll(box))
+            .setPositiveButton("Salva", null)
+            .setNegativeButton("Annulla", null)
+        if (edited) builder.setNeutralButton("Ripristina", null)
+        val dlg = builder.create()
+        dlg.setOnShowListener {
+            dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                val p = picked
+                val n = til.editText!!.text.toString().trim().ifEmpty { ch.name }
+                LiveFixtures.editEvent(league, ch.evKey, if (n != ch.name) n else null, p)
+                val upd = ch.copy(
+                    name = n,
+                    rawName = p?.rawName ?: ch.rawName,
+                    quality = p?.quality ?: ch.quality,
+                    url = p?.url ?: ch.url,
+                    logos = p?.logos ?: ch.logos
+                )
+                autoEvents = autoEvents + (catName to (autoEvents[catName] ?: emptyList()).map { if (it.evKey == ch.evKey) upd else it })
+                dlg.dismiss()
+                prefetchLive()
+                refreshAdmin()
+            }
+            if (edited) {
+                dlg.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
+                    LiveFixtures.resetEvent(league, ch.evKey)
+                    autoEvents = autoEvents - catName    // si rigenera com'è generato da solo
+                    dlg.dismiss()
+                    refreshAdmin()
+                }
             }
         }
         dlg.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
