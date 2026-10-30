@@ -7,19 +7,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.LocalDate
 
 /**
- * Eventi live creati da soli, giornata per giornata, dai siti ufficiali:
- *  - Serie A: https://sport.sky.it/calcio/serie-a/calendario-risultati
- *  - Serie B: https://www.legab.it/seriebkt
- *  - Serie C: https://www.seriec.com/
+ * Eventi live creati da soli, giornata per giornata. I siti non si leggono piu' nell'app: un job di GitHub Actions
+ * (scripts/aggiorna_eventi.py, ogni 10 minuti) li legge e pubblica eventi.json; l'app scarica solo quello.
+ *  - Serie A: sport.sky.it, Serie B: legab.it, Serie C: seriec.com + guida Sky (canali)
  *
  * Una categoria di una sezione "Eventi live" il cui nome e' "Serie A", "Serie B" o "Serie C" si riempie da sola:
  * ogni partita diventa un evento "Casa - Ospite" con il suo orario. Per Serie A e B il canale e' quello della
  * playlist col nome della squadra di casa: FHD, oppure HD solo se l'FHD non c'e'.
- * Per la Serie C il canale e' quello che Sky indica per la partita (Sky Sport 251, 252...) se c'e' nella playlist
- * (guida: articoli "Serie C, il calendario della N^ giornata su Sky" di sport.sky.it); altrimenti quello della squadra.
+ * Per la Serie C il canale e' quello che Sky indica per la partita (Sky Sport 251, 252...) se c'e' nella playlist;
+ * altrimenti quello della squadra.
  *
  * L'admin puo' modificare (nome, canale) o rimuovere ogni evento automatico: le scelte si ricordano per partita
  * (chiave "casa|ospite|giornata") e restano anche quando l'elenco si aggiorna da solo.
@@ -27,19 +25,15 @@ import java.time.LocalDate
 object LiveFixtures {
     private const val TAG = "Fixtures"   // diagnostica: Logcat, filtro "Fixtures"
 
-    private const val URL_A = "https://sport.sky.it/calcio/serie-a/calendario-risultati"
-    private const val URL_B = "https://www.legab.it/seriebkt"
-    private const val URL_C = "https://www.seriec.com/"
+    private const val URL_DATA =
+        "https://raw.githubusercontent.com/thehonestfox-cyber/test-app-android/main/eventi.json"
 
     private const val UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     private const val REFRESH_MS = 5 * 60_000L
     private const val KEEP_MS = 36 * 3_600_000L
 
-    // guida Sky alla Serie C: pagine dove cercare gli articoli delle giornate, ogni quanto aggiornarla, quanti articoli leggere
-    private val SKY_INDEX = listOf("https://sport.sky.it/calcio/serie-c", "https://sport.sky.it/argomenti/guida-tv")
-    private const val SKY_REFRESH_MS = 15 * 60_000L
-    private const val SKY_ARTICLES = 3
+    // guida Sky alla Serie C: quanto resta valida
     private const val SKY_VALID_MS = 10 * 86_400_000L     // una guida piu' vecchia di cosi' non si usa piu'
     private const val MEMO_MS = 60L * 86_400_000L          // modifiche/rimozioni dell'admin: si dimenticano dopo 60 giorni
 
@@ -134,36 +128,64 @@ object LiveFixtures {
 
     // ---- API ----
 
-    /** Scarica (al massimo ogni 5 minuti) le partite dei tre campionati. Da chiamare su un thread a parte. */
+    /** Scarica (al massimo ogni 5 minuti) eventi.json con le partite dei tre campionati. Da chiamare su un thread a parte. */
     @Synchronized
     fun refresh(): Map<String, List<Fixture>> {
         val now = System.currentTimeMillis()
-        val today = LocalDate.now(FixtureParsers.ROME)
-        val sources = listOf(
-            Triple<String, String, (String) -> List<Fixture>>("A", URL_A, { h -> FixtureParsers.parseSerieA(h) }),
-            Triple<String, String, (String) -> List<Fixture>>("B", URL_B, { h -> FixtureParsers.parseSerieB(h) }),
-            Triple<String, String, (String) -> List<Fixture>>("C", URL_C, { h -> FixtureParsers.parseSerieC(h, today) })
-        )
-        for ((league, url, parse) in sources) {
-            if (now - (lastFetch[league] ?: 0L) < REFRESH_MS) continue
-            val html = http(url)
-            val info = StringBuilder(if (html == null) "sito: errore di rete" else "sito: letto")
-            var parsed: List<Fixture> = emptyList()
-            if (html != null) {
-                parsed = try { parse(html) } catch (e: Exception) { Log.d(TAG, "Serie $league: errore di lettura ${e.message}"); emptyList() }
-                Log.d(TAG, "Serie $league: ${parsed.size} partite lette da $url")
-                info.append(" (${parsed.size} partite)")
+        if (now - (lastFetch["DATA"] ?: 0L) >= REFRESH_MS) {
+            val text = http(URL_DATA)
+            if (text == null) {
+                lastFetch["DATA"] = now - REFRESH_MS + 30_000L    // errore di rete: si riprova tra 30 secondi
+                for (l in listOf("A", "B", "C")) diag[l] = "eventi.json: errore di rete"
+            } else {
+                lastFetch["DATA"] = now
+                try {
+                    applyData(JSONObject(text), now)
+                } catch (e: Exception) {
+                    Log.d(TAG, "eventi.json: errore di lettura ${e.message}")
+                    for (l in listOf("A", "B", "C")) diag[l] = "eventi.json: formato non valido"
+                }
             }
-            diag[league] = info.toString()
-            if (html == null && parsed.isEmpty()) {
-                lastFetch[league] = now - REFRESH_MS + 30_000L    // errore di rete: si riprova tra 30 secondi
-                continue
+        }
+        return current()
+    }
+
+    /** Mette nel ricordo dell'app le partite e la guida Sky lette dal file. */
+    private fun applyData(o: JSONObject, now: Long) {
+        val fx = o.optJSONObject("fixtures")
+        val stato = o.optJSONObject("stato")
+        for (league in listOf("A", "B", "C")) {
+            val arr = fx?.optJSONArray(league)
+            val parsed = ArrayList<Fixture>()
+            if (arr != null) {
+                for (i in 0 until arr.length()) {
+                    val f = arr.optJSONObject(i) ?: continue
+                    val h = f.optString("h", "")
+                    val a = f.optString("a", "")
+                    if (h.isEmpty() || a.isEmpty() || !f.has("s")) continue
+                    parsed.add(Fixture(league, f.optInt("r", 0), h, a, f.optLong("s")))
+                }
             }
-            lastFetch[league] = now
+            diag[league] = "eventi.json: ${stato?.optString(league, "ok") ?: "ok"} (${parsed.size} partite)"
+            Log.d(TAG, "Serie $league: ${parsed.size} partite da eventi.json")
             if (parsed.isNotEmpty()) store(league, parsed)
         }
-        refreshSky(now)
-        return current()
+        val skyArr = o.optJSONArray("sky")
+        if (skyArr != null && skyArr.length() > 0) {
+            val l = ArrayList<SkyMatch>()
+            for (i in 0 until skyArr.length()) {
+                val m = skyArr.optJSONObject(i) ?: continue
+                val c = m.optJSONArray("c") ?: continue
+                val t = m.optString("t", "")
+                if (t.isEmpty()) continue
+                l.add(SkyMatch(t, List(c.length()) { k -> c.getString(k) }))
+            }
+            if (l.isNotEmpty()) {
+                sky = l
+                prefs?.edit()?.putString("sky_c", skyToJson(l).toString())
+                    ?.putLong("sky_c_at", o.optLong("sky_at", now))?.apply()
+            }
+        }
     }
 
     /** Le partite della giornata in corso, da quanto e' gia' stato scaricato/ricordato (nessuna rete). */
@@ -196,42 +218,6 @@ object LiveFixtures {
         }
         sky = l
         return l
-    }
-
-    /** Scarica piu' pagine insieme (stesso ordine dell'elenco; null = errore di rete). */
-    private fun httpAll(urls: List<String>): List<String?> {
-        val out = arrayOfNulls<String>(urls.size)
-        val threads = urls.mapIndexed { i, u -> Thread { out[i] = http(u) }.also { it.start() } }
-        threads.forEach { it.join() }
-        return out.toList()
-    }
-
-    /** Cerca (al massimo ogni 15 minuti) gli ultimi articoli di Sky con i canali della Serie C e li ricorda. */
-    private fun refreshSky(now: Long) {
-        if (now - (lastFetch["SKY"] ?: 0L) < SKY_REFRESH_MS) return
-        val pages = httpAll(SKY_INDEX)
-        if (pages.all { it == null }) {
-            lastFetch["SKY"] = now - SKY_REFRESH_MS + 30_000L    // errore di rete: si riprova tra 30 secondi
-            return
-        }
-        lastFetch["SKY"] = now
-        val links = LinkedHashSet<String>()
-        pages.forEach { h -> if (h != null) links.addAll(FixtureParsers.skyGuideLinks(h)) }
-        val newest = links.sortedByDescending { FixtureParsers.skyLinkStamp(it) }.take(SKY_ARTICLES)
-        val map = LinkedHashMap<String, SkyMatch>()
-        // dal piu' recente: se la stessa partita e' in due articoli vale quello nuovo
-        httpAll(newest).forEach { h ->
-            if (h != null) {
-                val parsed: List<SkyMatch> = try { FixtureParsers.parseSkyGuide(h) } catch (_: Exception) { emptyList() }
-                for (m in parsed) map.putIfAbsent(FixtureParsers.fold(m.teams), m)
-            }
-        }
-        Log.d(TAG, "Sky Serie C: ${newest.size} articoli, ${map.size} partite con canale")
-        if (map.isNotEmpty()) {
-            val l = map.values.toList()
-            sky = l
-            prefs?.edit()?.putString("sky_c", skyToJson(l).toString())?.putLong("sky_c_at", now)?.apply()
-        }
     }
 
     // "Under 23" e "U23", "Next Gen" e "NextGen" sono la stessa cosa
