@@ -1,0 +1,2916 @@
+{
+ "fixtures": {
+  "A": [
+   {
+    "r": 10,
+    "h": "Bologna",
+    "a": "Monza",
+    "s": 1793455200000
+   },
+   {
+    "r": 10,
+    "h": "Udinese",
+    "a": "Roma",
+    "s": 1793466000000
+   },
+   {
+    "r": 10,
+    "h": "Milan",
+    "a": "Inter",
+    "s": 1793475900000
+   },
+   {
+    "r": 10,
+    "h": "Como",
+    "a": "Venezia",
+    "s": 1793532600000
+   },
+   {
+    "r": 10,
+    "h": "Frosinone",
+    "a": "Torino",
+    "s": 1793541600000
+   },
+   {
+    "r": 10,
+    "h": "Lazio",
+    "a": "Cagliari",
+    "s": 1793541600000
+   },
+   {
+    "r": 10,
+    "h": "Lecce",
+    "a": "Genoa",
+    "s": 1793552400000
+   },
+   {
+    "r": 10,
+    "h": "Juventus",
+    "a": "Napoli",
+    "s": 1793562300000
+   },
+   {
+    "r": 10,
+    "h": "Sassuolo",
+    "a": "Fiorentina",
+    "s": 1793640600000
+   },
+   {
+    "r": 10,
+    "h": "Atalanta",
+    "a": "Parma",
+    "s": 1793648700000
+   },
+   {
+    "r": 11,
+    "h": "Venezia",
+    "a": "Udinese",
+    "s": 1793994300000
+   },
+   {
+    "r": 11,
+    "h": "Cagliari",
+    "a": "Frosinone",
+    "s": 1794060000000
+   },
+   {
+    "r": 11,
+    "h": "Torino",
+    "a": "Lecce",
+    "s": 1794060000000
+   },
+   {
+    "r": 11,
+    "h": "Parma",
+    "a": "Bologna",
+    "s": 1794070800000
+   },
+   {
+    "r": 11,
+    "h": "Roma",
+    "a": "Sassuolo",
+    "s": 1794080700000
+   },
+   {
+    "r": 11,
+    "h": "Napoli",
+    "a": "Lazio",
+    "s": 1794137400000
+   },
+   {
+    "r": 11,
+    "h": "Genoa",
+    "a": "Milan",
+    "s": 1794146400000
+   },
+   {
+    "r": 11,
+    "h": "Monza",
+    "a": "Atalanta",
+    "s": 1794146400000
+   },
+   {
+    "r": 11,
+    "h": "Inter",
+    "a": "Como",
+    "s": 1794157200000
+   },
+   {
+    "r": 11,
+    "h": "Fiorentina",
+    "a": "Juventus",
+    "s": 1794167100000
+   },
+   {
+    "r": 12,
+    "h": "Como",
+    "a": "Cagliari",
+    "s": 1795269600000
+   },
+   {
+    "r": 12,
+    "h": "Lazio",
+    "a": "Lecce",
+    "s": 1795269600000
+   },
+   {
+    "r": 12,
+    "h": "Parma",
+    "a": "Roma",
+    "s": 1795280400000
+   },
+   {
+    "r": 12,
+    "h": "Napoli",
+    "a": "Torino",
+    "s": 1795290300000
+   },
+   {
+    "r": 12,
+    "h": "Juventus",
+    "a": "Venezia",
+    "s": 1795347000000
+   },
+   {
+    "r": 12,
+    "h": "Bologna",
+    "a": "Udinese",
+    "s": 1795356000000
+   },
+   {
+    "r": 12,
+    "h": "Sassuolo",
+    "a": "Genoa",
+    "s": 1795356000000
+   },
+   {
+    "r": 12,
+    "h": "Milan",
+    "a": "Frosinone",
+    "s": 1795366800000
+   },
+   {
+    "r": 12,
+    "h": "Atalanta",
+    "a": "Inter",
+    "s": 1795376700000
+   },
+   {
+    "r": 12,
+    "h": "Monza",
+    "a": "Fiorentina",
+    "s": 1795463100000
+   },
+   {
+    "r": 13,
+    "h": "Venezia",
+    "a": "Bologna",
+    "s": 1795808700000
+   },
+   {
+    "r": 13,
+    "h": "Frosinone",
+    "a": "Parma",
+    "s": 1795874400000
+   },
+   {
+    "r": 13,
+    "h": "Torino",
+    "a": "Lazio",
+    "s": 1795885200000
+   },
+   {
+    "r": 13,
+    "h": "Inter",
+    "a": "Genoa",
+    "s": 1795895100000
+   },
+   {
+    "r": 13,
+    "h": "Udinese",
+    "a": "Fiorentina",
+    "s": 1795951800000
+   },
+   {
+    "r": 13,
+    "h": "Sassuolo",
+    "a": "Napoli",
+    "s": 1795960800000
+   },
+   {
+    "r": 13,
+    "h": "Roma",
+    "a": "Monza",
+    "s": 1795971600000
+   },
+   {
+    "r": 13,
+    "h": "Como",
+    "a": "Juventus",
+    "s": 1795981500000
+   },
+   {
+    "r": 13,
+    "h": "Lecce",
+    "a": "Atalanta",
+    "s": 1796059800000
+   },
+   {
+    "r": 13,
+    "h": "Cagliari",
+    "a": "Milan",
+    "s": 1796067900000
+   },
+   {
+    "r": 14,
+    "h": "Bologna",
+    "a": "Roma",
+    "s": 1796413500000
+   },
+   {
+    "r": 14,
+    "h": "Monza",
+    "a": "Como",
+    "s": 1796479200000
+   },
+   {
+    "r": 14,
+    "h": "Frosinone",
+    "a": "Inter",
+    "s": 1796490000000
+   },
+   {
+    "r": 14,
+    "h": "Napoli",
+    "a": "Lecce",
+    "s": 1796499900000
+   },
+   {
+    "r": 14,
+    "h": "Genoa",
+    "a": "Torino",
+    "s": 1796556600000
+   },
+   {
+    "r": 14,
+    "h": "Lazio",
+    "a": "Atalanta",
+    "s": 1796565600000
+   },
+   {
+    "r": 14,
+    "h": "Juventus",
+    "a": "Udinese",
+    "s": 1796576400000
+   },
+   {
+    "r": 14,
+    "h": "Milan",
+    "a": "Parma",
+    "s": 1796586300000
+   },
+   {
+    "r": 14,
+    "h": "Venezia",
+    "a": "Sassuolo",
+    "s": 1796664600000
+   },
+   {
+    "r": 14,
+    "h": "Fiorentina",
+    "a": "Cagliari",
+    "s": 1796672700000
+   },
+   {
+    "r": 15,
+    "h": "Udinese",
+    "a": "Frosinone",
+    "s": 1797018300000
+   },
+   {
+    "r": 15,
+    "h": "Cagliari",
+    "a": "Venezia",
+    "s": 1797084000000
+   },
+   {
+    "r": 15,
+    "h": "Lecce",
+    "a": "Sassuolo",
+    "s": 1797094800000
+   },
+   {
+    "r": 15,
+    "h": "Como",
+    "a": "Bologna",
+    "s": 1797104700000
+   },
+   {
+    "r": 15,
+    "h": "Lazio",
+    "a": "Roma",
+    "s": 1797161400000
+   },
+   {
+    "r": 15,
+    "h": "Inter",
+    "a": "Torino",
+    "s": 1797170400000
+   },
+   {
+    "r": 15,
+    "h": "Parma",
+    "a": "Fiorentina",
+    "s": 1797181200000
+   },
+   {
+    "r": 15,
+    "h": "Napoli",
+    "a": "Milan",
+    "s": 1797191100000
+   },
+   {
+    "r": 15,
+    "h": "Atalanta",
+    "a": "Genoa",
+    "s": 1797269400000
+   },
+   {
+    "r": 15,
+    "h": "Juventus",
+    "a": "Monza",
+    "s": 1797277500000
+   },
+   {
+    "r": 16,
+    "h": "Frosinone",
+    "a": "Lazio",
+    "s": 1797615000000
+   },
+   {
+    "r": 16,
+    "h": "Lecce",
+    "a": "Inter",
+    "s": 1797623100000
+   },
+   {
+    "r": 16,
+    "h": "Sassuolo",
+    "a": "Parma",
+    "s": 1797688800000
+   },
+   {
+    "r": 16,
+    "h": "Milan",
+    "a": "Como",
+    "s": 1797699600000
+   },
+   {
+    "r": 16,
+    "h": "Roma",
+    "a": "Juventus",
+    "s": 1797709500000
+   },
+   {
+    "r": 16,
+    "h": "Fiorentina",
+    "a": "Bologna",
+    "s": 1797766200000
+   },
+   {
+    "r": 16,
+    "h": "Torino",
+    "a": "Cagliari",
+    "s": 1797775200000
+   },
+   {
+    "r": 16,
+    "h": "Venezia",
+    "a": "Monza",
+    "s": 1797775200000
+   },
+   {
+    "r": 16,
+    "h": "Genoa",
+    "a": "Udinese",
+    "s": 1797786000000
+   },
+   {
+    "r": 16,
+    "h": "Atalanta",
+    "a": "Napoli",
+    "s": 1797795900000
+   },
+   {
+    "r": 17,
+    "h": "Cagliari",
+    "a": "Genoa",
+    "s": 1798889400000
+   },
+   {
+    "r": 17,
+    "h": "Fiorentina",
+    "a": "Lazio",
+    "s": 1798898400000
+   },
+   {
+    "r": 17,
+    "h": "Torino",
+    "a": "Venezia",
+    "s": 1798898400000
+   },
+   {
+    "r": 17,
+    "h": "Roma",
+    "a": "Frosinone",
+    "s": 1798909200000
+   },
+   {
+    "r": 17,
+    "h": "Monza",
+    "a": "Milan",
+    "s": 1798919100000
+   },
+   {
+    "r": 17,
+    "h": "Inter",
+    "a": "Sassuolo",
+    "s": 1798975800000
+   },
+   {
+    "r": 17,
+    "h": "Como",
+    "a": "Lecce",
+    "s": 1798984800000
+   },
+   {
+    "r": 17,
+    "h": "Udinese",
+    "a": "Atalanta",
+    "s": 1798984800000
+   },
+   {
+    "r": 17,
+    "h": "Parma",
+    "a": "Napoli",
+    "s": 1798995600000
+   },
+   {
+    "r": 17,
+    "h": "Bologna",
+    "a": "Juventus",
+    "s": 1799005500000
+   },
+   {
+    "r": 18,
+    "h": "Genoa",
+    "a": "Monza",
+    "s": 1799170200000
+   },
+   {
+    "r": 18,
+    "h": "Venezia",
+    "a": "Roma",
+    "s": 1799170200000
+   },
+   {
+    "r": 18,
+    "h": "Milan",
+    "a": "Fiorentina",
+    "s": 1799178300000
+   },
+   {
+    "r": 18,
+    "h": "Juventus",
+    "a": "Torino",
+    "s": 1799235000000
+   },
+   {
+    "r": 18,
+    "h": "Frosinone",
+    "a": "Bologna",
+    "s": 1799244000000
+   },
+   {
+    "r": 18,
+    "h": "Lecce",
+    "a": "Parma",
+    "s": 1799244000000
+   },
+   {
+    "r": 18,
+    "h": "Atalanta",
+    "a": "Como",
+    "s": 1799254800000
+   },
+   {
+    "r": 18,
+    "h": "Lazio",
+    "a": "Inter",
+    "s": 1799264700000
+   },
+   {
+    "r": 18,
+    "h": "Sassuolo",
+    "a": "Udinese",
+    "s": 1799343000000
+   },
+   {
+    "r": 18,
+    "h": "Napoli",
+    "a": "Cagliari",
+    "s": 1799351100000
+   },
+   {
+    "r": 19,
+    "h": "Monza",
+    "a": "Frosinone",
+    "s": 1799503200000
+   },
+   {
+    "r": 19,
+    "h": "Roma",
+    "a": "Milan",
+    "s": 1799514000000
+   },
+   {
+    "r": 19,
+    "h": "Bologna",
+    "a": "Genoa",
+    "s": 1799523900000
+   },
+   {
+    "r": 19,
+    "h": "Como",
+    "a": "Lazio",
+    "s": 1799580600000
+   },
+   {
+    "r": 19,
+    "h": "Fiorentina",
+    "a": "Lecce",
+    "s": 1799589600000
+   },
+   {
+    "r": 19,
+    "h": "Parma",
+    "a": "Venezia",
+    "s": 1799589600000
+   },
+   {
+    "r": 19,
+    "h": "Torino",
+    "a": "Atalanta",
+    "s": 1799600400000
+   },
+   {
+    "r": 19,
+    "h": "Inter",
+    "a": "Juventus",
+    "s": 1799610300000
+   },
+   {
+    "r": 19,
+    "h": "Cagliari",
+    "a": "Sassuolo",
+    "s": 1799688600000
+   },
+   {
+    "r": 19,
+    "h": "Udinese",
+    "a": "Napoli",
+    "s": 1799696700000
+   },
+   {
+    "r": 20,
+    "h": "Atalanta",
+    "a": "Roma",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Cagliari",
+    "a": "Como",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Juventus",
+    "a": "Genoa",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Lazio",
+    "a": "Bologna",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Lecce",
+    "a": "Udinese",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Milan",
+    "a": "Torino",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Napoli",
+    "a": "Fiorentina",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Parma",
+    "a": "Inter",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Sassuolo",
+    "a": "Monza",
+    "s": 1800194400000
+   },
+   {
+    "r": 20,
+    "h": "Venezia",
+    "a": "Frosinone",
+    "s": 1800194400000
+   },
+   {
+    "r": 21,
+    "h": "Bologna",
+    "a": "Atalanta",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Como",
+    "a": "Napoli",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Fiorentina",
+    "a": "Sassuolo",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Frosinone",
+    "a": "Milan",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Genoa",
+    "a": "Parma",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Inter",
+    "a": "Venezia",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Juventus",
+    "a": "Cagliari",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Lecce",
+    "a": "Torino",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Monza",
+    "a": "Lazio",
+    "s": 1800799200000
+   },
+   {
+    "r": 21,
+    "h": "Roma",
+    "a": "Udinese",
+    "s": 1800799200000
+   },
+   {
+    "r": 22,
+    "h": "Atalanta",
+    "a": "Fiorentina",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Cagliari",
+    "a": "Parma",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Genoa",
+    "a": "Lecce",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Lazio",
+    "a": "Venezia",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Milan",
+    "a": "Juventus",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Monza",
+    "a": "Roma",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Napoli",
+    "a": "Inter",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Sassuolo",
+    "a": "Como",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Torino",
+    "a": "Frosinone",
+    "s": 1801404000000
+   },
+   {
+    "r": 22,
+    "h": "Udinese",
+    "a": "Bologna",
+    "s": 1801404000000
+   },
+   {
+    "r": 23,
+    "h": "Atalanta",
+    "a": "Lazio",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Bologna",
+    "a": "Milan",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Como",
+    "a": "Monza",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Fiorentina",
+    "a": "Udinese",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Inter",
+    "a": "Cagliari",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Juventus",
+    "a": "Sassuolo",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Lecce",
+    "a": "Napoli",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Parma",
+    "a": "Frosinone",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Roma",
+    "a": "Torino",
+    "s": 1802008800000
+   },
+   {
+    "r": 23,
+    "h": "Venezia",
+    "a": "Genoa",
+    "s": 1802008800000
+   },
+   {
+    "r": 24,
+    "h": "Bologna",
+    "a": "Como",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Cagliari",
+    "a": "Lazio",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Frosinone",
+    "a": "Fiorentina",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Genoa",
+    "a": "Atalanta",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Inter",
+    "a": "Milan",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Monza",
+    "a": "Lecce",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Napoli",
+    "a": "Juventus",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Roma",
+    "a": "Parma",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Torino",
+    "a": "Sassuolo",
+    "s": 1802613600000
+   },
+   {
+    "r": 24,
+    "h": "Udinese",
+    "a": "Venezia",
+    "s": 1802613600000
+   },
+   {
+    "r": 25,
+    "h": "Atalanta",
+    "a": "Monza",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Como",
+    "a": "Torino",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Fiorentina",
+    "a": "Inter",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Juventus",
+    "a": "Bologna",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Lazio",
+    "a": "Napoli",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Lecce",
+    "a": "Frosinone",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Milan",
+    "a": "Genoa",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Sassuolo",
+    "a": "Roma",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Udinese",
+    "a": "Parma",
+    "s": 1803218400000
+   },
+   {
+    "r": 25,
+    "h": "Venezia",
+    "a": "Cagliari",
+    "s": 1803218400000
+   },
+   {
+    "r": 26,
+    "h": "Bologna",
+    "a": "Lecce",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Cagliari",
+    "a": "Udinese",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Como",
+    "a": "Milan",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Frosinone",
+    "a": "Napoli",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Genoa",
+    "a": "Lazio",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Inter",
+    "a": "Atalanta",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Monza",
+    "a": "Juventus",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Parma",
+    "a": "Sassuolo",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Roma",
+    "a": "Venezia",
+    "s": 1803823200000
+   },
+   {
+    "r": 26,
+    "h": "Torino",
+    "a": "Fiorentina",
+    "s": 1803823200000
+   },
+   {
+    "r": 27,
+    "h": "Atalanta",
+    "a": "Torino",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Fiorentina",
+    "a": "Venezia",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Juventus",
+    "a": "Roma",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Lazio",
+    "a": "Frosinone",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Lecce",
+    "a": "Como",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Milan",
+    "a": "Cagliari",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Monza",
+    "a": "Genoa",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Napoli",
+    "a": "Parma",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Sassuolo",
+    "a": "Bologna",
+    "s": 1804428000000
+   },
+   {
+    "r": 27,
+    "h": "Udinese",
+    "a": "Inter",
+    "s": 1804428000000
+   },
+   {
+    "r": 28,
+    "h": "Bologna",
+    "a": "Napoli",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Cagliari",
+    "a": "Fiorentina",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Como",
+    "a": "Udinese",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Frosinone",
+    "a": "Monza",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Genoa",
+    "a": "Roma",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Lazio",
+    "a": "Juventus",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Milan",
+    "a": "Sassuolo",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Parma",
+    "a": "Lecce",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Torino",
+    "a": "Inter",
+    "s": 1805032800000
+   },
+   {
+    "r": 28,
+    "h": "Venezia",
+    "a": "Atalanta",
+    "s": 1805032800000
+   },
+   {
+    "r": 29,
+    "h": "Atalanta",
+    "a": "Milan",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Fiorentina",
+    "a": "Genoa",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Inter",
+    "a": "Frosinone",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Juventus",
+    "a": "Como",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Monza",
+    "a": "Bologna",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Napoli",
+    "a": "Venezia",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Parma",
+    "a": "Lazio",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Roma",
+    "a": "Lecce",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Sassuolo",
+    "a": "Cagliari",
+    "s": 1805637600000
+   },
+   {
+    "r": 29,
+    "h": "Udinese",
+    "a": "Torino",
+    "s": 1805637600000
+   },
+   {
+    "r": 30,
+    "h": "Cagliari",
+    "a": "Napoli",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Como",
+    "a": "Fiorentina",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Frosinone",
+    "a": "Udinese",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Genoa",
+    "a": "Inter",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Lecce",
+    "a": "Lazio",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Milan",
+    "a": "Monza",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Roma",
+    "a": "Bologna",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Sassuolo",
+    "a": "Atalanta",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Torino",
+    "a": "Juventus",
+    "s": 1806843600000
+   },
+   {
+    "r": 30,
+    "h": "Venezia",
+    "a": "Parma",
+    "s": 1806843600000
+   },
+   {
+    "r": 31,
+    "h": "Bologna",
+    "a": "Venezia",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Cagliari",
+    "a": "Atalanta",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Fiorentina",
+    "a": "Milan",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Frosinone",
+    "a": "Genoa",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Inter",
+    "a": "Roma",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Juventus",
+    "a": "Lecce",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Lazio",
+    "a": "Torino",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Napoli",
+    "a": "Sassuolo",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Parma",
+    "a": "Como",
+    "s": 1807448400000
+   },
+   {
+    "r": 31,
+    "h": "Udinese",
+    "a": "Monza",
+    "s": 1807448400000
+   },
+   {
+    "r": 32,
+    "h": "Atalanta",
+    "a": "Udinese",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Bologna",
+    "a": "Cagliari",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Como",
+    "a": "Frosinone",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Fiorentina",
+    "a": "Parma",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Milan",
+    "a": "Napoli",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Monza",
+    "a": "Inter",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Roma",
+    "a": "Lazio",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Sassuolo",
+    "a": "Lecce",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Torino",
+    "a": "Genoa",
+    "s": 1808053200000
+   },
+   {
+    "r": 32,
+    "h": "Venezia",
+    "a": "Juventus",
+    "s": 1808053200000
+   },
+   {
+    "r": 33,
+    "h": "Cagliari",
+    "a": "Monza",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Frosinone",
+    "a": "Roma",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Genoa",
+    "a": "Sassuolo",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Inter",
+    "a": "Bologna",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Juventus",
+    "a": "Fiorentina",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Lazio",
+    "a": "Como",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Lecce",
+    "a": "Milan",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Napoli",
+    "a": "Udinese",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Parma",
+    "a": "Atalanta",
+    "s": 1808658000000
+   },
+   {
+    "r": 33,
+    "h": "Venezia",
+    "a": "Torino",
+    "s": 1808658000000
+   },
+   {
+    "r": 34,
+    "h": "Atalanta",
+    "a": "Juventus",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Bologna",
+    "a": "Fiorentina",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Como",
+    "a": "Inter",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Lecce",
+    "a": "Cagliari",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Milan",
+    "a": "Lazio",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Monza",
+    "a": "Venezia",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Roma",
+    "a": "Napoli",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Sassuolo",
+    "a": "Frosinone",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Torino",
+    "a": "Parma",
+    "s": 1809262800000
+   },
+   {
+    "r": 34,
+    "h": "Udinese",
+    "a": "Genoa",
+    "s": 1809262800000
+   },
+   {
+    "r": 35,
+    "h": "Fiorentina",
+    "a": "Roma",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Frosinone",
+    "a": "Atalanta",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Genoa",
+    "a": "Cagliari",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Inter",
+    "a": "Lecce",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Lazio",
+    "a": "Sassuolo",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Napoli",
+    "a": "Monza",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Parma",
+    "a": "Milan",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Torino",
+    "a": "Bologna",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Udinese",
+    "a": "Juventus",
+    "s": 1809867600000
+   },
+   {
+    "r": 35,
+    "h": "Venezia",
+    "a": "Como",
+    "s": 1809867600000
+   },
+   {
+    "r": 36,
+    "h": "Bologna",
+    "a": "Frosinone",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Cagliari",
+    "a": "Torino",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Como",
+    "a": "Atalanta",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Juventus",
+    "a": "Inter",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Lazio",
+    "a": "Udinese",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Lecce",
+    "a": "Fiorentina",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Milan",
+    "a": "Roma",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Monza",
+    "a": "Parma",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Napoli",
+    "a": "Genoa",
+    "s": 1810472400000
+   },
+   {
+    "r": 36,
+    "h": "Sassuolo",
+    "a": "Venezia",
+    "s": 1810472400000
+   },
+   {
+    "r": 37,
+    "h": "Atalanta",
+    "a": "Lecce",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Fiorentina",
+    "a": "Monza",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Frosinone",
+    "a": "Cagliari",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Genoa",
+    "a": "Bologna",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Inter",
+    "a": "Lazio",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Parma",
+    "a": "Juventus",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Roma",
+    "a": "Como",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Torino",
+    "a": "Napoli",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Udinese",
+    "a": "Sassuolo",
+    "s": 1811077200000
+   },
+   {
+    "r": 37,
+    "h": "Venezia",
+    "a": "Milan",
+    "s": 1811077200000
+   },
+   {
+    "r": 38,
+    "h": "Bologna",
+    "a": "Parma",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Cagliari",
+    "a": "Roma",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Como",
+    "a": "Genoa",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Juventus",
+    "a": "Frosinone",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Lazio",
+    "a": "Fiorentina",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Lecce",
+    "a": "Venezia",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Milan",
+    "a": "Udinese",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Monza",
+    "a": "Torino",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Napoli",
+    "a": "Atalanta",
+    "s": 1811682000000
+   },
+   {
+    "r": 38,
+    "h": "Sassuolo",
+    "a": "Inter",
+    "s": 1811682000000
+   }
+  ],
+  "B": [
+   {
+    "r": 10,
+    "h": "Cremonese",
+    "a": "Benevento",
+    "s": 1793455200000
+   },
+   {
+    "r": 10,
+    "h": "Modena",
+    "a": "Mantova",
+    "s": 1793455200000
+   },
+   {
+    "r": 10,
+    "h": "Südtirol",
+    "a": "Cesena",
+    "s": 1793455200000
+   },
+   {
+    "r": 10,
+    "h": "Catanzaro",
+    "a": "Padova",
+    "s": 1793463300000
+   },
+   {
+    "r": 10,
+    "h": "Sampdoria",
+    "a": "Virtus Entella",
+    "s": 1793471400000
+   },
+   {
+    "r": 10,
+    "h": "Arezzo",
+    "a": "Ascoli",
+    "s": 1793541600000
+   },
+   {
+    "r": 10,
+    "h": "Avellino",
+    "a": "Pisa",
+    "s": 1793541600000
+   },
+   {
+    "r": 10,
+    "h": "Empoli",
+    "a": "Juve Stabia",
+    "s": 1793541600000
+   },
+   {
+    "r": 10,
+    "h": "Hellas Verona",
+    "a": "Carrarese",
+    "s": 1793549700000
+   },
+   {
+    "r": 10,
+    "h": "Palermo",
+    "a": "L.R. Vicenza",
+    "s": 1793557800000
+   },
+   {
+    "r": 11,
+    "h": "Ascoli",
+    "a": "Palermo",
+    "s": 1793993400000
+   },
+   {
+    "r": 11,
+    "h": "Cesena",
+    "a": "Catanzaro",
+    "s": 1794060000000
+   },
+   {
+    "r": 11,
+    "h": "Juve Stabia",
+    "a": "Arezzo",
+    "s": 1794060000000
+   },
+   {
+    "r": 11,
+    "h": "Padova",
+    "a": "Empoli",
+    "s": 1794060000000
+   },
+   {
+    "r": 11,
+    "h": "Pisa",
+    "a": "Südtirol",
+    "s": 1794060000000
+   },
+   {
+    "r": 11,
+    "h": "Mantova",
+    "a": "Hellas Verona",
+    "s": 1794068100000
+   },
+   {
+    "r": 11,
+    "h": "Benevento",
+    "a": "Avellino",
+    "s": 1794076200000
+   },
+   {
+    "r": 11,
+    "h": "Virtus Entella",
+    "a": "Modena",
+    "s": 1794146400000
+   },
+   {
+    "r": 11,
+    "h": "Carrarese",
+    "a": "Sampdoria",
+    "s": 1794154500000
+   },
+   {
+    "r": 11,
+    "h": "L.R. Vicenza",
+    "a": "Cremonese",
+    "s": 1794162600000
+   }
+  ],
+  "C": [
+   {
+    "r": 12,
+    "h": "Audace Cerignola",
+    "a": "Catania",
+    "s": 1793453400000
+   },
+   {
+    "r": 12,
+    "h": "Bari",
+    "a": "Scafatese",
+    "s": 1793453400000
+   },
+   {
+    "r": 12,
+    "h": "Giugliano",
+    "a": "Casertana",
+    "s": 1793453400000
+   },
+   {
+    "r": 12,
+    "h": "Ospitaletto F.",
+    "a": "Trento",
+    "s": 1793453400000
+   },
+   {
+    "r": 12,
+    "h": "Pescara",
+    "a": "Torres",
+    "s": 1793453400000
+   },
+   {
+    "r": 12,
+    "h": "Sorrento",
+    "a": "Altamura",
+    "s": 1793453400000
+   },
+   {
+    "r": 12,
+    "h": "Barletta",
+    "a": "Monopoli",
+    "s": 1793464200000
+   },
+   {
+    "r": 12,
+    "h": "Cavese",
+    "a": "Picerno",
+    "s": 1793464200000
+   },
+   {
+    "r": 12,
+    "h": "Giana Erminio",
+    "a": "Alcione Milano",
+    "s": 1793464200000
+   },
+   {
+    "r": 12,
+    "h": "Guidonia M.",
+    "a": "Perugia",
+    "s": 1793464200000
+   },
+   {
+    "r": 12,
+    "h": "Vado",
+    "a": "Grosseto",
+    "s": 1793464200000
+   },
+   {
+    "r": 12,
+    "h": "Cosenza",
+    "a": "Inter Under 23",
+    "s": 1793532600000
+   },
+   {
+    "r": 12,
+    "h": "Folgore Caratese",
+    "a": "Union Brescia",
+    "s": 1793532600000
+   },
+   {
+    "r": 12,
+    "h": "Cittadella",
+    "a": "Treviso",
+    "s": 1793539800000
+   },
+   {
+    "r": 12,
+    "h": "Dolomiti Bellunesi",
+    "a": "Lecco",
+    "s": 1793539800000
+   },
+   {
+    "r": 12,
+    "h": "Gubbio",
+    "a": "Vis Pesaro",
+    "s": 1793539800000
+   },
+   {
+    "r": 12,
+    "h": "Ravenna",
+    "a": "Pineto",
+    "s": 1793539800000
+   },
+   {
+    "r": 12,
+    "h": "Salernitana",
+    "a": "Savoia",
+    "s": 1793539800000
+   },
+   {
+    "r": 12,
+    "h": "Spezia",
+    "a": "Atalanta Under 23",
+    "s": 1793541600000
+   },
+   {
+    "r": 12,
+    "h": "Campobasso",
+    "a": "Forlì",
+    "s": 1793550600000
+   },
+   {
+    "r": 12,
+    "h": "Carpi",
+    "a": "Renate",
+    "s": 1793550600000
+   },
+   {
+    "r": 12,
+    "h": "Latina",
+    "a": "Pianese",
+    "s": 1793550600000
+   },
+   {
+    "r": 12,
+    "h": "Livorno",
+    "a": "Ostiamare",
+    "s": 1793550600000
+   },
+   {
+    "r": 12,
+    "h": "Lumezzane",
+    "a": "Arzignano V.",
+    "s": 1793550600000
+   },
+   {
+    "r": 12,
+    "h": "Potenza",
+    "a": "Crotone",
+    "s": 1793550600000
+   },
+   {
+    "r": 12,
+    "h": "Casarano",
+    "a": "Foggia",
+    "s": 1793647800000
+   },
+   {
+    "r": 12,
+    "h": "Juventus Next Gen",
+    "a": "Pro Vercelli",
+    "s": 1793647800000
+   },
+   {
+    "r": 12,
+    "h": "Novara",
+    "a": "Desenzano",
+    "s": 1793647800000
+   },
+   {
+    "r": 13,
+    "h": "Alcione Milano",
+    "a": "Lumezzane",
+    "s": 1793993400000
+   },
+   {
+    "r": 13,
+    "h": "Union Brescia",
+    "a": "Arzignano V.",
+    "s": 1793993400000
+   },
+   {
+    "r": 13,
+    "h": "Atalanta Under 23",
+    "a": "Reggiana",
+    "s": 1794058200000
+   },
+   {
+    "r": 13,
+    "h": "Casertana",
+    "a": "Casarano",
+    "s": 1794058200000
+   },
+   {
+    "r": 13,
+    "h": "Crotone",
+    "a": "Giugliano",
+    "s": 1794058200000
+   },
+   {
+    "r": 13,
+    "h": "Inter Under 23",
+    "a": "Salernitana",
+    "s": 1794058200000
+   },
+   {
+    "r": 13,
+    "h": "Ostiamare",
+    "a": "Spezia",
+    "s": 1794058200000
+   },
+   {
+    "r": 13,
+    "h": "Pro Vercelli",
+    "a": "Dolomiti Bellunesi",
+    "s": 1794058200000
+   },
+   {
+    "r": 13,
+    "h": "Forlì",
+    "a": "Gubbio",
+    "s": 1794069000000
+   },
+   {
+    "r": 13,
+    "h": "Pergolettese",
+    "a": "Renate",
+    "s": 1794069000000
+   },
+   {
+    "r": 13,
+    "h": "Scafatese",
+    "a": "Audace Cerignola",
+    "s": 1794069000000
+   },
+   {
+    "r": 13,
+    "h": "Trento",
+    "a": "Albinoleffe",
+    "s": 1794069000000
+   },
+   {
+    "r": 13,
+    "h": "Vado",
+    "a": "Ravenna",
+    "s": 1794069000000
+   },
+   {
+    "r": 13,
+    "h": "Grosseto",
+    "a": "Pescara",
+    "s": 1794137400000
+   },
+   {
+    "r": 13,
+    "h": "Torres",
+    "a": "Latina",
+    "s": 1794137400000
+   },
+   {
+    "r": 13,
+    "h": "Campobasso",
+    "a": "Livorno",
+    "s": 1794144600000
+   },
+   {
+    "r": 13,
+    "h": "Catania",
+    "a": "Sorrento",
+    "s": 1794144600000
+   },
+   {
+    "r": 13,
+    "h": "Giana Erminio",
+    "a": "Cittadella",
+    "s": 1794144600000
+   },
+   {
+    "r": 13,
+    "h": "Lecco",
+    "a": "Juventus Next Gen",
+    "s": 1794144600000
+   },
+   {
+    "r": 13,
+    "h": "Monopoli",
+    "a": "Cosenza",
+    "s": 1794144600000
+   },
+   {
+    "r": 13,
+    "h": "Savoia",
+    "a": "Potenza",
+    "s": 1794144600000
+   },
+   {
+    "r": 13,
+    "h": "Desenzano",
+    "a": "Ospitaletto F.",
+    "s": 1794155400000
+   },
+   {
+    "r": 13,
+    "h": "Folgore Caratese",
+    "a": "Carpi",
+    "s": 1794155400000
+   },
+   {
+    "r": 13,
+    "h": "Pianese",
+    "a": "Perugia",
+    "s": 1794155400000
+   },
+   {
+    "r": 13,
+    "h": "Sambenedettese",
+    "a": "Guidonia M.",
+    "s": 1794155400000
+   },
+   {
+    "r": 13,
+    "h": "Treviso",
+    "a": "Novara",
+    "s": 1794155400000
+   },
+   {
+    "r": 13,
+    "h": "Altamura",
+    "a": "Cavese",
+    "s": 1794252600000
+   },
+   {
+    "r": 13,
+    "h": "Foggia",
+    "a": "Barletta",
+    "s": 1794252600000
+   },
+   {
+    "r": 13,
+    "h": "Pineto",
+    "a": "Vis Pesaro",
+    "s": 1794252600000
+   },
+   {
+    "r": 13,
+    "h": "Picerno",
+    "a": "Bari",
+    "s": 1794253500000
+   },
+   {
+    "r": 14,
+    "h": "Latina",
+    "a": "Campobasso",
+    "s": 1794598200000
+   },
+   {
+    "r": 14,
+    "h": "Ospitaletto F.",
+    "a": "Dolomiti Bellunesi",
+    "s": 1794598200000
+   },
+   {
+    "r": 14,
+    "h": "Albinoleffe",
+    "a": "Union Brescia",
+    "s": 1794663000000
+   },
+   {
+    "r": 14,
+    "h": "Arzignano V.",
+    "a": "Alcione Milano",
+    "s": 1794663000000
+   },
+   {
+    "r": 14,
+    "h": "Casarano",
+    "a": "Picerno",
+    "s": 1794663000000
+   },
+   {
+    "r": 14,
+    "h": "Reggiana",
+    "a": "Livorno",
+    "s": 1794663000000
+   },
+   {
+    "r": 14,
+    "h": "Renate",
+    "a": "Desenzano",
+    "s": 1794663000000
+   },
+   {
+    "r": 14,
+    "h": "Vis Pesaro",
+    "a": "Pianese",
+    "s": 1794663000000
+   },
+   {
+    "r": 14,
+    "h": "Atalanta Under 23",
+    "a": "Pineto",
+    "s": 1794673800000
+   },
+   {
+    "r": 14,
+    "h": "Audace Cerignola",
+    "a": "Inter Under 23",
+    "s": 1794673800000
+   },
+   {
+    "r": 14,
+    "h": "Bari",
+    "a": "Foggia",
+    "s": 1794673800000
+   },
+   {
+    "r": 14,
+    "h": "Carpi",
+    "a": "Giana Erminio",
+    "s": 1794673800000
+   },
+   {
+    "r": 14,
+    "h": "Gubbio",
+    "a": "Grosseto",
+    "s": 1794673800000
+   },
+   {
+    "r": 14,
+    "h": "Lumezzane",
+    "a": "Trento",
+    "s": 1794673800000
+   },
+   {
+    "r": 14,
+    "h": "Giugliano",
+    "a": "Savoia",
+    "s": 1794742200000
+   },
+   {
+    "r": 14,
+    "h": "Novara",
+    "a": "Lecco",
+    "s": 1794742200000
+   },
+   {
+    "r": 14,
+    "h": "Cavese",
+    "a": "Crotone",
+    "s": 1794749400000
+   },
+   {
+    "r": 14,
+    "h": "Guidonia M.",
+    "a": "Ostiamare",
+    "s": 1794749400000
+   },
+   {
+    "r": 14,
+    "h": "Pescara",
+    "a": "Sambenedettese",
+    "s": 1794749400000
+   },
+   {
+    "r": 14,
+    "h": "Potenza",
+    "a": "Scafatese",
+    "s": 1794749400000
+   },
+   {
+    "r": 14,
+    "h": "Salernitana",
+    "a": "Catania",
+    "s": 1794749400000
+   },
+   {
+    "r": 14,
+    "h": "Spezia",
+    "a": "Vado",
+    "s": 1794749400000
+   },
+   {
+    "r": 14,
+    "h": "Barletta",
+    "a": "Altamura",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
+    "h": "Cittadella",
+    "a": "Folgore Caratese",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
+    "h": "Cosenza",
+    "a": "Casertana",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
+    "h": "Juventus Next Gen",
+    "a": "Treviso",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
+    "h": "Pergolettese",
+    "a": "Pro Vercelli",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
+    "h": "Ravenna",
+    "a": "Forlì",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
+    "h": "Sorrento",
+    "a": "Monopoli",
+    "s": 1794857400000
+   },
+   {
+    "r": 14,
+    "h": "Perugia",
+    "a": "Torres",
+    "s": 1794858300000
+   }
+  ]
+ },
+ "stato": {
+  "A": "ok",
+  "B": "ok",
+  "C": "ok"
+ },
+ "sky": [
+  {
+   "t": "REGGIANA-SAMBENEDETTESE",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "ALBINOLEFFE-PERGOLETTESE",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "AUDACE CERIGNOLA-CATANIA",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "BARI-SCAFATESE",
+   "c": [
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "PESCARA-TORRES",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "SORRENTO-ALTAMURA",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "GIUGLIANO-CASERTANA",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "OSPITALETTO FRANCIACORTA-TRENTO",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "GUIDONIA MONTECELIO-PERUGIA",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "BARLETTA-MONOPOLI",
+   "c": [
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "VADO-GROSSETO",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "CAVESE-AZ PICERNO",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "GIANA ERMINIO-ALCIONE MILANO",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "COSENZA-INTER U23",
+   "c": [
+    "Sky Sport Uno",
+    "Sky Sport 257"
+   ]
+  },
+  {
+   "t": "FOLGORE CARATESE-UNION BRESCIA",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "SALERNITANA-SAVOIA",
+   "c": [
+    "Sky Sport Uno",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "CITTADELLA-TREVISO",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "RAVENNA-PINETO",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "GUBBIO-VIS PESARO",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "DOLOMITI BELLUNESI-LECCO",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "SPEZIA-ATALANTA U23",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "POTENZA-CROTONE",
+   "c": [
+    "Sky Sport Arena",
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "LIVORNO-OSTIAMARE",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "CAMPOBASSO-FORLÌ",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "LATINA-PIANESE",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "CARPI-RENATE",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "LUMEZZANE-ARZIGNANO VALCHIAMPO",
+   "c": [
+    "Sky Sport 257"
+   ]
+  },
+  {
+   "t": "CASARANO-FOGGIA",
+   "c": [
+    "Sky Sport Arena",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "JUVENTUS NEXT GEN-PRO VERCELLI",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "NOVARA-DESENZANO",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "CASERTANA-BARI",
+   "c": [
+    "Sky Sport Uno",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "PERUGIA-PESCARA",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "ALTAMURA-POTENZA",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "OSTIAMARE-VADO",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "PINETO-GUBBIO",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "INTER U23-SORRENTO",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "SPEZIA-LATINA",
+   "c": [
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "SAMBENEDETTESE-LIVORNO",
+   "c": [
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "ATALANTA U23-CAMPOBASSO",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "SCAFATESE-BARLETTA",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "TREVISO-DOLOMITI BELLUNESI",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "UNION BRESCIA-CITTADELLA",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "VIS PESARO-RAVENNA",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "SAVOIA-COSENZA",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "ALCIONE MILANO-CARPI",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "TRENTO-JUVENTUS NEXT GEN",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "RENATE-ALBINOLEFFE",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 258"
+   ]
+  },
+  {
+   "t": "MONOPOLI-AUDACE CERIGNOLA",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 257"
+   ]
+  },
+  {
+   "t": "GROSSETO-REGGIANA",
+   "c": [
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "LIVORNO-GROSSETO",
+   "c": [
+    "Sky Sport Arena",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "PRO VERCELLI-LECCO",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "INTER U23-MONOPOLI",
+   "c": [
+    "Sky Sport Uno",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "REGGIANA-TORRES",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "VADO-SAMBENEDETTESE",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "GUIDONIA MONTECELIO-FORLÌ",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "PIANESE-PINETO",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "CARPI-LUMEZZANE",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "POTENZA-CATANIA",
+   "c": [
+    "Sky Sport Uno",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "SALERNITANA-SCAFATESE",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "FOLGORE CARATESE-TREVISO",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "CAMPOBASSO-PERUGIA",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "LATINA-VIS PESARO",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 257"
+   ]
+  },
+  {
+   "t": "RAVENNA-SPEZIA",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "GUBBIO-ATALANTA U23",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "AUDACE CERIGNOLA-SAVOIA",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "CAVESE-CASARANO",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "COSENZA-ALTAMURA",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "BARI-CROTONE",
+   "c": [
+    "Sky Sport Uno",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "PESCARA-OSTIAMARE",
+   "c": [
+    "Sky Sport Arena",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "SORRENTO-CASERTANA",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "BARLETTA-AZ PICERNO",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "ALBINOLEFFE-NOVARA",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "ALCIONE MILANO-DESENZANO",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "OSPITALETTO-PERGOLETTESE",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "JUVENTUS NEXT GEN-RENATE",
+   "c": [
+    "Sky Sport Uno",
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "GIANA ERMINIO-UNION BRESCIA",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "GIUGLIANO-FOGGIA",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "CITTADELLA-ARZIGNANO VALCHIAMPO",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "DOLOMITI BELLUNESI-TRENTO",
+   "c": [
+    "Sky Sport 256"
+   ]
+  }
+ ],
+ "sky_at": 1793314800000
+}
