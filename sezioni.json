@@ -1,0 +1,26 @@
+{
+ "v": 1,
+ "sections": [
+  {
+   "id": "mvv6mq10",
+   "name": "Eventi",
+   "icon": "library",
+   "description": "",
+   "type": "live",
+   "cats": [
+    {
+     "name": "Serie A",
+     "channels": []
+    },
+    {
+     "name": "Serie B",
+     "channels": []
+    },
+    {
+     "name": "Serie C",
+     "channels": []
+    }
+   ]
+  }
+ ]
+}
