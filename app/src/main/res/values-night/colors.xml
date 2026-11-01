@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Palette tema scuro -->
-    <color name="pez_background">#101419</color>
-    <color name="pez_toolbar">#101419</color>
-    <color name="pez_card_menu">#29333C</color>
-    <color name="pez_card_match">#1B2229</color>
-    <color name="pez_text">#F5F6F8</color>
-    <color name="pez_text_secondary">#AAB5BF</color>
-    <color name="pez_selection">#244744</color>
-    <color name="pez_accent">#35B8B0</color>
-    <color name="pez_on_accent">#101419</color>
-    <color name="pez_outline">#5B6873</color>
-    <color name="pez_outline_variant">#2F3A44</color>
+    <!-- PEZ8 Dark (Material 3) -->
+    <color name="pez_background">#101619</color>
+    <color name="pez_surface">#141D22</color>
+    <color name="pez_toolbar">#141D22</color>
+    <color name="pez_card_menu">#293943</color>
+    <color name="pez_card_match">#293943</color>
+    <color name="pez_text">#F5F6F4</color>
+    <color name="pez_text_secondary">#C1CCD1</color>
+    <color name="pez_selection">#35464F</color>
+    <color name="pez_accent">#F5F6F4</color>
+    <color name="pez_on_accent">#0B151A</color>
+    <color name="pez_primary_container">#293943</color>
+    <color name="pez_on_primary_container">#F5F6F4</color>
+    <color name="pez_secondary">#BBC5CA</color>
+    <color name="pez_on_secondary">#18262D</color>
+    <color name="pez_secondary_container">#35464F</color>
+    <color name="pez_on_secondary_container">#E0E7EA</color>
+    <color name="pez_tertiary">#D0D9DD</color>
+    <color name="pez_error">#FFB4AB</color>
+    <color name="pez_on_error">#690005</color>
+    <color name="pez_outline">#87969D</color>
+    <color name="pez_outline_variant">#45545B</color>
 </resources>

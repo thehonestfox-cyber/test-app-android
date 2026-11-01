@@ -194,7 +194,7 @@ class MainActivity : AppCompatActivity() {
         Logos.init(this)
         if (!prefs.contains("playlists")) savePlaylists(listOf(defaultPlaylist))
 
-        root = FrameLayout(this).apply { setBackgroundColor(c(MR.attr.colorSurface)) }
+        root = FrameLayout(this).apply { setBackgroundColor(c(android.R.attr.colorBackground)) }
         setContentView(root)
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val b = insets.getInsets(
@@ -257,8 +257,8 @@ class MainActivity : AppCompatActivity() {
         nightApplied = nightNow()
         theme.applyStyle(R.style.Theme_IPTV, true)
         val night = nightApplied == Configuration.UI_MODE_NIGHT_YES
-        window.setBackgroundDrawable(ColorDrawable(c(MR.attr.colorSurface)))
-        root.setBackgroundColor(c(MR.attr.colorSurface))
+        window.setBackgroundDrawable(ColorDrawable(c(android.R.attr.colorBackground)))
+        root.setBackgroundColor(c(android.R.attr.colorBackground))
         WindowInsetsControllerCompat(window, window.decorView).apply {
             isAppearanceLightStatusBars = !night
             isAppearanceLightNavigationBars = !night
@@ -422,7 +422,7 @@ class MainActivity : AppCompatActivity() {
             radius = dp(16).toFloat()
             cardElevation = 0f
             setCardBackgroundColor(
-                if (selected) c(MR.attr.colorPrimaryContainer) else c(MR.attr.colorSurfaceVariant)
+                if (selected) c(R.attr.pezSelection) else c(MR.attr.colorSurfaceVariant)
             )
             if (onClick != null) {
                 isClickable = true
@@ -1308,7 +1308,7 @@ class MainActivity : AppCompatActivity() {
         return MaterialCardView(this).apply {
             radius = dp(12).toFloat()
             cardElevation = 0f
-            setCardBackgroundColor(c(if (target) MR.attr.colorPrimaryContainer else MR.attr.colorSurfaceVariant))
+            setCardBackgroundColor(c(if (target) R.attr.pezSelection else MR.attr.colorSurfaceVariant))
             isClickable = true
             isFocusable = true
             enableFocusRing()
@@ -1935,7 +1935,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 v.background = if (on) GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(c(MR.attr.colorPrimaryContainer))
+                    setColor(c(R.attr.pezSelection))
                 } else selectable()
             }
         }

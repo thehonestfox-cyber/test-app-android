@@ -202,7 +202,7 @@ class ChannelAdapter(
                 h.name.text = ch.name
                 h.sub.text = ch.quality.ifEmpty { "Diretta" }
                 h.card.setCardBackgroundColor(
-                    if (ch.url == selectedUrl) col(MR.attr.colorPrimaryContainer)
+                    if (ch.url == selectedUrl) col(R.attr.pezSelection)
                     else col(MR.attr.colorSurfaceVariant)
                 )
                 h.card.setOnClickListener { onClick(ch) }

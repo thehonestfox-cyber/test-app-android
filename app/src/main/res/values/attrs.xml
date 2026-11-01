@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colore di riga/card selezionata (canale in riproduzione, voce scelta) -->
+    <attr name="pezSelection" format="color" />
+</resources>

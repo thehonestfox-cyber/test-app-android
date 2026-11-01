@@ -2,6 +2,7 @@
 <resources>
     <!-- Palette tema chiaro -->
     <color name="pez_background">#F5F6F8</color>
+    <color name="pez_surface">#F5F6F8</color>
     <color name="pez_toolbar">#FFFFFF</color>
     <color name="pez_card_menu">#E9EDF1</color>
     <color name="pez_card_match">#FFFFFF</color>
@@ -10,6 +11,15 @@
     <color name="pez_selection">#D7F2EF</color>
     <color name="pez_accent">#168F89</color>
     <color name="pez_on_accent">#FFFFFF</color>
+    <color name="pez_primary_container">#D7F2EF</color>
+    <color name="pez_on_primary_container">#17212A</color>
+    <color name="pez_secondary">#168F89</color>
+    <color name="pez_on_secondary">#FFFFFF</color>
+    <color name="pez_secondary_container">#E9EDF1</color>
+    <color name="pez_on_secondary_container">#17212A</color>
+    <color name="pez_tertiary">#168F89</color>
+    <color name="pez_error">#B3261E</color>
+    <color name="pez_on_error">#FFFFFF</color>
     <color name="pez_outline">#A9B4BE</color>
     <color name="pez_outline_variant">#D5DBE1</color>
 </resources>

@@ -9,18 +9,22 @@
     <style name="Theme.IPTV" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="tabStyle">@style/Widget.IPTV.TabLayout</item>
 
-        <!-- Palette (i valori chiaro/scuro stanno in values/colors.xml e values-night/colors.xml) -->
+        <!-- Palette: i valori chiaro/scuro stanno in values/colors.xml e values-night/colors.xml -->
         <item name="colorPrimary">@color/pez_accent</item>
         <item name="colorOnPrimary">@color/pez_on_accent</item>
-        <item name="colorPrimaryContainer">@color/pez_selection</item>
-        <item name="colorOnPrimaryContainer">@color/pez_text</item>
-        <item name="colorSecondary">@color/pez_accent</item>
-        <item name="colorOnSecondary">@color/pez_on_accent</item>
-        <item name="colorSecondaryContainer">@color/pez_card_menu</item>
-        <item name="colorOnSecondaryContainer">@color/pez_text</item>
+        <item name="colorPrimaryContainer">@color/pez_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/pez_on_primary_container</item>
+        <item name="colorSecondary">@color/pez_secondary</item>
+        <item name="colorOnSecondary">@color/pez_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/pez_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/pez_on_secondary_container</item>
+        <item name="colorTertiary">@color/pez_tertiary</item>
+        <item name="colorError">@color/pez_error</item>
+        <item name="colorOnError">@color/pez_on_error</item>
 
         <item name="android:colorBackground">@color/pez_background</item>
-        <item name="colorSurface">@color/pez_background</item>
+        <item name="colorOnBackground">@color/pez_text</item>
+        <item name="colorSurface">@color/pez_surface</item>
         <item name="colorOnSurface">@color/pez_text</item>
         <item name="colorSurfaceVariant">@color/pez_card_menu</item>
         <item name="colorOnSurfaceVariant">@color/pez_text_secondary</item>
@@ -33,5 +37,7 @@
         <item name="colorSurfaceContainer">@color/pez_card_menu</item>
         <item name="colorSurfaceContainerHigh">@color/pez_card_menu</item>
         <item name="colorSurfaceContainerHighest">@color/pez_card_menu</item>
+
+        <item name="pezSelection">@color/pez_selection</item>
     </style>
 </resources>
