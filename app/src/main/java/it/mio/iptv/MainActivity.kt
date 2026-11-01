@@ -319,8 +319,13 @@ class MainActivity : AppCompatActivity() {
         text = t
         textSize = size
         setTextColor(color)
-        if (bold) setTypeface(typeface, Typeface.BOLD)
+        if (bold) setTypeface(medium(typeface))
     }
+
+    // M3: titoli ed etichette usano il peso 500 (Medium); sotto Android 9 non esiste e si ripiega sul grassetto
+    private fun medium(base: Typeface?): Typeface =
+        if (Build.VERSION.SDK_INT >= 28) Typeface.create(base, 500, false)
+        else Typeface.create(base, Typeface.BOLD)
 
     private fun selectable(): Drawable? {
         val tv = TypedValue()
@@ -396,7 +401,7 @@ class MainActivity : AppCompatActivity() {
                 maxLines = 2
                 ellipsize = TextUtils.TruncateAt.END
             })
-            if (sub != null) addView(tv(sub, 13f, onSub).apply {
+            if (sub != null) addView(tv(sub, 14f, onSub).apply {
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
             })
@@ -404,25 +409,25 @@ class MainActivity : AppCompatActivity() {
         val shareBtn = onShare?.let { f ->
             iconBtn(
                 R.drawable.ic_share,
-                if (shareActive && !selected) c(MR.attr.colorPrimary) else onSub, dp(10), null
+                if (shareActive && !selected) c(MR.attr.colorPrimary) else onSub, dp(12), null
             ) { f() }.apply { contentDescription = "Condividi a tutti" }
         }
         val editBtn = onEdit?.let { f ->
-            iconBtn(R.drawable.ic_edit, onSub, dp(10), null) { f() }
+            iconBtn(R.drawable.ic_edit, onSub, dp(12), null) { f() }.apply { contentDescription = "Modifica" }
         }
         val delBtn = onDelete?.let { f ->
-            iconBtn(R.drawable.ic_delete, onSub, dp(10), null) { f() }
+            iconBtn(R.drawable.ic_delete, onSub, dp(12), null) { f() }.apply { contentDescription = "Elimina" }
         }
         val row = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(12), dp(8), dp(12))
             addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
-            if (shareBtn != null) addView(shareBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
-            if (editBtn != null) addView(editBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
-            if (delBtn != null) addView(delBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
+            if (shareBtn != null) addView(shareBtn, LinearLayout.LayoutParams(dp(48), dp(48)))
+            if (editBtn != null) addView(editBtn, LinearLayout.LayoutParams(dp(48), dp(48)))
+            if (delBtn != null) addView(delBtn, LinearLayout.LayoutParams(dp(48), dp(48)))
         }
         val card = MaterialCardView(this).apply {
-            radius = dp(16).toFloat()
+            radius = dp(12).toFloat()
             cardElevation = 0f
             setCardBackgroundColor(
                 if (selected) c(R.attr.pezSelection) else c(MR.attr.colorSurfaceVariant)
@@ -445,7 +450,7 @@ class MainActivity : AppCompatActivity() {
         val onC = c(MR.attr.colorOnSecondaryContainer)
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(tv(title, 20f, onC, true))
+            addView(tv(title, 22f, onC, true))
             if (sub.isNotBlank()) addView(tv(sub, 14f, onC))
         }
         return MaterialCardView(this).apply {
@@ -478,7 +483,6 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             setTitleTextColor(c(MR.attr.colorOnSurface))
         }
-        val divider = View(this).apply { setBackgroundColor(c(MR.attr.colorOutlineVariant)) }
         val cards = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
@@ -488,7 +492,6 @@ class MainActivity : AppCompatActivity() {
         homeView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(bar, LinearLayout.LayoutParams(MATCH, WRAP))
-            addView(divider, LinearLayout.LayoutParams(MATCH, dp(1)))
             addView(ScrollView(context).apply {
                 scrollbar()
                 isFillViewport = true
@@ -1060,13 +1063,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun liveBadge() = TextView(this).apply {
         text = "LIVE"
-        textSize = 11f
-        setTypeface(typeface, Typeface.BOLD)
-        setTextColor(Color.WHITE)
-        setPadding(dp(7), dp(2), dp(7), dp(2))
+        textSize = 11f   // Label Small
+        setTypeface(medium(typeface))
+        setTextColor(c(MR.attr.colorOnError))
+        setPadding(dp(8), dp(4), dp(8), dp(4))
         background = GradientDrawable().apply {
-            cornerRadius = dp(6).toFloat()
-            setColor(0xFFE53935.toInt())
+            cornerRadius = dp(8).toFloat()
+            setColor(c(MR.attr.colorError))
         }
     }
 
@@ -1076,13 +1079,14 @@ class MainActivity : AppCompatActivity() {
         val zone = ZoneId.systemDefault()
         val live = start <= 0L || (now >= start && now < start + 3 * 3_600_000L)
         t.text = if (live) "LIVE" else timeLabel(start, zone)
-        (t.background as? GradientDrawable)?.setColor(
-            when {
-                live -> 0xFFE53935.toInt()          // rosso: in corso
-                now < start -> 0xFF1E88E5.toInt()   // blu: deve ancora iniziare
-                else -> 0xFF757575.toInt()          // grigio: finito
-            }
-        )
+        // ruoli del tema: in corso = error, deve ancora iniziare = tertiary container, finito = surface variant
+        val (bg, on) = when {
+            live -> MR.attr.colorError to MR.attr.colorOnError
+            now < start -> MR.attr.colorTertiaryContainer to MR.attr.colorOnTertiaryContainer
+            else -> MR.attr.colorSurfaceVariant to MR.attr.colorOnSurfaceVariant
+        }
+        (t.background as? GradientDrawable)?.setColor(c(bg))
+        t.setTextColor(c(on))
     }
 
     private fun timeLabel(ms: Long, zone: ZoneId): String {
@@ -1138,7 +1142,7 @@ class MainActivity : AppCompatActivity() {
             })
         }
         return MaterialCardView(this).apply {
-            radius = dp(16).toFloat()
+            radius = dp(12).toFloat()
             cardElevation = 0f
             setCardBackgroundColor(c(MR.attr.colorSurfaceContainerLow))
             isClickable = true
