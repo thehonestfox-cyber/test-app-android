@@ -2494,7 +2494,7 @@
  "stato": {
   "A": "ok",
   "B": "ok",
-  "C": "ok"
+  "C": "errore di rete"
  },
  "sky": [
   {
