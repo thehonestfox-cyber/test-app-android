@@ -19,6 +19,9 @@
         <item name="colorSecondaryContainer">@color/pez_secondary_container</item>
         <item name="colorOnSecondaryContainer">@color/pez_on_secondary_container</item>
         <item name="colorTertiary">@color/pez_tertiary</item>
+        <item name="colorOnTertiary">@color/pez_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/pez_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/pez_on_tertiary_container</item>
         <item name="colorError">@color/pez_error</item>
         <item name="colorOnError">@color/pez_on_error</item>
 

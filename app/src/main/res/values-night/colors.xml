@@ -17,6 +17,9 @@
     <color name="pez_secondary_container">#4A4458</color>
     <color name="pez_on_secondary_container">#E8DEF8</color>
     <color name="pez_tertiary">#EFB8C8</color>
+    <color name="pez_on_tertiary">#492532</color>
+    <color name="pez_tertiary_container">#633B48</color>
+    <color name="pez_on_tertiary_container">#FFD8E4</color>
     <color name="pez_error">#F2B8B5</color>
     <color name="pez_on_error">#601410</color>
     <color name="pez_outline">#938F99</color>
