@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- PEZ8 Dark (Material 3) -->
-    <color name="pez_background">#101619</color>
+    <color name="pez_background">#0C161C</color>
     <color name="pez_surface">#141D22</color>
     <color name="pez_toolbar">#141D22</color>
     <color name="pez_card_menu">#293943</color>
     <color name="pez_card_match">#293943</color>
-    <color name="pez_text">#F5F6F4</color>
-    <color name="pez_text_secondary">#C1CCD1</color>
-    <color name="pez_selection">#35464F</color>
-    <color name="pez_accent">#F5F6F4</color>
-    <color name="pez_on_accent">#0B151A</color>
-    <color name="pez_primary_container">#293943</color>
-    <color name="pez_on_primary_container">#F5F6F4</color>
+    <color name="pez_text">#FFFFFF</color>
+    <color name="pez_text_secondary">#8F9396</color>
+    <color name="pez_selection">#2E3D17</color>
+    <color name="pez_accent">#C8F000</color>
+    <color name="pez_on_accent">#0C161C</color>
+    <color name="pez_primary_container">#C8F000</color>
+    <color name="pez_on_primary_container">#0C161C</color>
     <color name="pez_secondary">#BBC5CA</color>
     <color name="pez_on_secondary">#18262D</color>
     <color name="pez_secondary_container">#35464F</color>
