@@ -17,7 +17,7 @@ object Featured {
     private const val KEY = "featured"
     const val PREFIX = "IPTV1-"
 
-    private fun toJson(list: List<FeaturedCategory>): JSONArray {
+    fun toJson(list: List<FeaturedCategory>): JSONArray {
         val arr = JSONArray()
         list.forEach { cat ->
             arr.put(JSONObject().apply {
@@ -39,7 +39,7 @@ object Featured {
         return arr
     }
 
-    private fun fromJson(arr: JSONArray): MutableList<FeaturedCategory> {
+    fun fromJson(arr: JSONArray): MutableList<FeaturedCategory> {
         val out = mutableListOf<FeaturedCategory>()
         for (i in 0 until arr.length()) {
             val o = arr.getJSONObject(i)

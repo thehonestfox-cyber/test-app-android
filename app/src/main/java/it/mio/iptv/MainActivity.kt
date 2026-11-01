@@ -386,7 +386,8 @@ class MainActivity : AppCompatActivity() {
     // Card Material 3 usata per le righe di canali e playlist
     private fun itemCard(
         title: String, sub: String?, selected: Boolean,
-        onClick: (() -> Unit)?, onEdit: (() -> Unit)? = null, onDelete: (() -> Unit)?
+        onClick: (() -> Unit)?, onEdit: (() -> Unit)? = null, onDelete: (() -> Unit)?,
+        onShare: (() -> Unit)? = null, shareActive: Boolean = false
     ): View {
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -399,6 +400,12 @@ class MainActivity : AppCompatActivity() {
                 ellipsize = TextUtils.TruncateAt.END
             })
         }
+        val shareBtn = onShare?.let { f ->
+            iconBtn(
+                R.drawable.ic_share,
+                c(if (shareActive) MR.attr.colorPrimary else MR.attr.colorOnSurfaceVariant), dp(10), null
+            ) { f() }.apply { contentDescription = "Condividi a tutti" }
+        }
         val editBtn = onEdit?.let { f ->
             iconBtn(R.drawable.ic_edit, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { f() }
         }
@@ -409,6 +416,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(12), dp(8), dp(12))
             addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
+            if (shareBtn != null) addView(shareBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
             if (editBtn != null) addView(editBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
             if (delBtn != null) addView(delBtn, LinearLayout.LayoutParams(dp(44), dp(44)))
         }
@@ -428,7 +436,7 @@ class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }
         }
         // per il telecomando: la riga (card + matita + cestino) è una fila di punti di focus collegati
-        card.tag = FocusRow(listOfNotNull(if (onClick != null) card else null, editBtn, delBtn))
+        card.tag = FocusRow(listOfNotNull(if (onClick != null) card else null, shareBtn, editBtn, delBtn))
         return card
     }
 
@@ -501,6 +509,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshHome() {
+        // sezioni condivise dall'admin: le scarica (al massimo ogni 3 minuti) e aggiorna la home
+        SharedSections.syncIfDue(prefs) {
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                refreshHome()
+                if (currentView === adminView && adminEditing == null) refreshAdmin()
+            }
+        }
         prefetchLive()
         homeCards.removeAllViews()
         Sections.load(prefs).forEach { sec ->
@@ -1691,7 +1707,7 @@ class MainActivity : AppCompatActivity() {
         })
         adminList.addView(
             tv(
-                "Tocca una sezione per gestire categorie e canali. Con la matita cambi nome, icona, descrizione e tipo; tenendo premuto la sposti su o giù.",
+                "Tocca una sezione per gestire categorie e canali. Con l'icona di condivisione la mandi a tutti quelli che hanno l'app; con la matita cambi nome, icona, descrizione e tipo; tenendo premuto la sposti su o giù.",
                 13f, c(MR.attr.colorOnSurfaceVariant)
             ).apply { setPadding(dp(4), 0, dp(4), dp(8)) }
         )
@@ -1713,12 +1729,16 @@ class MainActivity : AppCompatActivity() {
             }
             val unit = if (sec.isLive) "eventi" else "canali"
             val count = "$n $unit"
-            val sub = if (sec.description.isBlank()) count else "${sec.description} · $count"
+            val shared = SharedSections.isShared(prefs, sec.id)
+            val base = if (sec.description.isBlank()) count else "${sec.description} · $count"
+            val sub = if (shared) "$base · condivisa" else base
             val card = itemCard(
                 title = sec.name, sub = sub, selected = false,
                 onClick = { adminEditing = sec.id; refreshAdmin() },
                 onEdit = { sectionDialog(i) },
-                onDelete = del
+                onDelete = del,
+                onShare = { shareSection(sec) },
+                shareActive = shared
             )
             card.setOnLongClickListener {
                 showMoveMenu(card, i, sections.size) { d -> moveSection(i, d) }
@@ -1758,10 +1778,81 @@ class MainActivity : AppCompatActivity() {
 
     private fun deleteSection(id: String) {
         val l = Sections.load(prefs)
+        val name = l.firstOrNull { it.id == id }?.name ?: ""
+        if (SharedSections.isOwned(prefs, id)) {
+            Thread {
+                val r = SharedSections.unpublish(prefs, id, name)
+                if (!r.ok) runOnUiThread { toast("Eliminata qui, ma non dalla condivisione: ${r.message}") }
+            }.start()
+        }
         l.removeAll { it.id == id }
         Sections.save(prefs, l)
         Featured.delete(prefs, id)
         refreshAdmin()
+    }
+
+    // Condivisione a tutti: pubblica la sezione nel repo GitHub, da lì la scaricano tutte le installazioni
+    private fun shareSection(sec: Section) {
+        if (SharedSections.token(prefs).isEmpty()) {
+            tokenDialog { shareSection(sec) }
+            return
+        }
+        val owned = SharedSections.isOwned(prefs, sec.id)
+        val labels = mutableListOf(if (owned) "Aggiorna per tutti" else "Condividi con tutti")
+        if (owned) labels.add("Smetti di condividere")
+        labels.add("Cambia token GitHub")
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Condividi \"${sec.name}\"")
+            .setItems(labels.toTypedArray()) { _, which ->
+                when (labels[which]) {
+                    "Smetti di condividere" ->
+                        runShare("Non è più condivisa") { SharedSections.unpublish(prefs, sec.id, sec.name) }
+                    "Cambia token GitHub" -> tokenDialog { }
+                    else -> {
+                        val cats = Featured.load(prefs, sec.id)
+                        runShare("Condivisa: la ricevono entro pochi minuti") { SharedSections.publish(prefs, sec, cats) }
+                    }
+                }
+            }
+            .setNegativeButton("Annulla", null)
+            .show()
+    }
+
+    private fun runShare(okMsg: String, job: () -> SharedSections.Result) {
+        toast("Invio in corso…")
+        Thread {
+            val r = job()
+            runOnUiThread {
+                Toast.makeText(this, if (r.ok) okMsg else r.message, Toast.LENGTH_LONG).show()
+                if (currentView === adminView && adminEditing == null) refreshAdmin()
+            }
+        }.start()
+    }
+
+    private fun tokenDialog(then: () -> Unit) {
+        val til = field("Token GitHub")
+        til.editText!!.setText(SharedSections.token(prefs))
+        showDialog(
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Token GitHub")
+                .setView(scroll(padBox(
+                    tv(
+                        "Per condividere serve un token GitHub (una volta sola; resta solo su questo dispositivo).\n\n" +
+                            "1. github.com › Settings › Developer settings › Fine-grained tokens › Generate new token\n" +
+                            "2. Repository access: solo test-app-android\n" +
+                            "3. Permissions › Contents: Read and write\n" +
+                            "4. Copia qui il token.",
+                        13f, c(MR.attr.colorOnSurfaceVariant)
+                    ),
+                    til
+                )))
+                .setPositiveButton("Salva") { _, _ ->
+                    val t = til.editText!!.text.toString().trim()
+                    SharedSections.setToken(prefs, t)
+                    if (t.isNotEmpty()) then()
+                }
+                .setNegativeButton("Annulla", null)
+        )
     }
 
     // Nome + icona. index == null: nuova sezione; altrimenti modifica
