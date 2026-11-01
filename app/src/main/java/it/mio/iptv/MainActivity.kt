@@ -386,8 +386,9 @@ class MainActivity : AppCompatActivity() {
     // Card Material 3 usata per le righe di canali e playlist
     private fun itemCard(
         title: String, sub: String?, selected: Boolean,
-        onClick: (() -> Unit)?, onEdit: (() -> Unit)? = null, onDelete: (() -> Unit)?,
-        onShare: (() -> Unit)? = null, shareActive: Boolean = false
+        onClick: (() -> Unit)?, onEdit: (() -> Unit)? = null,
+        onShare: (() -> Unit)? = null, shareActive: Boolean = false,
+        onDelete: (() -> Unit)?
     ): View {
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
