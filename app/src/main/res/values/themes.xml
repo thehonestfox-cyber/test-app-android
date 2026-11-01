@@ -8,5 +8,30 @@
 
     <style name="Theme.IPTV" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="tabStyle">@style/Widget.IPTV.TabLayout</item>
+
+        <!-- Palette (i valori chiaro/scuro stanno in values/colors.xml e values-night/colors.xml) -->
+        <item name="colorPrimary">@color/pez_accent</item>
+        <item name="colorOnPrimary">@color/pez_on_accent</item>
+        <item name="colorPrimaryContainer">@color/pez_selection</item>
+        <item name="colorOnPrimaryContainer">@color/pez_text</item>
+        <item name="colorSecondary">@color/pez_accent</item>
+        <item name="colorOnSecondary">@color/pez_on_accent</item>
+        <item name="colorSecondaryContainer">@color/pez_card_menu</item>
+        <item name="colorOnSecondaryContainer">@color/pez_text</item>
+
+        <item name="android:colorBackground">@color/pez_background</item>
+        <item name="colorSurface">@color/pez_background</item>
+        <item name="colorOnSurface">@color/pez_text</item>
+        <item name="colorSurfaceVariant">@color/pez_card_menu</item>
+        <item name="colorOnSurfaceVariant">@color/pez_text_secondary</item>
+        <item name="colorOutline">@color/pez_outline</item>
+        <item name="colorOutlineVariant">@color/pez_outline_variant</item>
+
+        <!-- Lowest = barra del titolo, Low = card delle partite, il resto = card dei menu e finestre -->
+        <item name="colorSurfaceContainerLowest">@color/pez_toolbar</item>
+        <item name="colorSurfaceContainerLow">@color/pez_card_match</item>
+        <item name="colorSurfaceContainer">@color/pez_card_menu</item>
+        <item name="colorSurfaceContainerHigh">@color/pez_card_menu</item>
+        <item name="colorSurfaceContainerHighest">@color/pez_card_menu</item>
     </style>
 </resources>

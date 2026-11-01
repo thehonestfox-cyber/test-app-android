@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette tema scuro -->
+    <color name="pez_background">#101419</color>
+    <color name="pez_toolbar">#101419</color>
+    <color name="pez_card_menu">#29333C</color>
+    <color name="pez_card_match">#1B2229</color>
+    <color name="pez_text">#F5F6F8</color>
+    <color name="pez_text_secondary">#AAB5BF</color>
+    <color name="pez_selection">#244744</color>
+    <color name="pez_accent">#35B8B0</color>
+    <color name="pez_on_accent">#101419</color>
+    <color name="pez_outline">#5B6873</color>
+    <color name="pez_outline_variant">#2F3A44</color>
+</resources>

@@ -68,7 +68,6 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
@@ -191,7 +190,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         AppCompatDelegate.setDefaultNightMode(themeMode())
         super.onCreate(savedInstanceState)
-        DynamicColors.applyToActivityIfAvailable(this)
         nightApplied = nightNow()
         Logos.init(this)
         if (!prefs.contains("playlists")) savePlaylists(listOf(defaultPlaylist))
@@ -258,7 +256,6 @@ class MainActivity : AppCompatActivity() {
     private fun applyThemeInPlace() {
         nightApplied = nightNow()
         theme.applyStyle(R.style.Theme_IPTV, true)
-        DynamicColors.applyToActivityIfAvailable(this)
         val night = nightApplied == Configuration.UI_MODE_NIGHT_YES
         window.setBackgroundDrawable(ColorDrawable(c(MR.attr.colorSurface)))
         root.setBackgroundColor(c(MR.attr.colorSurface))
@@ -475,6 +472,7 @@ class MainActivity : AppCompatActivity() {
         // Barra fissa in alto con il nome dell'app (fuori dalle sezioni)
         val bar = MaterialToolbar(this).apply {
             title = "PEZ8"
+            setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             setTitleTextColor(c(MR.attr.colorOnSurface))
         }
         val divider = View(this).apply { setBackgroundColor(c(MR.attr.colorOutlineVariant)) }
@@ -1139,7 +1137,7 @@ class MainActivity : AppCompatActivity() {
         return MaterialCardView(this).apply {
             radius = dp(16).toFloat()
             cardElevation = 0f
-            setCardBackgroundColor(c(MR.attr.colorSurfaceVariant))
+            setCardBackgroundColor(c(MR.attr.colorSurfaceContainerLow))
             isClickable = true
             isFocusable = true
             enableFocusRing()
@@ -1571,6 +1569,7 @@ class MainActivity : AppCompatActivity() {
     private fun buildAdmin() {
         adminToolbar = MaterialToolbar(this).apply {
             title = "Impostazioni"
+            setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             setNavigationIcon(R.drawable.ic_back)
             setNavigationIconTint(c(MR.attr.colorOnSurface))
             setTitleTextColor(c(MR.attr.colorOnSurface))
@@ -1578,6 +1577,7 @@ class MainActivity : AppCompatActivity() {
         }
         adminTabs = TabLayout(this).apply {
             tabGravity = TabLayout.GRAVITY_FILL
+            setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             addTab(newTab().setText("Generali"))
             addTab(newTab().setText("Admin"))
             addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
@@ -1794,22 +1794,31 @@ class MainActivity : AppCompatActivity() {
 
     // Condivisione a tutti: pubblica la sezione nel repo GitHub, da lì la scaricano tutte le installazioni
     private fun shareSection(sec: Section) {
-        if (SharedSections.token(prefs).isEmpty()) {
+        val owned = SharedSections.isOwned(prefs, sec.id)
+        val shared = SharedSections.isShared(prefs, sec.id)
+        // Mai condivisa e nessun token: prima si imposta il token. Se è già condivisa si va dritti al menu.
+        if (!shared && SharedSections.token(prefs).isEmpty()) {
             tokenDialog { shareSection(sec) }
             return
         }
-        val owned = SharedSections.isOwned(prefs, sec.id)
-        val labels = mutableListOf(if (owned) "Aggiorna per tutti" else "Condividi con tutti")
-        if (owned) labels.add("Smetti di condividere")
+        // il token serve solo al momento di scrivere su GitHub
+        fun withToken(go: () -> Unit) {
+            if (SharedSections.token(prefs).isEmpty()) tokenDialog { go() } else go()
+        }
+        val labels = mutableListOf<String>()
+        if (!shared) labels.add("Condividi con tutti")
+        if (owned) labels.add("Aggiorna per tutti")
+        if (shared) labels.add("Smetti di condividere")
         labels.add("Cambia token GitHub")
         MaterialAlertDialogBuilder(this)
-            .setTitle("Condividi \"${sec.name}\"")
+            .setTitle(if (shared) "\"${sec.name}\" è condivisa" else "Condividi \"${sec.name}\"")
             .setItems(labels.toTypedArray()) { _, which ->
                 when (labels[which]) {
-                    "Smetti di condividere" ->
+                    "Smetti di condividere" -> withToken {
                         runShare("Non è più condivisa") { SharedSections.unpublish(prefs, sec.id, sec.name) }
+                    }
                     "Cambia token GitHub" -> tokenDialog { }
-                    else -> {
+                    else -> withToken {
                         val cats = Featured.load(prefs, sec.id)
                         runShare("Condivisa: la ricevono entro pochi minuti") { SharedSections.publish(prefs, sec, cats) }
                     }
