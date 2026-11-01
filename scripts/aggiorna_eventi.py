@@ -28,7 +28,7 @@ URL_B = "https://www.legab.it/seriebkt"
 URL_C = "https://www.seriec.com/"
 SKY_INDEX = ["https://sport.sky.it/calcio/serie-c", "https://sport.sky.it/argomenti/guida-tv"]
 SKY_ARTICLES = 3
-KEEP_MS = 36 * 3_600_000          # una partita iniziata da meno di 36 ore resta nell'elenco
+KEEP_MS = 5 * 86_400_000          # una partita iniziata da meno di 5 giorni resta nell'elenco (la giornata dura dal venerdi al lunedi)
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
@@ -420,7 +420,7 @@ def main():
                 stato[league] = "errore di lettura"
         old_list = old.get("fixtures", {}).get(league, [])
         if parsed:
-            # come faceva l'app: le partite gia' iniziate (da meno di 36 ore) restano anche se il sito non le elenca piu'
+            # come faceva l'app: le partite gia' iniziate (da meno di 5 giorni) restano anche se il sito non le elenca piu'
             merged = {fx_key(f): f for f in old_list if now_ms - KEEP_MS < f["s"] <= now_ms}
             for f in parsed:
                 merged[fx_key(fx_json(f))] = fx_json(f)

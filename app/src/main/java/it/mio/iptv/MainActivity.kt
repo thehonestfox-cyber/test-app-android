@@ -1017,15 +1017,19 @@ class MainActivity : AppCompatActivity() {
         val gen = loadGen
         showLiveCats(liveCats(section), name)
         listStatus.text = "$name · caricamento partite…"
+        var finalShown = false
         loadPlaylistChannels { playlist, _, final ->
-            if (!final || gen != loadGen) return@loadPlaylistChannels
+            if (gen != loadGen) return@loadPlaylistChannels
+            // subito: playlist e partite gia' salvate (nessuna rete); poi la versione aggiornata
             Thread {
-                val fx = LiveFixtures.refresh()
+                val fx = if (final) LiveFixtures.refresh() else LiveFixtures.current()
                 val ev = cats.filter { LiveFixtures.isAuto(it.name) }.associate { c ->
                     c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
                 }
                 runOnUiThread {
                     if (gen != loadGen || userSection != section) return@runOnUiThread
+                    if (!final && (finalShown || ev.values.all { it.isEmpty() })) return@runOnUiThread
+                    if (final) finalShown = true
                     autoEvents = ev
                     showLiveCats(liveCats(section), name)
                     SportsDb.prefetch(ev.values.flatten())
@@ -1989,15 +1993,20 @@ class MainActivity : AppCompatActivity() {
         if (autos.isEmpty() || adminAutoLoading || autos.all { autoEvents.containsKey(it.name) }) return
         adminAutoLoading = true
         val section = adminSection
+        var finalShown = false
         loadPlaylistChannels { playlist, _, final ->
-            if (!final) return@loadPlaylistChannels
+            // subito: playlist e partite gia' salvate (nessuna rete); poi la versione aggiornata
             Thread {
-                val fx = LiveFixtures.refresh()
+                val fx = if (final) LiveFixtures.refresh() else LiveFixtures.current()
                 val ev = autos.associate { c ->
                     c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
                 }
                 runOnUiThread {
-                    adminAutoLoading = false
+                    if (!final && (finalShown || ev.values.all { it.isEmpty() })) return@runOnUiThread
+                    if (final) {
+                        finalShown = true
+                        adminAutoLoading = false
+                    }
                     autoEvents = autoEvents + ev
                     if (adminEditing == section) refreshAdmin()
                 }

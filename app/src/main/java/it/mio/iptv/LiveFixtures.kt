@@ -31,7 +31,7 @@ object LiveFixtures {
     private const val UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     private const val REFRESH_MS = 5 * 60_000L
-    private const val KEEP_MS = 36 * 3_600_000L
+    private const val KEEP_MS = 5 * 86_400_000L      // la giornata dura dal venerdi al lunedi: le partite gia' iniziate restano 5 giorni
 
     // guida Sky alla Serie C: quanto resta valida
     private const val SKY_VALID_MS = 10 * 86_400_000L     // una guida piu' vecchia di cosi' non si usa piu'
@@ -133,9 +133,9 @@ object LiveFixtures {
     fun refresh(): Map<String, List<Fixture>> {
         val now = System.currentTimeMillis()
         if (now - (lastFetch["DATA"] ?: 0L) >= REFRESH_MS) {
-            val text = http(URL_DATA)
+            val text = http("$URL_DATA?t=${now / 60_000L}")   // il parametro evita la copia vecchia in cache di GitHub
             if (text == null) {
-                lastFetch["DATA"] = now - REFRESH_MS + 30_000L    // errore di rete: si riprova tra 30 secondi
+                lastFetch["DATA"] = now - REFRESH_MS + 10_000L    // errore di rete: si riprova tra 10 secondi
                 for (l in listOf("A", "B", "C")) diag[l] = "eventi.json: errore di rete"
             } else {
                 lastFetch["DATA"] = now
