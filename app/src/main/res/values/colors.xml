@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Palette tema chiaro -->
-    <color name="pez_background">#F5F6F8</color>
-    <color name="pez_surface">#F5F6F8</color>
-    <color name="pez_toolbar">#FFFFFF</color>
-    <color name="pez_card_menu">#E9EDF1</color>
-    <color name="pez_card_match">#FFFFFF</color>
-    <color name="pez_text">#0C161C</color>
-    <color name="pez_text_secondary">#687580</color>
-    <color name="pez_selection">#ECFAA6</color>
-    <color name="pez_accent">#0C161C</color>
+    <!-- Material 3, palette di base (baseline) - tema chiaro -->
+    <color name="pez_background">#FEF7FF</color>
+    <color name="pez_surface">#FEF7FF</color>
+    <color name="pez_toolbar">#F3EDF7</color>           <!-- Surface Container -->
+    <color name="pez_card_menu">#E6E0E9</color>         <!-- Surface Container Highest -->
+    <color name="pez_card_match">#F3EDF7</color>        <!-- Surface Container -->
+    <color name="pez_text">#1D1B20</color>
+    <color name="pez_text_secondary">#49454F</color>
+    <color name="pez_selection">#E8DEF8</color>         <!-- Secondary Container -->
+    <color name="pez_accent">#6750A4</color>            <!-- Primary -->
     <color name="pez_on_accent">#FFFFFF</color>
-    <color name="pez_primary_container">#C8F000</color>
-    <color name="pez_on_primary_container">#0C161C</color>
-    <color name="pez_secondary">#0C161C</color>
+    <color name="pez_primary_container">#EADDFF</color>
+    <color name="pez_on_primary_container">#21005D</color>
+    <color name="pez_secondary">#625B71</color>
     <color name="pez_on_secondary">#FFFFFF</color>
-    <color name="pez_secondary_container">#E9EDF1</color>
-    <color name="pez_on_secondary_container">#0C161C</color>
-    <color name="pez_tertiary">#0C161C</color>
+    <color name="pez_secondary_container">#E8DEF8</color>
+    <color name="pez_on_secondary_container">#1D192B</color>
+    <color name="pez_tertiary">#7D5260</color>
     <color name="pez_error">#B3261E</color>
     <color name="pez_on_error">#FFFFFF</color>
-    <color name="pez_outline">#A9B4BE</color>
-    <color name="pez_outline_variant">#D5DBE1</color>
+    <color name="pez_outline">#79747E</color>
+    <color name="pez_outline_variant">#CAC4D0</color>
 </resources>
