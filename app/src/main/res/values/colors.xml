@@ -8,7 +8,6 @@
     <color name="pez_card_match">#F3EDF7</color>        <!-- Surface Container -->
     <color name="pez_text">#1D1B20</color>
     <color name="pez_text_secondary">#49454F</color>
-    <color name="pez_selection">#E8DEF8</color>         <!-- Secondary Container -->
     <color name="pez_accent">#6750A4</color>            <!-- Primary -->
     <color name="pez_on_accent">#FFFFFF</color>
     <color name="pez_primary_container">#EADDFF</color>

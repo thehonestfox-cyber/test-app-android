@@ -38,6 +38,6 @@
         <item name="colorSurfaceContainerHigh">@color/pez_card_menu</item>
         <item name="colorSurfaceContainerHighest">@color/pez_card_menu</item>
 
-        <item name="pezSelection">@color/pez_selection</item>
+        <item name="pezSelection">@color/pez_secondary_container</item>
     </style>
 </resources>

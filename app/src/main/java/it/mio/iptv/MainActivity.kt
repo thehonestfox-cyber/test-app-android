@@ -387,13 +387,16 @@ class MainActivity : AppCompatActivity() {
         onShare: (() -> Unit)? = null, shareActive: Boolean = false,
         onDelete: (() -> Unit)?
     ): View {
+        // sfondo selezionato = secondary container: il testo sopra è "on secondary container" (abbinamento M3)
+        val onMain = c(if (selected) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurface)
+        val onSub = c(if (selected) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurfaceVariant)
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(tv(title, 16f, c(MR.attr.colorOnSurface), true).apply {
+            addView(tv(title, 16f, onMain, true).apply {
                 maxLines = 2
                 ellipsize = TextUtils.TruncateAt.END
             })
-            if (sub != null) addView(tv(sub, 13f, c(MR.attr.colorOnSurfaceVariant)).apply {
+            if (sub != null) addView(tv(sub, 13f, onSub).apply {
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
             })
@@ -401,14 +404,14 @@ class MainActivity : AppCompatActivity() {
         val shareBtn = onShare?.let { f ->
             iconBtn(
                 R.drawable.ic_share,
-                c(if (shareActive) MR.attr.colorPrimary else MR.attr.colorOnSurfaceVariant), dp(10), null
+                if (shareActive && !selected) c(MR.attr.colorPrimary) else onSub, dp(10), null
             ) { f() }.apply { contentDescription = "Condividi a tutti" }
         }
         val editBtn = onEdit?.let { f ->
-            iconBtn(R.drawable.ic_edit, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { f() }
+            iconBtn(R.drawable.ic_edit, onSub, dp(10), null) { f() }
         }
         val delBtn = onDelete?.let { f ->
-            iconBtn(R.drawable.ic_delete, c(MR.attr.colorOnSurfaceVariant), dp(10), null) { f() }
+            iconBtn(R.drawable.ic_delete, onSub, dp(10), null) { f() }
         }
         val row = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
@@ -1278,8 +1281,8 @@ class MainActivity : AppCompatActivity() {
     private fun multiSlotCard(i: Int): View {
         val ch = multi.slots[i]
         val target = i == multi.target
-        val onC = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurface)
-        val onV = c(if (target) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurfaceVariant)
+        val onC = c(if (target) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurface)
+        val onV = c(if (target) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurfaceVariant)
         val hasAudio = ch != null && i == multi.audio
         val speaker = ImageView(this).apply {
             setImageResource(if (hasAudio) R.drawable.ic_volume_on else R.drawable.ic_volume_off)
@@ -1931,7 +1934,7 @@ class MainActivity : AppCompatActivity() {
             cells.forEach { (key, v) ->
                 val on = key == sel
                 v.imageTintList = ColorStateList.valueOf(
-                    c(if (on) MR.attr.colorOnPrimaryContainer else MR.attr.colorOnSurfaceVariant)
+                    c(if (on) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurfaceVariant)
                 )
                 v.background = if (on) GradientDrawable().apply {
                     shape = GradientDrawable.OVAL

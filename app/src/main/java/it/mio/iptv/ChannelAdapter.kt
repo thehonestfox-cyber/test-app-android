@@ -201,10 +201,13 @@ class ChannelAdapter(
                 val ch = r.ch
                 h.name.text = ch.name
                 h.sub.text = ch.quality.ifEmpty { "Diretta" }
+                val sel = ch.url == selectedUrl
                 h.card.setCardBackgroundColor(
-                    if (ch.url == selectedUrl) col(R.attr.pezSelection)
-                    else col(MR.attr.colorSurfaceVariant)
+                    if (sel) col(R.attr.pezSelection) else col(MR.attr.colorSurfaceVariant)
                 )
+                // sfondo selezionato = secondary container: testo "on secondary container"
+                h.name.setTextColor(col(if (sel) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurface))
+                h.sub.setTextColor(col(if (sel) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurfaceVariant))
                 h.card.setOnClickListener { onClick(ch) }
                 loadChannelLogo(h.logo, ch)
             }
