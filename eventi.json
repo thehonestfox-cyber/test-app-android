@@ -2485,16 +2485,88 @@
    },
    {
     "r": 15,
+    "h": "Pro Vercelli",
+    "a": "Novara",
+    "s": 1795347000000
+   },
+   {
+    "r": 15,
     "h": "Scafatese",
     "a": "Foggia",
     "s": 1795347000000
+   },
+   {
+    "r": 15,
+    "h": "Union Brescia",
+    "a": "Renate",
+    "s": 1795347000000
+   },
+   {
+    "r": 15,
+    "h": "Alcione Milano",
+    "a": "Ospitaletto F.",
+    "s": 1795354200000
+   },
+   {
+    "r": 15,
+    "h": "Altamura",
+    "a": "Casarano",
+    "s": 1795354200000
+   },
+   {
+    "r": 15,
+    "h": "Livorno",
+    "a": "Ravenna",
+    "s": 1795354200000
+   },
+   {
+    "r": 15,
+    "h": "Pianese",
+    "a": "Gubbio",
+    "s": 1795354200000
+   },
+   {
+    "r": 15,
+    "h": "Torres",
+    "a": "Spezia",
+    "s": 1795354200000
+   },
+   {
+    "r": 15,
+    "h": "Catania",
+    "a": "Bari",
+    "s": 1795356000000
+   },
+   {
+    "r": 15,
+    "h": "Desenzano",
+    "a": "Albinoleffe",
+    "s": 1795365000000
+   },
+   {
+    "r": 15,
+    "h": "Forlì",
+    "a": "Reggiana",
+    "s": 1795365000000
+   },
+   {
+    "r": 15,
+    "h": "Sambenedettese",
+    "a": "Perugia",
+    "s": 1795365000000
+   },
+   {
+    "r": 15,
+    "h": "Grosseto",
+    "a": "Guidonia M.",
+    "s": 1795462200000
    }
   ]
  },
  "stato": {
   "A": "ok",
   "B": "ok",
-  "C": "errore di rete"
+  "C": "ok"
  },
  "sky": [
   {
