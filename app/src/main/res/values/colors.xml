@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Palette DAZN - tema chiaro: sfondo bianco, selezione e pulsanti neri.
+    <!-- Palette DAZN - tema chiaro: sfondo bianco, selezione grigio scuro.
          Il giallo #F6FF00 è usato SOLO per il bordo del focus (telecomando), identico nei due temi. -->
     <color name="pez_focus">#F6FF00</color>
     <color name="pez_background">#FFFFFF</color>
@@ -16,7 +16,7 @@
     <color name="pez_on_primary_container">#FFFFFF</color>
     <color name="pez_secondary">#3B474E</color>
     <color name="pez_on_secondary">#FFFFFF</color>
-    <color name="pez_secondary_container">#000000</color>  <!-- selezione: nero (tema chiaro) -->
+    <color name="pez_secondary_container">#3B474E</color>  <!-- selezione: grigio scuro morbido (tema chiaro) -->
     <color name="pez_on_secondary_container">#FFFFFF</color>
     <color name="pez_tertiary">#4A555C</color>
     <color name="pez_on_tertiary">#FFFFFF</color>

@@ -478,7 +478,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun homeCard(icon: Int, title: String, sub: String, onClick: () -> Unit): View {
-        val onC = c(MR.attr.colorOnSecondaryContainer)
+        val onC = c(MR.attr.colorOnSurface)
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(tv(title, 22f, onC, true))
@@ -487,7 +487,7 @@ class MainActivity : AppCompatActivity() {
         return MaterialCardView(this).apply {
             radius = dp(28).toFloat()
             cardElevation = 0f
-            setCardBackgroundColor(c(MR.attr.colorSecondaryContainer))
+            setCardBackgroundColor(c(MR.attr.colorSurfaceVariant))
             isClickable = true
             isFocusable = true
             enableFocusRing()

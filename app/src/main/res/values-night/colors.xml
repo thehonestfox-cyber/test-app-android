@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Palette DAZN - tema scuro: sfondo nero, selezione e pulsanti bianchi (il giallo è solo il bordo del focus) -->
+    <!-- Palette DAZN - tema scuro: sfondo nero, selezione grigio chiaro (il giallo è solo il bordo del focus) -->
     <color name="pez_background">#000000</color>
     <color name="pez_surface">#000000</color>
     <color name="pez_toolbar">#0C161C</color>            <!-- barra del titolo (grigio scuro DAZN) -->
@@ -14,8 +14,8 @@
     <color name="pez_on_primary_container">#FFFFFF</color>
     <color name="pez_secondary">#FFFFFF</color>
     <color name="pez_on_secondary">#000000</color>
-    <color name="pez_secondary_container">#FFFFFF</color>  <!-- selezione: bianco (tema scuro) -->
-    <color name="pez_on_secondary_container">#000000</color>
+    <color name="pez_secondary_container">#C4CBD0</color>  <!-- selezione: grigio chiaro morbido (tema scuro) -->
+    <color name="pez_on_secondary_container">#0C161C</color>
     <color name="pez_tertiary">#C4CBD0</color>
     <color name="pez_on_tertiary">#0C161C</color>
     <color name="pez_tertiary_container">#2A3640</color>
