@@ -6,11 +6,14 @@ Gira su GitHub Actions (.github/workflows/eventi.yml); l'app scarica solo il JSO
   - Serie A: sport.sky.it/calcio/serie-a/calendario-risultati
   - Serie B: legab.it/seriebkt
   - Serie C: seriec.com (partite) + sport.sky.it (canale Sky di ogni partita)
+  - Highlights (solo Serie A, solo partite finite): video del canale YouTube ufficiale DAZN Italia, scritti in "hl"
 
 E' la stessa logica che prima stava in FixtureParsers.kt, riportata in Python. Solo libreria standard.
 """
 import json
 import re
+import urllib.parse
+import xml.etree.ElementTree as ET
 import sys
 import time
 import unicodedata
@@ -28,6 +31,13 @@ URL_B = "https://www.legab.it/seriebkt"
 URL_C = "https://www.seriec.com/"
 SKY_INDEX = ["https://sport.sky.it/calcio/serie-c", "https://sport.sky.it/argomenti/guida-tv"]
 SKY_ARTICLES = 3
+FINISH_MS = 3 * 3_600_000         # come nell'app (FixtureParsers.FINISH_MS): dopo 3 ore dall'inizio la partita e' finita
+DAZN_CHANNEL_ID = "UC7N8IuYFhU8Hs1ruCTsXTbg"          # canale YouTube ufficiale "DAZN Italia"
+DAZN_FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + DAZN_CHANNEL_ID
+DAZN_VIDEOS = "https://www.youtube.com/channel/" + DAZN_CHANNEL_ID + "/videos"
+YT_SEARCH = "https://www.youtube.com/results?sp=EgIQAQ%253D%253D&search_query="   # sp = solo video
+YT_HEADERS = {"Cookie": "CONSENT=YES+cb; SOCS=CAI"}      # salta la schermata dei cookie
+HL_SEARCH_MAX = 12                # ricerche YouTube al massimo per esecuzione
 KEEP_MS = 5 * 86_400_000          # una partita iniziata da meno di 5 giorni resta nell'elenco (la giornata dura dal venerdi al lunedi)
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -365,14 +375,183 @@ def parse_sky_guide(html):
     return list(out.values())
 
 
+
+# ---------------------------------------------------------------- Highlights DAZN (YouTube)
+
+HL_ALIASES = {"inter": ["inter", "internazionale"], "juventus": ["juventus", "juve"],
+              "hellas verona": ["hellas verona", "verona"], "verona": ["verona", "hellas verona"]}
+HL_BAD = re.compile(r"\b(femminile|women|primavera|under ?\d\d|u ?\d\d|youth)\b")
+VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def team_forms(name):
+    n = space_re.sub(" ", re.sub(r"[^a-z0-9]+", " ", fold(name))).strip()
+    return HL_ALIASES.get(n, [n])
+
+
+def first_pos(text, forms):
+    best = -1
+    for f in forms:
+        m = re.search(r"(?<![a-z0-9])" + re.escape(f) + r"(?![a-z0-9])", text)
+        if m and (best < 0 or m.start() < best):
+            best = m.start()
+    return best
+
+
+def season_of(ms):
+    d = datetime.fromtimestamp(ms / 1000, ROME)
+    y = d.year if d.month >= 7 else d.year - 1
+    return y, (y + 1) % 100
+
+
+def age_ms(text):
+    """'5 ore fa', '2 giorni fa', 'Streamed 3 days ago' -> millisecondi (approssimati); None se non si capisce."""
+    t = fold(text or "")
+    m = re.search(r"(\d+)\s*(second|minut|min|or[ae]|hour|giorn|day|settiman|week|mes[ei]|month|ann[io]|year)", t)
+    if not m:
+        return None
+    n, u = int(m.group(1)), m.group(2)
+    unit = (1000 if u.startswith("second") else 60_000 if u.startswith("min") else 3_600_000 if u in ("ora", "ore", "hour")
+            else 86_400_000 if u in ("giorn", "day") else 7 * 86_400_000 if u in ("settiman", "week")
+            else 30 * 86_400_000 if u in ("mese", "mesi", "month") else 365 * 86_400_000)
+    return n * unit
+
+
+def match_highlight(f, cands, now_ms):
+    """Il video 'highlights' di DAZN per la partita f (dict h/a/s), o None. Serve: titolo con 'highlights',
+    squadra di casa prima dell'ospite, e pubblicato dopo l'inizio della partita (non l'edizione dell'anno scorso)."""
+    hf, af = team_forms(f["h"]), team_forms(f["a"])
+    y, y2 = season_of(f["s"])
+    for c in cands:
+        t = space_re.sub(" ", re.sub(r"[^a-z0-9]+", " ", fold(c["title"]))).strip()
+        if "highlight" not in t or HL_BAD.search(t):
+            continue
+        ph, pa = first_pos(t, hf), first_pos(t, af)
+        if ph < 0 or pa < 0 or ph > pa:
+            continue
+        seasons = re.findall(r"\b(20\d\d) (\d\d)\b", t)
+        if seasons and (str(y), "%02d" % y2) not in seasons:
+            continue
+        pub = c.get("published")             # ms, se noto (feed)
+        if pub is None and c.get("age") is not None:
+            pub = now_ms - c["age"]          # stimato da "2 giorni fa" (+- un giorno)
+            if pub < f["s"] - 86_400_000:
+                continue
+        elif pub is not None and pub < f["s"]:
+            continue
+        elif pub is None and not seasons:
+            continue                         # ne' data ne' stagione nel titolo: non si e' sicuri
+        return c["id"]
+    return None
+
+
+def yt_json(html):
+    """Il JSON 'ytInitialData' di una pagina YouTube, o None."""
+    m = re.search(r"ytInitialData\s*=\s*", html)
+    if not m:
+        return None
+    try:
+        obj, _ = json.JSONDecoder().raw_decode(html[m.end():])
+        return obj
+    except ValueError:
+        return None
+
+
+def yt_text(x):
+    if isinstance(x, dict):
+        if "simpleText" in x:
+            return x["simpleText"]
+        return "".join(r.get("text", "") for r in x.get("runs", []))
+    return x if isinstance(x, str) else ""
+
+
+def yt_videos(node, only_dazn, out):
+    """Raccoglie (id, titolo, eta') da tutta la pagina; da una ricerca tiene solo i video del canale DAZN Italia."""
+    if isinstance(node, dict):
+        vid = node.get("videoId")
+        if isinstance(vid, str) and VIDEO_ID_RE.match(vid) and "title" in node and "thumbnail" in node:
+            owner = node.get("ownerText") or node.get("longBylineText") or {}
+            runs = owner.get("runs", []) if isinstance(owner, dict) else []
+            cid = next((r.get("navigationEndpoint", {}).get("browseEndpoint", {}).get("browseId") for r in runs), None)
+            name = fold(yt_text(owner))
+            ok = (not only_dazn) or cid == DAZN_CHANNEL_ID or "dazn italia" in name
+            title = yt_text(node["title"])
+            if ok and title:
+                out.append({"id": vid, "title": title, "age": age_ms(yt_text(node.get("publishedTimeText")))})
+        for v in node.values():
+            yt_videos(v, only_dazn, out)
+    elif isinstance(node, list):
+        for v in node:
+            yt_videos(v, only_dazn, out)
+
+
+def dazn_recent():
+    """Ultimi video del canale: feed RSS (15) + pagina Video del canale (~30). Senza chiavi API."""
+    out = []
+    xml = http(DAZN_FEED, YT_HEADERS)
+    if xml:
+        try:
+            ns = {"a": "http://www.w3.org/2005/Atom", "y": "http://www.youtube.com/xml/schemas/2015"}
+            for e in ET.fromstring(xml).findall("a:entry", ns):
+                pub = datetime.fromisoformat(e.findtext("a:published", "", ns).replace("Z", "+00:00"))
+                out.append({"id": e.findtext("y:videoId", "", ns), "title": e.findtext("a:title", "", ns),
+                            "published": int(pub.timestamp() * 1000)})
+        except Exception as ex:
+            print(f"Highlights: feed non leggibile {ex!r}", file=sys.stderr)
+    html = http(DAZN_VIDEOS, YT_HEADERS)
+    if html:
+        data = yt_json(html)
+        if data is not None:
+            yt_videos(data, False, out)
+    print(f"Highlights: {len(out)} video letti dal canale DAZN Italia")
+    return out
+
+
+def dazn_search(f):
+    q = urllib.parse.quote_plus(f"{f['h']} {f['a']} highlights DAZN Italia")
+    html = http(YT_SEARCH + q, YT_HEADERS)
+    out = []
+    data = yt_json(html) if html else None
+    if data is not None:
+        yt_videos(data, True, out)
+    return out
+
+
+def find_highlights(fixtures_a, old_hl, now, now_ms):
+    """Solo Serie A e solo partite finite. I video gia' trovati restano; le ricerche una per partita si fanno
+    una volta l'ora (minuti 0-9), il canale si legge a ogni esecuzione."""
+    keys = {fx_key(f): f for f in fixtures_a}
+    hl = {k: v for k, v in old_hl.items() if k in keys and VIDEO_ID_RE.match(str(v))}
+    missing = [f for f in fixtures_a if f["s"] + FINISH_MS <= now_ms and fx_key(f) not in hl]
+    if not missing:
+        return hl
+    try:
+        recent = dazn_recent()
+        for f in missing:
+            vid = match_highlight(f, recent, now_ms)
+            if vid:
+                hl[fx_key(f)] = vid
+        missing = [f for f in missing if fx_key(f) not in hl]
+        if missing and now.minute < 10:
+            for f in missing[:HL_SEARCH_MAX]:
+                vid = match_highlight(f, dazn_search(f), now_ms)
+                if vid:
+                    hl[fx_key(f)] = vid
+                time.sleep(1)
+    except Exception as e:
+        print(f"Highlights: errore {e!r}", file=sys.stderr)
+    print(f"Highlights Serie A: {len(hl)} trovati, {len([f for f in fixtures_a if f['s'] + FINISH_MS <= now_ms])} partite finite")
+    return hl
+
+
 # ---------------------------------------------------------------- rete e file
 
-def http(url):
+def http(url, extra=None):
     for attempt in (1, 2):
         try:
             req = urllib.request.Request(url, headers={
                 "User-Agent": UA, "Accept-Language": "it-IT,it;q=0.9",
-                "Accept": "text/html,application/xhtml+xml,*/*;q=0.8"})
+                "Accept": "text/html,application/xhtml+xml,*/*;q=0.8", **(extra or {})})
             with urllib.request.urlopen(req, timeout=25) as r:
                 return r.read().decode("utf-8", errors="replace")
         except Exception as e:
@@ -450,7 +629,10 @@ def main():
         if found:
             sky, sky_at = list(found.values()), midnight_ms   # sky_at cambia una volta al giorno: pochi commit
 
-    data = {"fixtures": fixtures, "stato": stato, "sky": sky, "sky_at": sky_at}
+    # highlights DAZN (YouTube): solo Serie A, solo partite finite
+    hl = find_highlights(fixtures["A"], old.get("hl", {}), now, now_ms)
+
+    data = {"fixtures": fixtures, "stato": stato, "sky": sky, "sky_at": sky_at, "hl": hl}
     text = json.dumps(data, ensure_ascii=False, indent=1) + "\n"
     try:
         same = OUT.read_text(encoding="utf-8") == text

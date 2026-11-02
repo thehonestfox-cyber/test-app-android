@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.net.Uri
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -1146,6 +1147,46 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Pulsante "Highlights" (partite di Serie A gia' finite): apre il video DAZN su YouTube (app o browser)
+    private fun highlightsButton(videoId: String): View = TextView(this).apply {
+        text = "Highlights DAZN"
+        textSize = 13f
+        gravity = Gravity.CENTER
+        setTypeface(medium(typeface))
+        setTextColor(c(MR.attr.colorOnSecondaryContainer))
+        setPadding(dp(12), dp(8), dp(12), dp(8))
+        val shape = GradientDrawable().apply {
+            cornerRadius = dp(16).toFloat()
+            setColor(c(MR.attr.colorSecondaryContainer))
+        }
+        background = shape
+        foreground = focusRingDrawable(focusColor(context), dp(3), false, dp(16).toFloat(), true)
+        ContextCompat.getDrawable(context, R.drawable.ic_play)?.mutate()?.let {
+            it.setTint(c(MR.attr.colorOnSecondaryContainer))
+            it.setBounds(0, 0, dp(16), dp(16))
+            setCompoundDrawablesRelative(it, null, null, null)
+            compoundDrawablePadding = dp(6)
+        }
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { openHighlights(videoId) }
+    }
+
+    private fun openHighlights(videoId: String) {
+        val web = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$videoId"))
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$videoId")).apply {
+                setPackage("com.google.android.youtube")
+            })
+        } catch (_: Exception) {
+            try {
+                startActivity(web)
+            } catch (_: Exception) {
+                toast("Nessuna app per aprire il video")
+            }
+        }
+    }
+
     private fun liveCard(ch: Channel): View {
         val badge = liveBadge()
         if (ch.start > 0) paintTag(badge, ch.start)   // orario dal sito della lega; senza orario resta LIVE
@@ -1184,7 +1225,10 @@ class MainActivity : AppCompatActivity() {
             })
             addView(tv(ch.quality.ifEmpty { if (ch.url.isEmpty()) "Canale non trovato" else "Diretta" }, 12f, c(MR.attr.colorOnSurfaceVariant)).apply {
                 maxLines = 1
-                setPadding(dp(12), dp(2), dp(12), dp(12))
+                setPadding(dp(12), dp(2), dp(12), if (ch.highlight.isEmpty()) dp(12) else dp(8))
+            })
+            if (ch.highlight.isNotEmpty()) addView(highlightsButton(ch.highlight), LinearLayout.LayoutParams(MATCH, WRAP).apply {
+                setMargins(dp(12), 0, dp(12), dp(12))
             })
         }
         return MaterialCardView(this).apply {

@@ -19,6 +19,9 @@ import java.net.URL
  * Per la Serie C il canale e' quello che Sky indica per la partita (Sky Sport 251, 252...) se c'e' nella playlist;
  * altrimenti quello della squadra.
  *
+ * Solo per la Serie A, a partita finita, eventi.json porta anche il video degli highlights pubblicato da DAZN nel
+ * suo canale YouTube ufficiale ("hl": chiave partita -> id video): la card mostra il pulsante "Highlights".
+ *
  * L'admin puo' modificare (nome, canale) o rimuovere ogni evento automatico: le scelte si ricordano per partita
  * (chiave "casa|ospite|giornata") e restano anche quando l'elenco si aggiorna da solo.
  */
@@ -41,6 +44,7 @@ object LiveFixtures {
     private val lastFetch = HashMap<String, Long>()
     private val memory = HashMap<String, List<Fixture>>()
     private var sky: List<SkyMatch>? = null
+    private var highlights: Map<String, String>? = null   // chiave partita -> id video YouTube (highlights DAZN Italia, solo Serie A)
 
     /** Cosa e' successo all'ultimo aggiornamento di ogni campionato (si vede nell'Admin quando non ci sono eventi). */
     val diag = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -170,6 +174,13 @@ object LiveFixtures {
             Log.d(TAG, "Serie $league: ${parsed.size} partite da eventi.json")
             if (parsed.isNotEmpty()) store(league, parsed)
         }
+        val hl = o.optJSONObject("hl")
+        if (hl != null) {
+            val m = HashMap<String, String>()
+            for (k in hl.keys()) hl.optString(k, "").takeIf { it.matches(Regex("""[A-Za-z0-9_-]{11}""")) }?.let { m[k] = it }
+            highlights = m
+            prefs?.edit()?.putString("hl_A", JSONObject(m as Map<*, *>).toString())?.apply()
+        }
         val skyArr = o.optJSONArray("sky")
         if (skyArr != null && skyArr.length() > 0) {
             val l = ArrayList<SkyMatch>()
@@ -186,6 +197,19 @@ object LiveFixtures {
                     ?.putLong("sky_c_at", o.optLong("sky_at", now))?.apply()
             }
         }
+    }
+
+    /** Highlights DAZN gia' noti (da eventi.json o dal ricordo su disco): chiave partita -> id video YouTube. */
+    private fun highlightsStored(): Map<String, String> {
+        highlights?.let { return it }
+        val m = HashMap<String, String>()
+        try {
+            val o = JSONObject(prefs?.getString("hl_A", null) ?: "{}")
+            for (k in o.keys()) m[k] = o.getString(k)
+        } catch (_: Exception) {
+        }
+        highlights = m
+        return m
     }
 
     /** Le partite della giornata in corso, da quanto e' gia' stato scaricato/ricordato (nessuna rete). */
@@ -403,6 +427,8 @@ object LiveFixtures {
         val removed = memo("del_$league")
         val edits = memo("ovr_$league")
         val skyIdx = if (league == "C") skyIndex(playlist) else emptyMap()
+        val now = System.currentTimeMillis()
+        val hl = if (league == "A") highlightsStored() else emptyMap()   // highlights DAZN: solo Serie A
         return (fixtures[league] ?: emptyList()).filter { !removed.has(key(it)) }.map { f ->
             val ch = (if (league == "C") skyChannel(f, skyIdx) else null)
                 ?: findChannel(f.home, playlist, partial = league != "C")
@@ -418,7 +444,9 @@ object LiveFixtures {
                 url = ch?.url ?: "",
                 logos = ch?.logos ?: emptyList(),
                 start = f.start,
-                evKey = key(f)
+                evKey = key(f),
+                // solo se la partita e' gia' finita
+                highlight = if (now >= f.start + FixtureParsers.FINISH_MS) hl[key(f)] ?: "" else ""
             )
             applyOverride(base, edits.optJSONObject(key(f)))
         }
