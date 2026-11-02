@@ -6,7 +6,7 @@
         <item name="tabMaxWidth">0dp</item>
     </style>
 
-    <style name="Theme.IPTV" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.IPTV" parent="Theme.Material3Expressive.DayNight.NoActionBar">
         <item name="tabStyle">@style/Widget.IPTV.TabLayout</item>
 
         <!-- Palette: i valori chiaro/scuro stanno in values/colors.xml e values-night/colors.xml -->
