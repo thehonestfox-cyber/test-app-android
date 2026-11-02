@@ -4,10 +4,29 @@
          Material limita di default ogni scheda a 264dp, quindi su schermi larghi restavano strette al centro. -->
     <style name="Widget.IPTV.TabLayout" parent="Widget.Material3.TabLayout">
         <item name="tabMaxWidth">0dp</item>
+        <!-- Indicatore sottile e arrotondato, a tutta larghezza della scheda; sfondo trasparente, ripple contenuto -->
+        <item name="tabIndicator">@drawable/tab_indicator</item>
+        <item name="tabIndicatorFullWidth">true</item>
+        <item name="tabUnboundedRipple">false</item>
+    </style>
+
+    <style name="Widget.IPTV.Snackbar" parent="Widget.Material3.Snackbar">
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Small</item>
+    </style>
+
+    <style name="Widget.IPTV.CircularProgress" parent="Widget.Material3.CircularProgressIndicator">
+        <item name="showAnimationBehavior">outward</item>
+    </style>
+
+    <style name="Widget.IPTV.LinearProgress" parent="Widget.Material3.LinearProgressIndicator">
+        <item name="showAnimationBehavior">outward</item>
     </style>
 
     <style name="Theme.IPTV" parent="Theme.Material3Expressive.DayNight.NoActionBar">
         <item name="tabStyle">@style/Widget.IPTV.TabLayout</item>
+        <item name="snackbarStyle">@style/Widget.IPTV.Snackbar</item>
+        <item name="circularProgressIndicatorStyle">@style/Widget.IPTV.CircularProgress</item>
+        <item name="linearProgressIndicatorStyle">@style/Widget.IPTV.LinearProgress</item>
 
         <!-- Palette: i valori chiaro/scuro stanno in values/colors.xml e values-night/colors.xml -->
         <item name="colorPrimary">@color/pez_accent</item>

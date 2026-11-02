@@ -252,6 +252,20 @@ class MainActivity : AppCompatActivity() {
         outState.putString("userSection", userSection)
     }
 
+    // Tasto play/pausa che si trasforma da un'icona all'altra (animazione di 250 ms)
+    private var playShown: Boolean? = null
+
+    private fun setPlayIcon(playing: Boolean) {
+        val prev = playShown
+        if (prev == playing) return
+        playShown = playing
+        // prima visualizzazione in pausa: resta l'icona statica del play, senza animazione
+        if (prev == null && !playing) return
+        val d = ContextCompat.getDrawable(this, if (playing) R.drawable.avd_play_to_pause else R.drawable.avd_pause_to_play)
+        playBtn.setImageDrawable(d)
+        (d as? android.graphics.drawable.Animatable)?.start()
+    }
+
     private fun nightNow() = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
 
     /**
@@ -589,7 +603,7 @@ class MainActivity : AppCompatActivity() {
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) = onError(error)
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                playBtn.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+                setPlayIcon(isPlaying)
                 showControls()
                 updatePip()
             }
@@ -613,6 +627,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(16), dp(12), dp(16), 0)
         }
         playBtn = iconBtn(R.drawable.ic_play, white, dp(14), 0x80000000.toInt()) { togglePlay() }
+        playShown = null
         fsBtn = iconBtn(R.drawable.ic_fullscreen, white, dp(10), null) { setFullscreen(!fullscreen) }
         pipBtn = iconBtn(R.drawable.ic_pip, white, dp(10), null) { enterPip() }
         if (!pipSupported()) pipBtn.visibility = View.GONE
