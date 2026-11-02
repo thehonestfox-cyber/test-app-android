@@ -68,7 +68,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
+import com.google.android.material.button.MaterialButtonGroup
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -153,7 +153,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var errorText: TextView
     private lateinit var nowLogo: ImageView
     private lateinit var listStatus: TextView
-    private lateinit var chipGroup: ChipGroup
+    private lateinit var chipGroup: MaterialButtonGroup
     private lateinit var chipScroll: HorizontalScrollView
     private lateinit var channelList: RecyclerView
     private lateinit var liveScroll: ScrollView
@@ -906,16 +906,8 @@ class MainActivity : AppCompatActivity() {
         listStatus = tv("", 13f, c(MR.attr.colorOnSurfaceVariant)).apply {
             setPadding(dp(16), dp(8), dp(16), dp(4))
         }
-        chipGroup = ChipGroup(this).apply {
-            isSingleSelection = true
-            isSelectionRequired = true
-            isSingleLine = true
-            setPadding(dp(16), 0, dp(16), 0)
-        }
-        chipScroll = HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            addView(chipGroup)
-        }
+        chipScroll = layoutInflater.inflate(R.layout.view_filter_chips, null) as HorizontalScrollView
+        chipGroup = chipScroll.findViewById(R.id.buttonGroup)
         searchField = field("Cerca canale").apply { setPadding(dp(16), dp(4), dp(16), 0) }
         searchField.editText!!.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
@@ -1257,25 +1249,24 @@ class MainActivity : AppCompatActivity() {
             }, LinearLayout.LayoutParams(WRAP, WRAP).apply { leftMargin = dp(8) })
         })
 
-        val chips = ChipGroup(ctx).apply {
-            isSingleSelection = true
-            isSelectionRequired = true
-            setPadding(dp(4), 0, dp(4), 0)
-        }
+        val chipsRow = layoutInflater.inflate(R.layout.view_filter_chips, null) as HorizontalScrollView
+        val chips = chipsRow.findViewById<MaterialButtonGroup>(R.id.buttonGroup)
+        val countButtons = mutableListOf<Pair<MaterialButton, Int>>()
         for (n in 1..MultiState.MAX) {
-            chips.addView(Chip(ctx).apply {
-                ring(10)
-                scrollTopOnFocus()
-                id = View.generateViewId()
-                text = if (n == 1) "1 player" else "$n player"
-                isCheckable = true
-                isChecked = n == multi.count
-                setOnCheckedChangeListener { _, checked ->
-                    if (checked && n != multi.count) setMultiCount(n)
+            val btn = filterButton(chips, if (n == 1) "1 player" else "$n player", n == multi.count)
+            btn.scrollTopOnFocus()
+            btn.setOnClickListener {
+                if (n == multi.count) {
+                    btn.isChecked = true
+                } else {
+                    countButtons.forEach { (other, k) -> other.isChecked = k == n }
+                    setMultiCount(n)
                 }
-            })
+            }
+            countButtons += btn to n
+            chips.addView(btn)
         }
-        h.addView(chips, LinearLayout.LayoutParams(WRAP, WRAP))
+        h.addView(chipsRow, LinearLayout.LayoutParams(MATCH, WRAP))
 
         if (multi.count > 1) {
             h.addView(
@@ -1489,22 +1480,37 @@ class MainActivity : AppCompatActivity() {
         else applyFilter()
     }
 
+    // Filtri a pulsanti (stile Echo): pillola tonale; quello scelto diventa scuro e cambia forma
+    private fun filterButton(group: ViewGroup, label: String, checked: Boolean): MaterialButton {
+        val b = layoutInflater.inflate(R.layout.item_filter_button, group, false) as MaterialButton
+        val st = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+        b.backgroundTintList = ColorStateList(
+            st, intArrayOf(c(MR.attr.colorSurfaceInverse), c(MR.attr.colorSurfaceContainerHighest))
+        )
+        b.setTextColor(
+            ColorStateList(st, intArrayOf(c(MR.attr.colorOnSurfaceInverse), c(MR.attr.colorOnSurface)))
+        )
+        b.text = label
+        b.isChecked = checked
+        return b
+    }
+
     private fun rebuildChips(counts: Map<String, Int>) {
         chipGroup.removeAllViews()
+        val buttons = mutableListOf<Pair<MaterialButton, String?>>()
         fun add(label: String, cat: String?) {
-            chipGroup.addView(Chip(this).apply {
-                ring(10)
-                id = View.generateViewId()
-                text = label
-                isCheckable = true
-                isChecked = cat == selectedCategory
-                setOnCheckedChangeListener { _, checked ->
-                    if (checked) {
-                        selectedCategory = cat
-                        applyFilter()
-                    }
+            val b = filterButton(chipGroup, label, cat == selectedCategory)
+            b.setOnClickListener {
+                if (cat == selectedCategory) {
+                    b.isChecked = true
+                    return@setOnClickListener
                 }
-            })
+                selectedCategory = cat
+                buttons.forEach { (btn, other) -> btn.isChecked = other == cat }
+                applyFilter()
+            }
+            buttons += b to cat
+            chipGroup.addView(b)
         }
         add("Tutti (${allChannels.size})", null)
         categories.forEach { add("$it (${counts[it]})", it) }
