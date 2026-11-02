@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Palette DAZN - tema chiaro: sfondo bianco, selezione gialla, nero per testi e pulsanti.
-         Il giallo #F6FF00 non si legge su bianco, quindi qui non è mai usato per testi. -->
+    <!-- Palette DAZN - tema chiaro: sfondo bianco, selezione e pulsanti neri.
+         Il giallo #F6FF00 è usato SOLO per il bordo del focus (telecomando), identico nei due temi. -->
+    <color name="pez_focus">#F6FF00</color>
     <color name="pez_background">#FFFFFF</color>
     <color name="pez_surface">#FFFFFF</color>
     <color name="pez_toolbar">#F2F4F5</color>            <!-- barra del titolo -->
@@ -11,12 +12,12 @@
     <color name="pez_text_secondary">#4A555C</color>
     <color name="pez_accent">#000000</color>             <!-- Primary: pulsanti e titoli di sezione -->
     <color name="pez_on_accent">#FFFFFF</color>
-    <color name="pez_primary_container">#F6FF00</color>  <!-- giallo DAZN -->
-    <color name="pez_on_primary_container">#000000</color>
+    <color name="pez_primary_container">#000000</color>
+    <color name="pez_on_primary_container">#FFFFFF</color>
     <color name="pez_secondary">#3B474E</color>
     <color name="pez_on_secondary">#FFFFFF</color>
-    <color name="pez_secondary_container">#F6FF00</color>  <!-- evidenziatore di selezione -->
-    <color name="pez_on_secondary_container">#000000</color>
+    <color name="pez_secondary_container">#000000</color>  <!-- selezione: nero (tema chiaro) -->
+    <color name="pez_on_secondary_container">#FFFFFF</color>
     <color name="pez_tertiary">#4A555C</color>
     <color name="pez_on_tertiary">#FFFFFF</color>
     <color name="pez_tertiary_container">#E3E7EA</color>

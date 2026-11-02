@@ -383,7 +383,7 @@ class MainActivity : AppCompatActivity() {
             } else selectable()
             // anello visibile quando il focus arriva dal telecomando
             foreground = focusRingDrawable(
-                if (tint == Color.WHITE) Color.WHITE else c(androidx.appcompat.R.attr.colorPrimary), dp(3), true, fill = true
+                focusColor(context), dp(3), true, fill = true
             )
             isFocusable = true
             setOnClickListener { onClick() }
@@ -1293,7 +1293,7 @@ class MainActivity : AppCompatActivity() {
                     isEnabled = multi.active().isNotEmpty()
                     // il tasto è pieno di colorPrimary: il bordo del focus è quello del tasto stesso (stroke Material)
                     // in un colore a contrasto, così si vede sempre
-                    strokeColor = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
+                    strokeColor = ColorStateList.valueOf(focusColor(ctx))
                     strokeWidth = 0
                     onFocusChangeListener = View.OnFocusChangeListener { _, has -> strokeWidth = if (has) dp(4) else 0 }
                     scrollTopOnFocus()
@@ -1595,7 +1595,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Evidenziazione ben visibile (anello + sfondo colorato) per pulsanti, chip e righe quando hanno il focus
-    private fun <T : View> T.ring(radiusDp: Int, color: Int = c(androidx.appcompat.R.attr.colorPrimary)): T {
+    private fun <T : View> T.ring(radiusDp: Int, color: Int = focusColor(context)): T {
         val d = focusRingDrawable(color, dp(3), false, dp(radiusDp).toFloat(), fill = true)
         // i pulsanti Material hanno margini interni (inset) sopra/sotto: l'anello li segue, così combacia col pulsante
         foreground = if (this is MaterialButton) InsetDrawable(d, 0, insetTop, 0, insetBottom) else d

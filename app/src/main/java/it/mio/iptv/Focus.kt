@@ -10,12 +10,17 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.R as MR
 
+/** Giallo del bordo di focus, uguale in tema chiaro e scuro. */
+fun focusColor(ctx: android.content.Context): Int = androidx.core.content.ContextCompat.getColor(ctx, R.color.pez_focus)
+
 private val markedCards = java.util.Collections.newSetFromMap(java.util.WeakHashMap<MaterialCardView, Boolean>())
 
 /** Bordo sottile = card "selezionata" (es. evento in riproduzione); bordo più spesso = card con il focus. */
 private fun MaterialCardView.updateStroke() {
     val d = resources.displayMetrics.density
-    strokeColor = MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary, Color.WHITE)
+    // focus (telecomando) = giallo fisso; selezione = bianco/nero a seconda del tema
+    strokeColor = if (isFocused) focusColor(context)
+        else MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary, Color.WHITE)
     strokeWidth = when {
         isFocused -> (4 * d).toInt()
         this in markedCards -> (2 * d).toInt()

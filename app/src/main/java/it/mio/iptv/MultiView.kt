@@ -131,7 +131,7 @@ class MultiPlayerOverlay(
     private val triedHls = BooleanArray(MultiState.MAX)
     private val firstErr = arrayOfNulls<PlaybackException>(MultiState.MAX)
     private val countBtns = mutableListOf<TextView>()
-    private val FOCUS = 0xFFFFC107.toInt()   // colore dell'anello del focus (telecomando)
+    private val FOCUS = 0xFFF6FF00.toInt()   // colore dell'anello del focus (telecomando)
 
     // Android TV / box senza touchscreen: più attenzione al telecomando
     private val isTv: Boolean = run {

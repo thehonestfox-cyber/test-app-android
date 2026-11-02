@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Palette DAZN - tema scuro: sfondo nero, selezione e accenti gialli, bianco per i testi -->
+    <!-- Palette DAZN - tema scuro: sfondo nero, selezione e pulsanti bianchi (il giallo è solo il bordo del focus) -->
     <color name="pez_background">#000000</color>
     <color name="pez_surface">#000000</color>
     <color name="pez_toolbar">#0C161C</color>            <!-- barra del titolo (grigio scuro DAZN) -->
@@ -8,13 +8,13 @@
     <color name="pez_card_match">#0C161C</color>         <!-- card delle partite -->
     <color name="pez_text">#FFFFFF</color>
     <color name="pez_text_secondary">#C4CBD0</color>
-    <color name="pez_accent">#F6FF00</color>             <!-- Primary: giallo DAZN -->
+    <color name="pez_accent">#FFFFFF</color>             <!-- Primary: bianco -->
     <color name="pez_on_accent">#000000</color>
     <color name="pez_primary_container">#1B262D</color>
-    <color name="pez_on_primary_container">#F6FF00</color>
+    <color name="pez_on_primary_container">#FFFFFF</color>
     <color name="pez_secondary">#FFFFFF</color>
     <color name="pez_on_secondary">#000000</color>
-    <color name="pez_secondary_container">#F6FF00</color>  <!-- evidenziatore di selezione -->
+    <color name="pez_secondary_container">#FFFFFF</color>  <!-- selezione: bianco (tema scuro) -->
     <color name="pez_on_secondary_container">#000000</color>
     <color name="pez_tertiary">#C4CBD0</color>
     <color name="pez_on_tertiary">#0C161C</color>
