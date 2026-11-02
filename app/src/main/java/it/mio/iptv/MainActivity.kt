@@ -318,7 +318,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Colori dinamici (Material You, Android 12+) e nero AMOLED: si sovrappongono al tema base
-    private fun dynamicColorOn() = DynamicColors.isDynamicColorAvailable() && prefs.getBoolean("dynamic_color", true)
+    private fun dynamicColorOn() = DynamicColors.isDynamicColorAvailable() && prefs.getBoolean("dynamic_color", false)
     private fun pitchBlackOn() = prefs.getBoolean("pitch_black", false)
 
     private fun applyColorOverlays() {
@@ -1480,15 +1480,15 @@ class MainActivity : AppCompatActivity() {
         else applyFilter()
     }
 
-    // Filtri a pulsanti (stile Echo): pillola tonale; quello scelto diventa scuro e cambia forma
+    // Filtri a pulsanti (stile Echo): pillola tonale; quello scelto diventa giallo (evidenziatore) e cambia forma
     private fun filterButton(group: ViewGroup, label: String, checked: Boolean): MaterialButton {
         val b = layoutInflater.inflate(R.layout.item_filter_button, group, false) as MaterialButton
         val st = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
         b.backgroundTintList = ColorStateList(
-            st, intArrayOf(c(MR.attr.colorSurfaceInverse), c(MR.attr.colorSurfaceContainerHighest))
+            st, intArrayOf(c(MR.attr.colorSecondaryContainer), c(MR.attr.colorSurfaceContainerHighest))
         )
         b.setTextColor(
-            ColorStateList(st, intArrayOf(c(MR.attr.colorOnSurfaceInverse), c(MR.attr.colorOnSurface)))
+            ColorStateList(st, intArrayOf(c(MR.attr.colorOnSecondaryContainer), c(MR.attr.colorOnSurface)))
         )
         b.text = label
         b.isChecked = checked

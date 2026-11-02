@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material 3, palette di base (baseline) - tema scuro -->
-    <color name="pez_background">#141218</color>
-    <color name="pez_surface">#141218</color>
-    <color name="pez_toolbar">#211F26</color>           <!-- Surface Container -->
-    <color name="pez_card_menu">#36343B</color>         <!-- Surface Container Highest -->
-    <color name="pez_card_match">#211F26</color>        <!-- Surface Container -->
-    <color name="pez_text">#E6E0E9</color>
-    <color name="pez_text_secondary">#CAC4D0</color>
-    <color name="pez_accent">#D0BCFF</color>            <!-- Primary -->
-    <color name="pez_on_accent">#381E72</color>
-    <color name="pez_primary_container">#4F378B</color>
-    <color name="pez_on_primary_container">#EADDFF</color>
-    <color name="pez_secondary">#CCC2DC</color>
-    <color name="pez_on_secondary">#332D41</color>
-    <color name="pez_secondary_container">#4A4458</color>
-    <color name="pez_on_secondary_container">#E8DEF8</color>
-    <color name="pez_tertiary">#EFB8C8</color>
-    <color name="pez_on_tertiary">#492532</color>
-    <color name="pez_tertiary_container">#633B48</color>
-    <color name="pez_on_tertiary_container">#FFD8E4</color>
-    <color name="pez_error">#F2B8B5</color>
-    <color name="pez_on_error">#601410</color>
-    <color name="pez_outline">#938F99</color>
-    <color name="pez_outline_variant">#49454F</color>
+    <!-- Palette DAZN - tema scuro: sfondo nero, selezione e accenti gialli, bianco per i testi -->
+    <color name="pez_background">#000000</color>
+    <color name="pez_surface">#000000</color>
+    <color name="pez_toolbar">#0C161C</color>            <!-- barra del titolo (grigio scuro DAZN) -->
+    <color name="pez_card_menu">#1B262D</color>          <!-- card, menu e finestre -->
+    <color name="pez_card_match">#0C161C</color>         <!-- card delle partite -->
+    <color name="pez_text">#FFFFFF</color>
+    <color name="pez_text_secondary">#C4CBD0</color>
+    <color name="pez_accent">#F6FF00</color>             <!-- Primary: giallo DAZN -->
+    <color name="pez_on_accent">#000000</color>
+    <color name="pez_primary_container">#1B262D</color>
+    <color name="pez_on_primary_container">#F6FF00</color>
+    <color name="pez_secondary">#FFFFFF</color>
+    <color name="pez_on_secondary">#000000</color>
+    <color name="pez_secondary_container">#F6FF00</color>  <!-- evidenziatore di selezione -->
+    <color name="pez_on_secondary_container">#000000</color>
+    <color name="pez_tertiary">#C4CBD0</color>
+    <color name="pez_on_tertiary">#0C161C</color>
+    <color name="pez_tertiary_container">#2A3640</color>
+    <color name="pez_on_tertiary_container">#FFFFFF</color>
+    <color name="pez_error">#FFB4AB</color>
+    <color name="pez_on_error">#690005</color>
+    <color name="pez_outline">#6B777F</color>
+    <color name="pez_outline_variant">#2A3640</color>
 </resources>
