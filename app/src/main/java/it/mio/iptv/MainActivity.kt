@@ -157,6 +157,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chipScroll: HorizontalScrollView
     private lateinit var channelList: RecyclerView
     private lateinit var liveScroll: ScrollView
+    private lateinit var liveBar: MaterialToolbar
     private lateinit var liveBox: LinearLayout
     private val liveCards = mutableListOf<Pair<MaterialCardView, String>>()
     private lateinit var searchField: TextInputLayout
@@ -933,19 +934,35 @@ class MainActivity : AppCompatActivity() {
         liveScroll = ScrollView(this).apply {
             scrollbar()
             clipToPadding = false
-            setPadding(dp(12), 0, dp(12), dp(16))
+            // riquadro arrotondato che stacca categorie ed eventi dal bordo dello schermo
+            background = GradientDrawable().apply {
+                cornerRadius = dp(28).toFloat()
+                setColor(c(MR.attr.colorSurfaceContainer))
+            }
+            clipToOutline = true
+            setPadding(dp(12), dp(4), dp(12), dp(16))
             visibility = View.GONE
             addView(liveBox)
+        }
+        // Barra con freccia indietro e nome della sezione (solo nelle sezioni eventi live)
+        liveBar = MaterialToolbar(this).apply {
+            setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
+            setNavigationIcon(R.drawable.ic_back)
+            setNavigationIconTint(c(MR.attr.colorOnSurface))
+            setTitleTextColor(c(MR.attr.colorOnSurface))
+            setNavigationOnClickListener { goHome() }
+            visibility = View.GONE
         }
 
         // Pannello con la lista dei canali (a sinistra in orizzontale, sotto in verticale)
         listPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            addView(liveBar, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(listStatus)
             addView(chipScroll, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(searchField, LinearLayout.LayoutParams(MATCH, WRAP))
             addView(channelList, lp(0, 1f))
-            addView(liveScroll, lp(0, 1f))
+            addView(liveScroll, lp(0, 1f).apply { setMargins(dp(16), dp(8), dp(16), dp(16)) })
         }
         // Player + info sul canale (a destra in orizzontale, sopra in verticale)
         rightColumn = LinearLayout(this).apply {
@@ -1006,6 +1023,8 @@ class MainActivity : AppCompatActivity() {
         searchField.visibility = if (live) View.GONE else View.VISIBLE
         channelList.visibility = if (live) View.GONE else View.VISIBLE
         liveScroll.visibility = if (live) View.VISIBLE else View.GONE
+        liveBar.visibility = if (live) View.VISIBLE else View.GONE
+        liveBar.title = section?.let { id -> Sections.load(prefs).firstOrNull { it.id == id }?.name } ?: ""
         liveBox.removeAllViews()
         liveCards.clear()
         nowSub.text = ""
