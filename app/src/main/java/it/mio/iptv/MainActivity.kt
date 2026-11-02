@@ -1,6 +1,10 @@
 package it.mio.iptv
 
+import android.app.Dialog
 import android.app.PictureInPictureParams
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebView
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -1004,6 +1008,11 @@ class MainActivity : AppCompatActivity() {
 
     // Primo tocco: seleziona e riproduce. Tocco sul canale già selezionato: schermo intero.
     private fun onChannelTap(ch: Channel) {
+        // partita di Serie A gia' finita con gli highlights DAZN: si guardano qui, col player di YouTube (barra e durata)
+        if (ch.highlight.isNotEmpty()) {
+            showHighlights(ch)
+            return
+        }
         if (ch.url.isEmpty()) {
             toast("Nessun canale trovato per questo evento")
             return
@@ -1148,7 +1157,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Pulsante "Highlights" (partite di Serie A gia' finite): apre il video DAZN su YouTube (app o browser)
-    private fun highlightsButton(videoId: String): View = TextView(this).apply {
+    private fun highlightsButton(ch: Channel): View = TextView(this).apply {
         text = "Highlights DAZN"
         textSize = 13f
         gravity = Gravity.CENTER
@@ -1169,7 +1178,92 @@ class MainActivity : AppCompatActivity() {
         }
         isClickable = true
         isFocusable = true
-        setOnClickListener { openHighlights(videoId) }
+        setOnClickListener { showHighlights(ch) }
+    }
+
+    private var customVideo: View? = null
+    private var customVideoCb: WebChromeClient.CustomViewCallback? = null
+
+    /**
+     * Highlights DAZN dentro l'app: player ufficiale di YouTube (IFrame API) con barra di avanzamento, durata,
+     * pausa e schermo intero. Se YouTube non ne consente l'incorporamento si apre l'app YouTube.
+     */
+    private fun showHighlights(ch: Channel) {
+        val id = ch.highlight
+        if (player.isPlaying) player.pause()
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+        val web = WebView(this).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.mediaPlaybackRequiresUserGesture = false
+            setBackgroundColor(Color.BLACK)
+            isFocusable = true
+            addJavascriptInterface(object {
+                @JavascriptInterface
+                fun onError(code: Int) {
+                    runOnUiThread {
+                        if (dialog.isShowing) dialog.dismiss()
+                        openHighlights(id)
+                    }
+                }
+            }, "Native")
+        }
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onShowCustomView(view: View, callback: CustomViewCallback) {
+                customVideo = view
+                customVideoCb = callback
+                web.visibility = View.GONE
+                root.addView(view, FrameLayout.LayoutParams(MATCH, MATCH))
+            }
+
+            override fun onHideCustomView() {
+                customVideo?.let { root.removeView(it) }
+                customVideo = null
+                customVideoCb?.onCustomViewHidden()
+                customVideoCb = null
+                web.visibility = View.VISIBLE
+            }
+        }
+        val close = iconBtn(R.drawable.ic_back, Color.WHITE, dp(10), null) { dialog.dismiss() }
+        val bar = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(4), dp(4), dp(16), dp(4))
+            addView(close, LinearLayout.LayoutParams(dp(48), dp(48)))
+            addView(tv(ch.name + " · Highlights", 16f, Color.WHITE, true).apply {
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            }, LinearLayout.LayoutParams(0, WRAP, 1f))
+        }
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(bar, LinearLayout.LayoutParams(MATCH, WRAP))
+            addView(web, LinearLayout.LayoutParams(MATCH, 0, 1f))
+        }, FrameLayout.LayoutParams(MATCH, MATCH))
+        dialog.setContentView(root)
+        dialog.setOnKeyListener { _, code, ev ->
+            if (code == KeyEvent.KEYCODE_BACK && ev.action == KeyEvent.ACTION_UP && customVideo != null) {
+                web.webChromeClient?.onHideCustomView()
+                true
+            } else false
+        }
+        dialog.setOnDismissListener {
+            customVideoCb?.onCustomViewHidden()
+            customVideo = null
+            customVideoCb = null
+            web.loadUrl("about:blank")
+            web.destroy()
+        }
+        val html = """<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head>
+<body><div id="p"></div><script src="https://www.youtube.com/iframe_api"></script><script>
+function onYouTubeIframeAPIReady(){new YT.Player('p',{width:'100%',height:'100%',videoId:'$id',
+playerVars:{autoplay:1,playsinline:1,rel:0,fs:1,controls:1,origin:'https://www.youtube.com'},
+events:{onError:function(e){Native.onError(e.data)}}});}
+</script></body></html>"""
+        web.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "utf-8", null)
+        dialog.show()
+        web.requestFocus()
     }
 
     private fun openHighlights(videoId: String) {
@@ -1227,7 +1321,7 @@ class MainActivity : AppCompatActivity() {
                 maxLines = 1
                 setPadding(dp(12), dp(2), dp(12), if (ch.highlight.isEmpty()) dp(12) else dp(8))
             })
-            if (ch.highlight.isNotEmpty()) addView(highlightsButton(ch.highlight), LinearLayout.LayoutParams(MATCH, WRAP).apply {
+            if (ch.highlight.isNotEmpty()) addView(highlightsButton(ch), LinearLayout.LayoutParams(MATCH, WRAP).apply {
                 setMargins(dp(12), 0, dp(12), dp(12))
             })
         }
