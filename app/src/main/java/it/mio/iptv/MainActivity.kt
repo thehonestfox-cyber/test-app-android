@@ -481,7 +481,6 @@ class MainActivity : AppCompatActivity() {
         0xFF80586A.toInt(), 0xFF4C6482.toInt(), 0xFF4B8060.toInt(), 0xFF7F6150.toInt(),
         0xFF655A8A.toInt(), 0xFF4F7F78.toInt(), 0xFF7A5578.toInt()
     )
-    )
 
     // Un rettangolo per riga a tutta larghezza, con l'animazione alla pressione (anche quando si entra)
     private fun homeCard(index: Int, icon: Int, title: String, sub: String, onClick: () -> Unit): View =
