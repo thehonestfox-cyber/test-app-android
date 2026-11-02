@@ -3,6 +3,7 @@ package it.mio.iptv
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -15,7 +16,6 @@ import android.text.TextUtils
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.SoundEffectConstants
-import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -24,42 +24,46 @@ import android.widget.TextView
 import kotlin.math.hypot
 import kotlin.math.max
 
+private fun isNight(c: Context) =
+    (c.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+private fun mediumFont(): Typeface =
+    if (Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 500, false)
+    else Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+
 /**
- * Rettangolo colorato della home (stile "Browse all": cerchio nero con icona, titolo, freccia),
- * uno per riga a tutta larghezza.
+ * Base dei pulsanti con l'animazione alla pressione (la stessa quando si tocca e quando si entra):
+ * il pulsante si rimpicciolisce, un velo chiaro lo attraversa da sinistra a destra partendo dal punto
+ * toccato, poi torna com'era, senza rimbalzo. Se si entra da qualche parte, il passaggio alla schermata
+ * successiva parte a metà dell'animazione.
  *
- * Animazione alla pressione (la stessa quando si tocca e quando si entra nella sezione):
- * il rettangolo si rimpicciolisce, un velo chiaro lo attraversa da sinistra a destra partendo dal punto
- * toccato, poi tutto torna com'era con un piccolo rimbalzo. Se si entra nella sezione, il passaggio alla
- * schermata successiva parte a metà dell'animazione.
+ * [radii]: raggi degli angoli in px (alto-sx, alto-dx, basso-dx, basso-sx).
  */
-class HomeTile(
+open class PressTile(
     context: Context,
-    iconRes: Int,
-    title: String,
-    sub: String,
-    private val tileColor: Int,
+    tileColor: Int,
+    radii: FloatArray,
     private val onTap: () -> Unit
 ) : FrameLayout(context) {
 
-    private val d = resources.displayMetrics.density
-    // M3: angoli "extra large" 28dp per il rettangolo, "large" 16dp per il quadrato dell'icona
-    private val corner = 28 * d
-    private val iconCorner = 16 * d
+    protected val d = resources.displayMetrics.density
 
+    private val corners = floatArrayOf(
+        radii[0], radii[0], radii[1], radii[1], radii[2], radii[2], radii[3], radii[3]
+    )
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tileColor }
     private val veilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
     private val focusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 4 * d
+        strokeWidth = 8 * d          // metà finisce fuori dal clip: 4dp visibili
         color = focusColor(context)
     }
     private val rect = RectF()
-    private val clip = Path()
+    private val shape = Path()
 
     // stato dell'animazione
     private var press = 0f            // 0 = a riposo, 1 = premuto (rimpicciolito)
-    private var veilProgress = 0f     // quanto il velo ha attraversato il rettangolo
+    private var veilProgress = 0f     // quanto il velo ha attraversato il pulsante
     private var veilAlpha = 0f
     private var touchX = 0f
     private var touchY = 0f
@@ -76,99 +80,43 @@ class HomeTile(
         isFocusable = true
         isFocusableInTouchMode = false
         if (Build.VERSION.SDK_INT >= 26) defaultFocusHighlightEnabled = false
-        contentDescription = title
-        minimumHeight = (80 * d).toInt()
-
-        // tema chiaro: quadrato icona bianco con icona nera; tema scuro: quadrato nero con icona grigio chiaro
-        val night = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
-        val boxColor = if (night) Color.BLACK else Color.WHITE
-        val iconColor = if (night) Color.rgb(190, 190, 190) else Color.BLACK
-        val chevronColor = if (night) Color.rgb(190, 190, 190) else Color.WHITE
-
-        val medium: Typeface =
-            if (Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 500, false)
-            else Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-
-        // cerchio nero con l'icona
-        val circle = FrameLayout(context).apply {
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = iconCorner
-                setColor(boxColor)
-            }
-            addView(ImageView(context).apply {
-                setImageResource(iconRes)
-                imageTintList = ColorStateList.valueOf(iconColor)
-            }, LayoutParams((24 * d).toInt(), (24 * d).toInt(), Gravity.CENTER))
-        }
-
-        val texts = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(TextView(context).apply {
-                text = title
-                textSize = 16f
-                setTextColor(Color.WHITE)
-                typeface = medium
-                maxLines = 1
-                ellipsize = TextUtils.TruncateAt.END
-            })
-            if (sub.isNotBlank()) addView(TextView(context).apply {
-                text = sub
-                textSize = 13f
-                setTextColor(Color.argb(220, 255, 255, 255))
-                maxLines = 2
-                ellipsize = TextUtils.TruncateAt.END
-            })
-        }
-
-        // la freccia è quella "indietro" ruotata
-        val chevron = ImageView(context).apply {
-            setImageResource(R.drawable.ic_chevron_left)
-            rotation = 180f
-            imageTintList = ColorStateList.valueOf(chevronColor)
-        }
-
-        val row = LinearLayout(context).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding((12 * d).toInt(), (12 * d).toInt(), (12 * d).toInt(), (12 * d).toInt())
-            addView(circle, LinearLayout.LayoutParams((48 * d).toInt(), (48 * d).toInt()).apply {
-                rightMargin = (12 * d).toInt()
-            })
-            addView(texts, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(chevron, LinearLayout.LayoutParams((24 * d).toInt(), (24 * d).toInt()))
-        }
-        addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }
 
     // ---------- Disegno ----------
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        rect.set(0f, 0f, w.toFloat(), h.toFloat())
+        shape.reset()
+        shape.addRoundRect(rect, corners, Path.Direction.CW)
+    }
+
     override fun onDraw(canvas: Canvas) {
-        rect.set(0f, 0f, width.toFloat(), height.toFloat())
-        canvas.drawRoundRect(rect, corner, corner, bgPaint)
+        canvas.drawPath(shape, bgPaint)
     }
 
     override fun dispatchDraw(canvas: Canvas) {
         super.dispatchDraw(canvas)
-        rect.set(0f, 0f, width.toFloat(), height.toFloat())
+        val w = width.toFloat()
+        val h = height.toFloat()
         // velo chiaro: un cerchio che si allarga dal punto toccato, tagliato sul bordo arrotondato
         if (veilAlpha > 0f && veilProgress > 0f) {
             val save = canvas.save()
-            clip.reset()
-            clip.addRoundRect(rect, corner, corner, Path.Direction.CW)
-            canvas.clipPath(clip)
-            val far = max(hypot(touchX, touchY), hypot(width - touchX, touchY))
-                .coerceAtLeast(hypot(touchX, height - touchY))
-                .coerceAtLeast(hypot(width - touchX, height - touchY))
+            canvas.clipPath(shape)
+            val far = max(
+                max(hypot(touchX, touchY), hypot(w - touchX, touchY)),
+                max(hypot(touchX, h - touchY), hypot(w - touchX, h - touchY))
+            )
             veilPaint.alpha = (255 * 0.5f * veilAlpha).toInt()
             canvas.drawCircle(touchX, touchY, far * veilProgress, veilPaint)
             canvas.restoreToCount(save)
         }
         // bordo giallo del focus (telecomando / tastiera)
         if (isFocused) {
-            val inset = focusPaint.strokeWidth / 2
-            rect.inset(inset, inset)
-            canvas.drawRoundRect(rect, corner - inset, corner - inset, focusPaint)
+            val save = canvas.save()
+            canvas.clipPath(shape)
+            canvas.drawPath(shape, focusPaint)
+            canvas.restoreToCount(save)
         }
     }
 
@@ -225,7 +173,7 @@ class HomeTile(
 
     private fun release() {
         val held = System.currentTimeMillis() - downAt
-        // il rettangolo resta un attimo premuto e il velo finisce la corsa, poi torna a riposo senza rimbalzo
+        // resta un attimo premuto e il velo finisce la corsa, poi torna a riposo senza rimbalzo
         animatePress(0f, 260, max(0L, 110 - held))
         fadeAnim?.cancel()
         fadeAnim = ValueAnimator.ofFloat(veilAlpha, 0f).apply {
@@ -274,5 +222,133 @@ class HomeTile(
             onTap()
         }, 280)
         return true
+    }
+}
+
+private fun uniform(c: Context, dp: Int): FloatArray {
+    val v = dp * c.resources.displayMetrics.density
+    return floatArrayOf(v, v, v, v)
+}
+
+/**
+ * Rettangolo colorato della home (cerchio nero con icona, titolo, freccia), uno per riga a tutta larghezza.
+ * M3: angoli "extra large" 28dp per il rettangolo, "large" 16dp per il quadrato dell'icona.
+ */
+class HomeTile(
+    context: Context,
+    iconRes: Int,
+    title: String,
+    sub: String,
+    tileColor: Int,
+    onTap: () -> Unit
+) : PressTile(context, tileColor, uniform(context, 28), onTap) {
+
+    init {
+        contentDescription = title
+        minimumHeight = (80 * d).toInt()
+
+        // tema chiaro: quadrato icona bianco con icona nera; tema scuro: quadrato nero con icona grigio chiaro
+        val night = isNight(context)
+        val boxColor = if (night) Color.BLACK else Color.WHITE
+        val iconColor = if (night) Color.rgb(190, 190, 190) else Color.BLACK
+        val chevronColor = if (night) Color.rgb(190, 190, 190) else Color.WHITE
+
+        val box = FrameLayout(context).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 16 * d
+                setColor(boxColor)
+            }
+            addView(ImageView(context).apply {
+                setImageResource(iconRes)
+                imageTintList = ColorStateList.valueOf(iconColor)
+            }, LayoutParams((24 * d).toInt(), (24 * d).toInt(), Gravity.CENTER))
+        }
+
+        val texts = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(context).apply {
+                text = title
+                textSize = 16f
+                setTextColor(Color.WHITE)
+                typeface = mediumFont()
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            })
+            if (sub.isNotBlank()) addView(TextView(context).apply {
+                text = sub
+                textSize = 13f
+                setTextColor(Color.argb(220, 255, 255, 255))
+                maxLines = 2
+                ellipsize = TextUtils.TruncateAt.END
+            })
+        }
+
+        // la freccia è quella "indietro" ruotata
+        val chevron = ImageView(context).apply {
+            setImageResource(R.drawable.ic_chevron_left)
+            rotation = 180f
+            imageTintList = ColorStateList.valueOf(chevronColor)
+        }
+
+        val row = LinearLayout(context).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding((12 * d).toInt(), (12 * d).toInt(), (12 * d).toInt(), (12 * d).toInt())
+            addView(box, LinearLayout.LayoutParams((48 * d).toInt(), (48 * d).toInt()).apply {
+                rightMargin = (12 * d).toInt()
+            })
+            addView(texts, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(chevron, LinearLayout.LayoutParams((24 * d).toInt(), (24 * d).toInt()))
+        }
+        addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+    }
+}
+
+/**
+ * Pulsante del menu (icona + nome), a gruppi uno sotto l'altro: gli angoli esterni del gruppo sono
+ * grandi (20dp), quelli tra un pulsante e l'altro piccoli (4dp), come nel video.
+ */
+class MenuButton(
+    context: Context,
+    iconRes: Int,
+    label: String,
+    tileColor: Int,
+    first: Boolean,
+    last: Boolean,
+    onTap: () -> Unit
+) : PressTile(
+    context, tileColor,
+    context.resources.displayMetrics.density.let { dd ->
+        val big = 20 * dd
+        val small = 4 * dd
+        val top = if (first) big else small
+        val bottom = if (last) big else small
+        floatArrayOf(top, top, bottom, bottom)
+    },
+    onTap
+) {
+    init {
+        contentDescription = label
+        minimumHeight = (56 * d).toInt()
+        val iconColor = if (isNight(context)) Color.rgb(190, 190, 190) else Color.WHITE
+        val row = LinearLayout(context).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding((16 * d).toInt(), (8 * d).toInt(), (16 * d).toInt(), (8 * d).toInt())
+            addView(ImageView(context).apply {
+                setImageResource(iconRes)
+                imageTintList = ColorStateList.valueOf(iconColor)
+            }, LinearLayout.LayoutParams((24 * d).toInt(), (24 * d).toInt()).apply {
+                rightMargin = (16 * d).toInt()
+            })
+            addView(TextView(context).apply {
+                text = label
+                textSize = 14f
+                setTextColor(Color.WHITE)
+                typeface = mediumFont()
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }
 }

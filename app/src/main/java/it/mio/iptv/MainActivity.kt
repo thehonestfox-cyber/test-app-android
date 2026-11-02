@@ -491,11 +491,19 @@ class MainActivity : AppCompatActivity() {
             title = "PEZ8"
             setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             setTitleTextColor(c(MR.attr.colorOnSurface))
+            // icona delle impostazioni in alto a destra: apre il menu
+            menu.add(android.view.Menu.NONE, 1, android.view.Menu.NONE, "Impostazioni").apply {
+                setIcon(R.drawable.ic_settings)
+                iconTintList = ColorStateList.valueOf(c(MR.attr.colorOnSurface))
+                setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS)
+            }
+            setOnMenuItemClickListener { showMenu(); true }
         }
+        // rettangoli allineati in alto, con lo stesso margine laterale (16dp) del titolo
         val cards = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(24), dp(8), dp(24), dp(24))
+            gravity = Gravity.TOP
+            setPadding(dp(16), dp(8), dp(16), dp(24))
         }
         homeCards = cards
         homeView = LinearLayout(this).apply {
@@ -553,7 +561,73 @@ class MainActivity : AppCompatActivity() {
             )
         }
         homeCards.addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
-        homeCards.addView(homeCard(R.drawable.ic_settings, "Impostazioni", "Tema, playlist e sezioni della home") { showAdmin() })
+    }
+
+    // ---------- Menu (icona in alto a destra della home) ----------
+
+    private fun showMenu() {
+        val tileColor = ContextCompat.getColor(this, R.color.pez_tile)
+        val onC = c(MR.attr.colorOnSurface)
+        val column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+
+        // freccia indietro: la sua punta sta sullo stesso filo (16dp) del titolo
+        column.addView(ImageButton(this).apply {
+            setImageResource(R.drawable.ic_back)
+            imageTintList = ColorStateList.valueOf(onC)
+            background = selectable()
+            contentDescription = "Indietro"
+            setOnClickListener { goHome() }
+        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+
+        // solo nome dell'app e icona a destra
+        column.addView(LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            addView(tv("PEZ8", 28f, onC, true), LinearLayout.LayoutParams(0, WRAP, 1f))
+            addView(ImageView(context).apply {
+                setImageResource(R.mipmap.ic_launcher)
+                outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: android.graphics.Outline) {
+                        outline.setRoundRect(0, 0, view.width, view.height, dp(16).toFloat())
+                    }
+                }
+                clipToOutline = true
+            }, LinearLayout.LayoutParams(dp(56), dp(56)))
+        }, LinearLayout.LayoutParams(MATCH, WRAP))
+
+        column.addView(tv("Impostazioni", 12f, c(MR.attr.colorOnSurfaceVariant), true).apply {
+            setPadding(dp(16), 0, dp(16), dp(8))
+        }, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(24) })
+
+        val items = listOf(
+            Triple(R.drawable.ic_settings, "Generali", 0),
+            Triple(R.drawable.ic_person, "Admin", 1)
+        )
+        items.forEachIndexed { i, (icon, label, tab) ->
+            column.addView(
+                MenuButton(this, icon, label, tileColor, i == 0, i == items.lastIndex) {
+                    adminTab = tab
+                    showAdmin()
+                },
+                LinearLayout.LayoutParams(MATCH, WRAP).apply {
+                    setMargins(dp(16), if (i == 0) 0 else dp(2), dp(16), 0)
+                }
+            )
+        }
+
+        val page = ScrollView(this).apply {
+            setBackgroundColor(c(MR.attr.colorSurface))
+            addView(column, ViewGroup.LayoutParams(MATCH, WRAP))
+        }
+        show(page)
+        // entra come nel video: compare ingrandendosi dall'angolo in alto a destra
+        page.pivotX = resources.displayMetrics.widthPixels.toFloat()
+        page.pivotY = 0f
+        page.alpha = 0f
+        page.scaleX = 0.9f
+        page.scaleY = 0.9f
+        page.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(260)
+            .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f)).start()
     }
 
     private fun goHome() {
@@ -938,6 +1012,7 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             setNavigationIcon(R.drawable.ic_back)
             setNavigationIconTint(c(MR.attr.colorOnSurface))
+            setContentInsetStartWithNavigation(0)   // la punta della freccia sta sul filo dei 16dp, come il testo
             setTitleTextColor(c(MR.attr.colorOnSurface))
             setNavigationOnClickListener { goHome() }
             visibility = View.GONE
@@ -1581,6 +1656,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             setNavigationIcon(R.drawable.ic_back)
             setNavigationIconTint(c(MR.attr.colorOnSurface))
+            setContentInsetStartWithNavigation(0)   // la punta della freccia sta sul filo dei 16dp, come il testo
             setTitleTextColor(c(MR.attr.colorOnSurface))
             setNavigationOnClickListener { adminBack() }
         }
