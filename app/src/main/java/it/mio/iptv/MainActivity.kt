@@ -491,18 +491,30 @@ class MainActivity : AppCompatActivity() {
             title = "PEZ8"
             setBackgroundColor(c(MR.attr.colorSurfaceContainerLowest))
             setTitleTextColor(c(MR.attr.colorOnSurface))
-            // icona delle impostazioni in alto a destra: apre il menu
-            menu.add(android.view.Menu.NONE, 1, android.view.Menu.NONE, "Impostazioni").apply {
-                setIcon(R.drawable.ic_settings)
-                iconTintList = ColorStateList.valueOf(c(MR.attr.colorOnSurface))
-                setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS)
-            }
-            setOnMenuItemClickListener { showMenu(); true }
+            // pulsante delle impostazioni in alto a destra (cerchio con bordo sottile): apre il menu
+            addView(FrameLayout(context).apply {
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(c(MR.attr.colorSurfaceContainerHigh))
+                    setStroke(dp(1), c(MR.attr.colorOutline))
+                }
+                foreground = selectable()
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Impostazioni"
+                setOnClickListener { showMenu() }
+                addView(ImageView(context).apply {
+                    setImageResource(R.drawable.ic_settings)
+                    imageTintList = ColorStateList.valueOf(c(MR.attr.colorOnSurface))
+                }, FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
+            }, androidx.appcompat.widget.Toolbar.LayoutParams(dp(44), dp(44), Gravity.END or Gravity.CENTER_VERTICAL).apply {
+                marginEnd = dp(16)
+            })
         }
-        // rettangoli allineati in alto, con lo stesso margine laterale (16dp) del titolo
+        // rettangoli al centro, con lo stesso margine laterale (16dp) del titolo
         val cards = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.TOP
+            gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(8), dp(16), dp(24))
         }
         homeCards = cards
@@ -563,27 +575,29 @@ class MainActivity : AppCompatActivity() {
         homeCards.addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
     }
 
-    // ---------- Menu (icona in alto a destra della home) ----------
+    // ---------- Menu (pulsante in alto a destra della home) ----------
 
+    // Scheda che sale dal basso a metà schermo; con uno swipe verso l'alto si apre a tutto schermo
     private fun showMenu() {
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
         val tileColor = ContextCompat.getColor(this, R.color.pez_tile)
         val onC = c(MR.attr.colorOnSurface)
-        val column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
         // freccia indietro: la sua punta sta sullo stesso filo (16dp) del titolo
-        column.addView(ImageButton(this).apply {
+        root.addView(ImageButton(this).apply {
             setImageResource(R.drawable.ic_back)
             imageTintList = ColorStateList.valueOf(onC)
             background = selectable()
             contentDescription = "Indietro"
-            setOnClickListener { goHome() }
-        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+            setOnClickListener { dialog.dismiss() }
+        }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { topMargin = dp(8) })
 
-        // solo nome dell'app e icona a destra
-        column.addView(LinearLayout(this).apply {
+        // solo nome dell'app e icona a destra, centrata in verticale sul testo
+        root.addView(LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(8), dp(16), dp(8))
-            addView(tv("PEZ8", 28f, onC, true), LinearLayout.LayoutParams(0, WRAP, 1f))
+            setPadding(dp(16), dp(8), dp(16), dp(16))
+            addView(tv("PEZ8", 32f, onC, true), LinearLayout.LayoutParams(0, WRAP, 1f))
             addView(ImageView(context).apply {
                 setImageResource(R.mipmap.ic_launcher)
                 outlineProvider = object : ViewOutlineProvider() {
@@ -595,17 +609,26 @@ class MainActivity : AppCompatActivity() {
             }, LinearLayout.LayoutParams(dp(56), dp(56)))
         }, LinearLayout.LayoutParams(MATCH, WRAP))
 
-        column.addView(tv("Impostazioni", 12f, c(MR.attr.colorOnSurfaceVariant), true).apply {
+        // linea sotto l'intestazione
+        root.addView(View(this).apply { setBackgroundColor(c(MR.attr.colorOutlineVariant)) },
+            LinearLayout.LayoutParams(MATCH, dp(1)))
+
+        val list = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(24), 0, dp(32))
+        }
+        list.addView(tv("Impostazioni", 12f, c(MR.attr.colorOnSurfaceVariant), true).apply {
             setPadding(dp(16), 0, dp(16), dp(8))
-        }, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(24) })
+        }, LinearLayout.LayoutParams(MATCH, WRAP))
 
         val items = listOf(
             Triple(R.drawable.ic_settings, "Generali", 0),
             Triple(R.drawable.ic_person, "Admin", 1)
         )
         items.forEachIndexed { i, (icon, label, tab) ->
-            column.addView(
+            list.addView(
                 MenuButton(this, icon, label, tileColor, i == 0, i == items.lastIndex) {
+                    dialog.dismiss()
                     adminTab = tab
                     showAdmin()
                 },
@@ -614,20 +637,20 @@ class MainActivity : AppCompatActivity() {
                 }
             )
         }
+        root.addView(androidx.core.widget.NestedScrollView(this).apply { addView(list) }, lp(0, 1f))
 
-        val page = ScrollView(this).apply {
-            setBackgroundColor(c(MR.attr.colorSurface))
-            addView(column, ViewGroup.LayoutParams(MATCH, WRAP))
+        dialog.setContentView(root)
+        dialog.setOnShowListener {
+            val sheet = dialog.findViewById<FrameLayout>(MR.id.design_bottom_sheet) ?: return@setOnShowListener
+            sheet.layoutParams = sheet.layoutParams.apply { height = ViewGroup.LayoutParams.MATCH_PARENT }
+            dialog.behavior.apply {
+                isFitToContents = false
+                halfExpandedRatio = 0.6f
+                skipCollapsed = true
+                state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HALF_EXPANDED
+            }
         }
-        show(page)
-        // entra come nel video: compare ingrandendosi dall'angolo in alto a destra
-        page.pivotX = resources.displayMetrics.widthPixels.toFloat()
-        page.pivotY = 0f
-        page.alpha = 0f
-        page.scaleX = 0.9f
-        page.scaleY = 0.9f
-        page.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(260)
-            .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f)).start()
+        dialog.show()
     }
 
     private fun goHome() {
