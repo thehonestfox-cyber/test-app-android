@@ -476,33 +476,19 @@ class MainActivity : AppCompatActivity() {
         return card
     }
 
-    private fun homeCard(icon: Int, title: String, sub: String, onClick: () -> Unit): View {
-        val onC = c(MR.attr.colorOnSurface)
-        val texts = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(tv(title, 22f, onC, true))
-            if (sub.isNotBlank()) addView(tv(sub, 14f, onC))
+    // Colori dei rettangoli della home (stessa palette morbida di "Browse all"): si alternano in ordine
+    private val homeTileColors = intArrayOf(
+        0xFF7A5578.toInt(), 0xFF4F7F7D.toInt(), 0xFF485E80.toInt(), 0xFF66825F.toInt(),
+        0xFF7C5560.toInt(), 0xFF7A6550.toInt(), 0xFF5F5688.toInt()
+    )
+
+    // Un rettangolo per riga a tutta larghezza, con l'animazione alla pressione (anche quando si entra)
+    private fun homeCard(index: Int, icon: Int, title: String, sub: String, onClick: () -> Unit): View =
+        HomeTile(
+            this, icon, title, sub, homeTileColors[index % homeTileColors.size], onClick
+        ).apply {
+            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) }
         }
-        return MaterialCardView(this).apply {
-            radius = dp(28).toFloat()
-            cardElevation = 0f
-            setCardBackgroundColor(c(MR.attr.colorSurfaceVariant))
-            isClickable = true
-            isFocusable = true
-            enableFocusRing()
-            setOnClickListener { onClick() }
-            addView(LinearLayout(context).apply {
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(24), dp(24), dp(24), dp(24))
-                addView(ImageView(context).apply {
-                    setImageResource(icon)
-                    imageTintList = ColorStateList.valueOf(onC)
-                }, LinearLayout.LayoutParams(dp(32), dp(32)).apply { rightMargin = dp(20) })
-                addView(texts)
-            })
-            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(16) }
-        }
-    }
 
     // ---------- Home: sezioni / Completa / Impostazioni ----------
 
@@ -564,16 +550,17 @@ class MainActivity : AppCompatActivity() {
         }
         prefetchLive()
         homeCards.removeAllViews()
-        Sections.load(prefs).forEach { sec ->
+        val secs = Sections.load(prefs)
+        secs.forEachIndexed { i, sec ->
             homeCards.addView(
                 homeCard(
-                    Sections.iconRes(sec.icon), sec.name,
+                    i, Sections.iconRes(sec.icon), sec.name,
                     sec.description
                 ) { showUser(sec.id) }
             )
         }
-        homeCards.addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
-        homeCards.addView(homeCard(R.drawable.ic_settings, "Impostazioni", "Tema, playlist e sezioni della home") { showAdmin() })
+        homeCards.addView(homeCard(secs.size, R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
+        homeCards.addView(homeCard(secs.size + 1, R.drawable.ic_settings, "Impostazioni", "Tema, playlist e sezioni della home") { showAdmin() })
     }
 
     private fun goHome() {
