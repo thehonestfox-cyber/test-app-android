@@ -31,6 +31,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
@@ -68,9 +69,11 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.radiobutton.MaterialRadioButton
 import com.google.android.material.tabs.TabLayout
@@ -191,6 +194,8 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(themeMode())
         super.onCreate(savedInstanceState)
         nightApplied = nightNow()
+        applyColorOverlays()
+        window.setBackgroundDrawable(ColorDrawable(c(android.R.attr.colorBackground)))
         Logos.init(this)
         if (!prefs.contains("playlists")) savePlaylists(listOf(defaultPlaylist))
 
@@ -256,6 +261,7 @@ class MainActivity : AppCompatActivity() {
     private fun applyThemeInPlace() {
         nightApplied = nightNow()
         theme.applyStyle(R.style.Theme_IPTV, true)
+        applyColorOverlays()
         val night = nightApplied == Configuration.UI_MODE_NIGHT_YES
         window.setBackgroundDrawable(ColorDrawable(c(android.R.attr.colorBackground)))
         root.setBackgroundColor(c(android.R.attr.colorBackground))
@@ -295,6 +301,17 @@ class MainActivity : AppCompatActivity() {
         "light" -> AppCompatDelegate.MODE_NIGHT_NO
         "dark" -> AppCompatDelegate.MODE_NIGHT_YES
         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+    }
+
+    // Colori dinamici (Material You, Android 12+) e nero AMOLED: si sovrappongono al tema base
+    private fun dynamicColorOn() = DynamicColors.isDynamicColorAvailable() && prefs.getBoolean("dynamic_color", true)
+    private fun pitchBlackOn() = prefs.getBoolean("pitch_black", false)
+
+    private fun applyColorOverlays() {
+        if (dynamicColorOn()) DynamicColors.applyToActivityIfAvailable(this)
+        if (pitchBlackOn() && nightNow() == Configuration.UI_MODE_NIGHT_YES) {
+            theme.applyStyle(R.style.ThemeOverlay_IPTV_PitchBlack, true)
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -1972,7 +1989,94 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshGeneral() {
         val i = themeKeys.indexOf(prefs.getString("theme", "system")).coerceAtLeast(0)
-        adminList.addView(settingRow(R.drawable.ic_theme, "Tema", themeLabels[i]) { themeDialog() })
+        val rows = mutableListOf<View>()
+        rows += groupRow(R.drawable.ic_theme, "Tema", themeLabels[i], null) { themeDialog() }
+        if (DynamicColors.isDynamicColorAvailable()) {
+            rows += toggleRow(
+                R.drawable.ic_palette, "Colori dinamici",
+                "Usa i colori dello sfondo del telefono", dynamicColorOn()
+            ) { on -> setColorPref("dynamic_color", on) }
+        }
+        rows += toggleRow(
+            R.drawable.ic_dark_mode, "Nero AMOLED",
+            "Sfondo nero puro nel tema scuro", pitchBlackOn()
+        ) { on -> setColorPref("pitch_black", on) }
+        adminList.addView(roundedGroup(rows))
+    }
+
+    private fun setColorPref(key: String, on: Boolean) {
+        prefs.edit().putBoolean(key, on).apply()
+        // il cambio si applica subito, senza ricreare l'activity (il player non si ferma)
+        ui.post { applyThemeInPlace() }
+    }
+
+    // Contenitore arrotondato (24dp) che raggruppa le righe, con 2dp di spazio tra l'una e l'altra
+    private fun roundedGroup(rows: List<View>): View {
+        val group = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GradientDrawable().apply {
+                cornerRadius = dp(24).toFloat()
+                setColor(c(MR.attr.colorSurface))
+            }
+            outlineProvider = ViewOutlineProvider.BACKGROUND
+            clipToOutline = true
+            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply {
+                topMargin = dp(8)
+                bottomMargin = dp(8)
+            }
+        }
+        rows.forEachIndexed { n, r ->
+            group.addView(r, LinearLayout.LayoutParams(MATCH, WRAP).apply { if (n > 0) topMargin = dp(2) })
+        }
+        return group
+    }
+
+    // Riga dentro il contenitore arrotondato: icona tonale + titolo + descrizione + elemento finale (es. interruttore)
+    private fun groupRow(icon: Int, title: String, desc: String?, trailing: View?, onClick: () -> Unit): LinearLayout {
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(tv(title, 16f, c(MR.attr.colorOnSurface), true))
+            if (desc != null) addView(tv(desc, 13f, c(MR.attr.colorOnSurfaceVariant)))
+        }
+        val badge = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(c(MR.attr.colorPrimaryContainer))
+            }
+            addView(ImageView(context).apply {
+                setImageResource(icon)
+                imageTintList = ColorStateList.valueOf(c(MR.attr.colorOnPrimaryContainer))
+            }, FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
+        }
+        return LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            background = android.graphics.drawable.RippleDrawable(
+                ColorStateList.valueOf((c(MR.attr.colorOnSurface) and 0x00FFFFFF) or 0x1F000000),
+                ColorDrawable(c(MR.attr.colorSurfaceContainerHigh)),
+                null
+            )
+            ring(4)
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onClick() }
+            addView(badge, LinearLayout.LayoutParams(dp(40), dp(40)).apply { rightMargin = dp(16) })
+            addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
+            if (trailing != null) addView(trailing, LinearLayout.LayoutParams(WRAP, WRAP).apply { leftMargin = dp(12) })
+        }
+    }
+
+    // Riga con interruttore (come IconToggleItem): si può toccare tutta la riga
+    private fun toggleRow(icon: Int, title: String, desc: String, checked: Boolean, onChange: (Boolean) -> Unit): View {
+        val sw = MaterialSwitch(this).apply {
+            isChecked = checked
+            isClickable = false
+            isFocusable = false
+        }
+        return groupRow(icon, title, desc, sw) {
+            sw.toggle()
+            onChange(sw.isChecked)
+        }
     }
 
     // Riga di impostazione senza riquadro: icona + titolo + valore attuale
