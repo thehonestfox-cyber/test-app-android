@@ -139,7 +139,7 @@ class ChannelAdapter(
             val t = TextView(ctx).apply {
                 textSize = 14f
                 setTypeface(typeface, Typeface.BOLD)
-                setTextColor(col(MR.attr.colorPrimary))
+                setTextColor(col(androidx.appcompat.R.attr.colorPrimary))
                 setPadding(dp(4), dp(16), dp(4), dp(4))
                 layoutParams = RecyclerView.LayoutParams(MATCH, WRAP)
             }

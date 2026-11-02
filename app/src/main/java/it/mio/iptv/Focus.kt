@@ -15,7 +15,7 @@ private val markedCards = java.util.Collections.newSetFromMap(java.util.WeakHash
 /** Bordo sottile = card "selezionata" (es. evento in riproduzione); bordo più spesso = card con il focus. */
 private fun MaterialCardView.updateStroke() {
     val d = resources.displayMetrics.density
-    strokeColor = MaterialColors.getColor(this, MR.attr.colorPrimary, Color.WHITE)
+    strokeColor = MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary, Color.WHITE)
     strokeWidth = when {
         isFocused -> (4 * d).toInt()
         this in markedCards -> (2 * d).toInt()

@@ -369,7 +369,7 @@ class MainActivity : AppCompatActivity() {
             } else selectable()
             // anello visibile quando il focus arriva dal telecomando
             foreground = focusRingDrawable(
-                if (tint == Color.WHITE) Color.WHITE else c(MR.attr.colorPrimary), dp(3), true, fill = true
+                if (tint == Color.WHITE) Color.WHITE else c(androidx.appcompat.R.attr.colorPrimary), dp(3), true, fill = true
             )
             isFocusable = true
             setOnClickListener { onClick() }
@@ -426,7 +426,7 @@ class MainActivity : AppCompatActivity() {
         val shareBtn = onShare?.let { f ->
             iconBtn(
                 R.drawable.ic_share,
-                if (shareActive && !selected) c(MR.attr.colorPrimary) else onSub, dp(12), null
+                if (shareActive && !selected) c(androidx.appcompat.R.attr.colorPrimary) else onSub, dp(12), null
             ) { f() }.apply { contentDescription = "Condividi a tutti" }
         }
         val editBtn = onEdit?.let { f ->
@@ -873,7 +873,7 @@ class MainActivity : AppCompatActivity() {
     private fun buildUser() {
         nowTitle = tv("Scegli un canale", 20f, c(MR.attr.colorOnSurface), true).apply { includeFontPadding = false }
         nowSub = tv("", 13f, c(MR.attr.colorOnSurfaceVariant)).apply { includeFontPadding = false }
-        errorText = tv("", 14f, c(MR.attr.colorError)).apply { visibility = View.GONE }
+        errorText = tv("", 14f, c(androidx.appcompat.R.attr.colorError)).apply { visibility = View.GONE }
         nowLogo = logoBox().apply { visibility = View.GONE }
         val texts = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -1086,7 +1086,7 @@ class MainActivity : AppCompatActivity() {
         setPadding(dp(8), dp(4), dp(8), dp(4))
         background = GradientDrawable().apply {
             cornerRadius = dp(8).toFloat()
-            setColor(c(MR.attr.colorError))
+            setColor(c(androidx.appcompat.R.attr.colorError))
         }
     }
 
@@ -1098,7 +1098,7 @@ class MainActivity : AppCompatActivity() {
         t.text = if (live) "LIVE" else timeLabel(start, zone)
         // ruoli del tema: in corso = error, deve ancora iniziare = tertiary container, finito = surface variant
         val (bg, on) = when {
-            live -> MR.attr.colorError to MR.attr.colorOnError
+            live -> androidx.appcompat.R.attr.colorError to MR.attr.colorOnError
             now < start -> MR.attr.colorTertiaryContainer to MR.attr.colorOnTertiaryContainer
             else -> MR.attr.colorSurfaceVariant to MR.attr.colorOnSurfaceVariant
         }
@@ -1307,7 +1307,7 @@ class MainActivity : AppCompatActivity() {
         val hasAudio = ch != null && i == multi.audio
         val speaker = ImageView(this).apply {
             setImageResource(if (hasAudio) R.drawable.ic_volume_on else R.drawable.ic_volume_off)
-            imageTintList = ColorStateList.valueOf(if (hasAudio) c(MR.attr.colorPrimary) else onV)
+            imageTintList = ColorStateList.valueOf(if (hasAudio) c(androidx.appcompat.R.attr.colorPrimary) else onV)
             visibility = if (ch != null) View.VISIBLE else View.INVISIBLE
             setPadding(dp(4), dp(4), dp(4), dp(4))
             setOnClickListener {
@@ -1574,7 +1574,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Evidenziazione ben visibile (anello + sfondo colorato) per pulsanti, chip e righe quando hanno il focus
-    private fun <T : View> T.ring(radiusDp: Int, color: Int = c(MR.attr.colorPrimary)): T {
+    private fun <T : View> T.ring(radiusDp: Int, color: Int = c(androidx.appcompat.R.attr.colorPrimary)): T {
         val d = focusRingDrawable(color, dp(3), false, dp(radiusDp).toFloat(), fill = true)
         // i pulsanti Material hanno margini interni (inset) sopra/sotto: l'anello li segue, così combacia col pulsante
         foreground = if (this is MaterialButton) InsetDrawable(d, 0, insetTop, 0, insetBottom) else d
@@ -2096,7 +2096,7 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { onClick() }
             addView(ImageView(context).apply {
                 setImageResource(icon)
-                imageTintList = ColorStateList.valueOf(c(MR.attr.colorPrimary))
+                imageTintList = ColorStateList.valueOf(c(androidx.appcompat.R.attr.colorPrimary))
             }, LinearLayout.LayoutParams(dp(28), dp(28)).apply { rightMargin = dp(16) })
             addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
         }
@@ -2138,7 +2138,7 @@ class MainActivity : AppCompatActivity() {
     // Pulsante con bordo e icona + (stesso stile per "Nuova sezione" e "Aggiungi playlist")
     private fun addButton(label: String, onClick: () -> Unit) = outlinedBtn(label, onClick).apply {
         icon = ContextCompat.getDrawable(context, R.drawable.ic_add)
-        iconTint = ColorStateList.valueOf(c(MR.attr.colorPrimary))
+        iconTint = ColorStateList.valueOf(c(androidx.appcompat.R.attr.colorPrimary))
         iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
     }
 
@@ -2237,7 +2237,7 @@ class MainActivity : AppCompatActivity() {
             }.apply {
                 icon = ContextCompat.getDrawable(context, R.drawable.ic_chevron_left)
                 iconSize = dp(32)
-                iconTint = ColorStateList.valueOf(c(MR.attr.colorPrimary))
+                iconTint = ColorStateList.valueOf(c(androidx.appcompat.R.attr.colorPrimary))
                 iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
             },
             LinearLayout.LayoutParams(WRAP, WRAP)
@@ -2407,7 +2407,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(20), 0, 0)
             addView(
-                tv("${cat.name} · ${if (auto) autoEvents[cat.name]?.size ?: 0 else cat.channels.size}", 16f, c(MR.attr.colorPrimary), true),
+                tv("${cat.name} · ${if (auto) autoEvents[cat.name]?.size ?: 0 else cat.channels.size}", 16f, c(androidx.appcompat.R.attr.colorPrimary), true),
                 LinearLayout.LayoutParams(0, WRAP, 1f)
             )
             addView(collapse, LinearLayout.LayoutParams(dp(44), dp(44)))
