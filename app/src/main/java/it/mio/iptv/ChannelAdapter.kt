@@ -64,6 +64,8 @@ private fun showLogo(iv: ImageView, ch: Channel, list: List<String>, idx: Int) {
     val url = list[idx]
     iv.load(url) {
         crossfade(false)
+        size(160, 112)   // loghi piccoli: decodifica leggera, scorrimento fluido
+        allowRgb565(true)
         listener(
             onSuccess = { _, _ -> logoGood[ch.url] = url },
             onError = { _, _ ->
@@ -99,6 +101,13 @@ class ChannelAdapter(
 
     private fun dp(v: Int) = (v * ctx.resources.displayMetrics.density).toInt()
     private fun col(attr: Int) = MaterialColors.getColor(ctx, attr, Color.MAGENTA)
+
+    // Colori letti una sola volta (risolvere gli attributi del tema a ogni riga rallenta molto le TV)
+    private val cSel by lazy { col(R.attr.pezSelection) }
+    private val cSurfVar by lazy { col(MR.attr.colorSurfaceVariant) }
+    private val cOnSurf by lazy { col(MR.attr.colorOnSurface) }
+    private val cOnSurfVar by lazy { col(MR.attr.colorOnSurfaceVariant) }
+    private val cOnSec by lazy { col(MR.attr.colorOnSecondaryContainer) }
 
     fun submit(r: List<Row>) {
         rows = r
@@ -203,11 +212,11 @@ class ChannelAdapter(
                 h.sub.text = ch.quality.ifEmpty { "Diretta" }
                 val sel = ch.url == selectedUrl
                 h.card.setCardBackgroundColor(
-                    if (sel) col(R.attr.pezSelection) else col(MR.attr.colorSurfaceVariant)
+                    if (sel) cSel else cSurfVar
                 )
                 // sfondo selezionato = secondary container: testo "on secondary container"
-                h.name.setTextColor(col(if (sel) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurface))
-                h.sub.setTextColor(col(if (sel) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurfaceVariant))
+                h.name.setTextColor(if (sel) cOnSec else cOnSurf)
+                h.sub.setTextColor(if (sel) cOnSec else cOnSurfVar)
                 h.card.setOnClickListener { onClick(ch) }
                 loadChannelLogo(h.logo, ch)
             }

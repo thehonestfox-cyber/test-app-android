@@ -57,7 +57,6 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -185,9 +184,6 @@ class MainActivity : AppCompatActivity() {
     private var nightApplied = 0              // modalità chiaro/scuro con cui sono costruite le schermate
     private val collapsedCats = mutableSetOf<String>()   // categorie chiuse (sezione/nome) nella gestione admin
     private var lastLand: Boolean? = null
-    private val multi = MultiState()                      // multi-schermo (BETA) nelle sezioni "eventi live"
-    private var multiOverlay: MultiPlayerOverlay? = null  // schermata con i player affiancati (null = chiusa)
-    private var liveHeader: LinearLayout? = null          // intestazione della sezione live con i controlli multi-schermo
 
     // ---------- Avvio ----------
 
@@ -212,7 +208,6 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
-                    multiOverlay != null -> closeMulti()
                     fullscreen -> setFullscreen(false)
                     currentView === adminView && adminTab == 1 && adminEditing != null -> {
                         adminEditing = null
@@ -393,7 +388,6 @@ class MainActivity : AppCompatActivity() {
     private fun show(v: View) {
         root.removeAllViews()
         root.addView(v, ViewGroup.LayoutParams(MATCH, MATCH))
-        multiOverlay?.let { root.addView(it, ViewGroup.LayoutParams(MATCH, MATCH)) }   // il multi-schermo resta sopra
         currentView = v
         updatePip()
     }
@@ -537,11 +531,21 @@ class MainActivity : AppCompatActivity() {
     // Precarica gli stemmi degli eventi delle sezioni live e scarica le partite dei campionati automatici,
     // così è già tutto pronto quando le apri
     private fun prefetchLive() {
-        Thread {
+        bg {
             val cats = Sections.load(prefs).filter { it.isLive }.flatMap { sec -> Featured.load(prefs, sec.id) }
             val chans = cats.filter { !LiveFixtures.isAuto(it.name) }.flatMap { it.channels }
             if (chans.isNotEmpty()) SportsDb.prefetch(chans)
             if (cats.any { LiveFixtures.isAuto(it.name) }) LiveFixtures.refresh()
+        }
+    }
+
+    // Lavoro in background che non può mai chiudere l'app: un errore di rete/lettura viene ignorato
+    private fun bg(block: () -> Unit) {
+        Thread {
+            try {
+                block()
+            } catch (_: Throwable) {
+            }
         }.start()
     }
 
@@ -570,8 +574,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun goHome() {
         player.stop()
-        if (multiOverlay != null) closeMulti()
-        multi.reset()   // i player del multi-schermo si svuotano (il numero scelto resta)
         if (fullscreen) setFullscreen(false)
         currentChannel = null
         refreshHome()
@@ -580,9 +582,8 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- Player in stile YouTube ----------
 
-    // Un nuovo ExoPlayer con le stesse impostazioni di rete (serve anche ai player del multi-schermo).
-    // light = true per i player del multi-schermo: buffer più piccoli, così la TV fa meno fatica
-    private fun newExo(light: Boolean = false): ExoPlayer {
+    // Un nuovo ExoPlayer con le impostazioni di rete dell'app
+    private fun newExo(): ExoPlayer {
         // User-Agent da lettore IPTV: molti server rifiutano quello di default.
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
@@ -595,8 +596,7 @@ class MainActivity : AppCompatActivity() {
             .forceEnableMediaCodecAsynchronousQueueing()
         val b = ExoPlayer.Builder(this, rf)
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
-        if (light) b.setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(5000, 15000, 1500, 3000).build())
-        return b.build()   // qualità lasciata di default; solo il multi-schermo la riduce (vedi MultiView)
+        return b.build()
     }
 
     private fun setupPlayer() {
@@ -913,7 +913,8 @@ class MainActivity : AppCompatActivity() {
         searchField.editText!!.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 query = s?.toString() ?: ""
-                applyFilter()
+                ui.removeCallbacks(filterRun)
+                ui.postDelayed(filterRun, 200)   // non rifiltra la lista a ogni lettera
             }
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
@@ -923,6 +924,8 @@ class MainActivity : AppCompatActivity() {
         channelList = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(context)
             adapter = channelAdapter
+            setHasFixedSize(true)
+            setItemViewCacheSize(12)
             itemAnimator = null   // niente animazioni di cambio: il focus resta sulla riga e la lista è più leggera
             scrollbar()
             clipToPadding = false
@@ -1003,9 +1006,7 @@ class MainActivity : AppCompatActivity() {
             toast("Nessun canale trovato per questo evento")
             return
         }
-        if (userLive && multi.count > 1) {
-            assignToMulti(ch)   // multi-schermo: l'evento va nel player evidenziato
-        } else if (userLive) {
+        if (userLive) {
             playChannel(ch)
             setFullscreen(true)
         } else if (currentChannel?.url == ch.url) setFullscreen(true) else playChannel(ch)
@@ -1031,8 +1032,9 @@ class MainActivity : AppCompatActivity() {
         titleView.text = ""
         setError("")
         nowLogo.visibility = View.GONE
-        channelAdapter.select(null)
+        channelList.stopScroll()
         setChannels(emptyList())   // via subito i canali dell'altra sezione
+        channelAdapter.select(null)
         listStatus.text = ""
         applyUserLayout()
         if (keepPlaying != null) showNowPlaying(keepPlaying)
@@ -1085,7 +1087,7 @@ class MainActivity : AppCompatActivity() {
         loadPlaylistChannels { playlist, _, final ->
             if (gen != loadGen) return@loadPlaylistChannels
             // subito: playlist e partite gia' salvate (nessuna rete); poi la versione aggiornata
-            Thread {
+            bg {
                 val fx = if (final) LiveFixtures.refresh() else LiveFixtures.current()
                 val ev = cats.filter { LiveFixtures.isAuto(it.name) }.associate { c ->
                     c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
@@ -1098,7 +1100,7 @@ class MainActivity : AppCompatActivity() {
                     showLiveCats(liveCats(section), name)
                     SportsDb.prefetch(ev.values.flatten())
                 }
-            }.start()
+            }
         }
     }
 
@@ -1201,10 +1203,6 @@ class MainActivity : AppCompatActivity() {
     private fun buildLive(cats: List<FeaturedCategory>) {
         liveBox.removeAllViews()
         liveCards.clear()
-        val header = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        liveHeader = header
-        liveBox.addView(header, LinearLayout.LayoutParams(MATCH, WRAP))
-        refreshLiveHeader()
         cats.filter { it.channels.isNotEmpty() }.forEach { cat ->
             liveBox.addView(tv(cat.name, 20f, c(MR.attr.colorOnSurface), true).apply {
                 setPadding(dp(4), dp(16), dp(4), dp(8))
@@ -1233,217 +1231,42 @@ class MainActivity : AppCompatActivity() {
         liveSelect(currentChannel?.url)
     }
 
-    // Evidenzia la card dell'evento in riproduzione (con più player: tutti gli eventi assegnati ai player)
+    // Evidenzia la card dell'evento in riproduzione 
     private fun liveSelect(url: String?) {
-        val picked: Set<String> =
-            if (multi.count > 1) multi.active().map { it.url }.toSet() else setOfNotNull(url)
+        val picked: Set<String> = setOfNotNull(url)
         liveCards.forEach { (card, u) ->
             card.setMarked(u in picked)
         }
     }
 
-    // ---------- Multi-schermo (BETA): da 1 a 4 player insieme, con l'audio di uno solo ----------
-
-    private fun refreshLiveHeader() {
-        val h = liveHeader ?: return
-        h.removeAllViews()
-        val onS = c(MR.attr.colorOnSurface)
-        val onV = c(MR.attr.colorOnSurfaceVariant)
-        val ctx = this
-
-        h.addView(LinearLayout(ctx).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(4), dp(12), dp(4), 0)
-            addView(tv("Multi-schermo", 16f, onS, true))
-            addView(TextView(ctx).apply {
-                text = "BETA"
-                textSize = 10f
-                setTypeface(typeface, Typeface.BOLD)
-                setTextColor(Color.WHITE)
-                setPadding(dp(6), dp(2), dp(6), dp(2))
-                background = GradientDrawable().apply {
-                    cornerRadius = dp(6).toFloat()
-                    setColor(0xFFFB8C00.toInt())
-                }
-            }, LinearLayout.LayoutParams(WRAP, WRAP).apply { leftMargin = dp(8) })
-        })
-
-        val chipsRow = layoutInflater.inflate(R.layout.view_filter_chips, null) as HorizontalScrollView
-        val chips = chipsRow.findViewById<MaterialButtonGroup>(R.id.buttonGroup)
-        val countButtons = mutableListOf<Pair<MaterialButton, Int>>()
-        for (n in 1..MultiState.MAX) {
-            val btn = filterButton(chips, if (n == 1) "1 player" else "$n player", n == multi.count)
-            btn.scrollTopOnFocus()
-            btn.setOnClickListener {
-                if (n == multi.count) {
-                    btn.isChecked = true
-                } else {
-                    countButtons.forEach { (other, k) -> other.isChecked = k == n }
-                    setMultiCount(n)
-                }
-            }
-            countButtons += btn to n
-            chips.addView(btn)
-        }
-        h.addView(chipsRow, LinearLayout.LayoutParams(MATCH, WRAP))
-
-        if (multi.count > 1) {
-            h.addView(
-                tv(
-                    "Tocca un evento per metterlo nel player evidenziato. Tocca l'altoparlante per scegliere l'audio, " +
-                        "tieni premuto un player per svuotarlo.",
-                    13f, onV
-                ).apply { setPadding(dp(4), dp(4), dp(4), dp(8)) }
-            )
-            val row = LinearLayout(ctx)
-            for (i in 0 until multi.count) {
-                row.addView(
-                    multiSlotCard(i),
-                    LinearLayout.LayoutParams(0, WRAP, 1f).apply { rightMargin = if (i < multi.count - 1) dp(8) else 0 }
-                )
-            }
-            h.addView(row, LinearLayout.LayoutParams(MATCH, WRAP))
-            h.addView(
-                MaterialButton(ctx).apply {
-                    text = "Guarda"
-                    icon = ContextCompat.getDrawable(ctx, R.drawable.ic_play)
-                    iconTint = ColorStateList.valueOf(c(MR.attr.colorOnPrimary))
-                    iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
-                    isEnabled = multi.active().isNotEmpty()
-                    // il tasto è pieno di colorPrimary: il bordo del focus è quello del tasto stesso (stroke Material)
-                    // in un colore a contrasto, così si vede sempre
-                    strokeColor = ColorStateList.valueOf(focusColor(ctx))
-                    strokeWidth = 0
-                    onFocusChangeListener = View.OnFocusChangeListener { _, has -> strokeWidth = if (has) dp(4) else 0 }
-                    scrollTopOnFocus()
-                    setOnClickListener { openMulti() }
-                },
-                LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) }
-            )
-        }
-    }
-
-    // Riquadro di un player nella lista: evidenziato se è quello che riceverà il prossimo evento
-    private fun multiSlotCard(i: Int): View {
-        val ch = multi.slots[i]
-        val target = i == multi.target
-        val onC = c(if (target) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurface)
-        val onV = c(if (target) MR.attr.colorOnSecondaryContainer else MR.attr.colorOnSurfaceVariant)
-        val hasAudio = ch != null && i == multi.audio
-        val speaker = ImageView(this).apply {
-            setImageResource(if (hasAudio) R.drawable.ic_volume_on else R.drawable.ic_volume_off)
-            imageTintList = ColorStateList.valueOf(if (hasAudio) c(androidx.appcompat.R.attr.colorPrimary) else onV)
-            visibility = if (ch != null) View.VISIBLE else View.INVISIBLE
-            setPadding(dp(4), dp(4), dp(4), dp(4))
-            setOnClickListener {
-                multi.audio = i
-                refreshLiveHeader()
-            }
-        }
-        val texts = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(tv("Player ${i + 1}", 12f, onV))
-            addView(tv(ch?.name ?: "Vuoto", 14f, onC, true).apply {
-                maxLines = 1
-                ellipsize = TextUtils.TruncateAt.END
-            })
-        }
-        val row = LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(10), dp(8), dp(4), dp(8))
-            addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
-            addView(speaker, LinearLayout.LayoutParams(dp(28), dp(28)))
-        }
-        return MaterialCardView(this).apply {
-            radius = dp(12).toFloat()
-            cardElevation = 0f
-            setCardBackgroundColor(c(if (target) R.attr.pezSelection else MR.attr.colorSurfaceVariant))
-            isClickable = true
-            isFocusable = true
-            enableFocusRing()
-            scrollTopOnFocus()
-            setOnClickListener {
-                multi.target = i
-                refreshLiveHeader()
-            }
-            setOnLongClickListener {
-                if (multi.slots[i] != null) {
-                    multi.clear(i)
-                    refreshLiveHeader()
-                    liveSelect(null)
-                }
-                true
-            }
-            addView(row)
-        }
-    }
-
-    private fun setMultiCount(n: Int) {
-        multi.changeCount(n)
-        // il ridisegno avviene dopo la callback del chip (non si tolgono viste mentre il chip sta cambiando)
-        ui.post {
-            refreshLiveHeader()
-            liveSelect(null)
-            // si risale in cima, così si vede subito "Multi-schermo" con i player
-            liveScroll.post { liveScroll.smoothScrollTo(0, 0) }
-        }
-    }
-
-    private fun assignToMulti(ch: Channel) {
-        multi.assign(ch)
-        refreshLiveHeader()
-        liveSelect(null)
-    }
-
-    // Eventi tra cui scegliere dentro la schermata multi-schermo: quelli della sezione aperta
-    private fun multiChoices(): List<Channel> =
-        userSection?.let { s -> liveCats(s).flatMap { it.channels } }?.filter { it.url.isNotEmpty() } ?: emptyList()
-
-    private fun openMulti() {
-        if (multiOverlay != null) return
-        if (multi.active().isEmpty()) {
-            toast("Scegli almeno un evento")
-            return
-        }
-        player.stop()
-        currentChannel = null
-        val o = MultiPlayerOverlay(this, multi, { newExo(true) }, { multiChoices() }, { closeMulti() })
-        multiOverlay = o
-        root.addView(o, ViewGroup.LayoutParams(MATCH, MATCH))
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        val ctl = WindowInsetsControllerCompat(window, window.decorView)
-        ctl.hide(WindowInsetsCompat.Type.systemBars())
-        ctl.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        updatePip()
-    }
-
-    private fun closeMulti() {
-        val o = multiOverlay ?: return
-        multiOverlay = null
-        o.release()
-        root.removeView(o)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
-        refreshLiveHeader()
-        liveSelect(null)
-        updatePip()
-    }
-
     // Carica le playlist in background: mostra subito quanto è già salvato (memoria/disco),
     // poi scarica gli aggiornamenti. cb(canali ordinati, errori, finale?) arriva sul thread UI.
+    private var sortKey: List<List<Channel>> = emptyList()
+    private var sortVal: List<Channel> = emptyList()
+
+    // Ordinamento fatto una sola volta finché le playlist non cambiano (rientrare in "Completa" è istantaneo)
+    @Synchronized
+    private fun sortedAll(lists: List<List<Channel>>): List<Channel> {
+        if (lists.size == sortKey.size && lists.indices.all { lists[it] === sortKey[it] }) return sortVal
+        val r = Categorizer.sortChannels(lists.flatten())
+        sortKey = lists
+        sortVal = r
+        return r
+    }
+
     private fun loadPlaylistChannels(cb: (List<Channel>, Int, Boolean) -> Unit) {
         val urls = loadPlaylists()
         if (urls.isEmpty()) {
             cb(emptyList(), 0, true)
             return
         }
-        Thread {
+        bg {
             val cached = urls.map { cachedPlaylist(it) }
             val now = System.currentTimeMillis()
             // se scaricata da meno di 10 minuti non serve riscaricarla
             val fresh = urls.map { cache.containsKey(it) && (fetchedAt[it] ?: 0L) + 10 * 60_000L > now }
             if (cached.any { it != null } && !fresh.all { it }) {
-                val first = Categorizer.sortChannels(cached.filterNotNull().flatten())
+                val first = sortedAll(cached.filterNotNull())
                 runOnUiThread { cb(first, 0, false) }
             }
             val pool = Executors.newFixedThreadPool(minOf(urls.size, 4))
@@ -1457,9 +1280,9 @@ class MainActivity : AppCompatActivity() {
                 r
             }
             pool.shutdown()
-            val all = Categorizer.sortChannels(lists.filterNotNull().flatten())
+            val all = sortedAll(lists.filterNotNull())
             runOnUiThread { cb(all, errors, true) }
-        }.start()
+        }
     }
 
     // "Completa": tutte le playlist, con le categorie create da sole
@@ -1473,7 +1296,7 @@ class MainActivity : AppCompatActivity() {
         var shown: List<Channel>? = null
         loadPlaylistChannels { all, errors, final ->
             if (gen != loadGen) return@loadPlaylistChannels
-            if (shown != all) {
+            if (shown !== all) {
                 setChannels(all)
                 shown = all
             }
@@ -1495,8 +1318,9 @@ class MainActivity : AppCompatActivity() {
         rebuildChips(counts)
         // svuota la ricerca (il TextWatcher richiama applyFilter)
         query = ""
+        ui.removeCallbacks(filterRun)
         if (searchField.editText!!.text.isNotEmpty()) searchField.editText!!.setText("")
-        else applyFilter()
+        applyFilter()
     }
 
     // Filtri a pulsanti (stile Echo): pillola tonale; quello scelto diventa giallo (evidenziatore) e cambia forma
@@ -1538,14 +1362,18 @@ class MainActivity : AppCompatActivity() {
     // Intestazioni di categoria + canali, nell'ordine indicato
     private fun rowsOf(list: List<Channel>, order: List<String>): List<ChannelAdapter.Row> {
         val rows = mutableListOf<ChannelAdapter.Row>()
+        val pos = HashMap<String, Int>(order.size * 2)
+        order.forEachIndexed { i, n -> pos[n] = i }
         list.groupBy { it.category }
-            .toSortedMap(compareBy<String> { order.indexOf(it) })
+            .entries.sortedBy { pos[it.key] ?: Int.MAX_VALUE }
             .forEach { (cat, l) ->
                 rows.add(ChannelAdapter.Row.Header(cat, l.size))
                 l.forEach { rows.add(ChannelAdapter.Row.Item(it)) }
             }
         return rows
     }
+
+    private val filterRun = Runnable { applyFilter() }
 
     private fun applyFilter() {
         val q = query.trim().lowercase()
@@ -1599,17 +1427,6 @@ class MainActivity : AppCompatActivity() {
     // Nessuna barra di scorrimento (slider): le liste scorrono solo col dito o col telecomando
     private fun <T : View> T.scrollbar(): T {
         isVerticalScrollBarEnabled = false
-        return this
-    }
-
-    // Nella sezione live: quando il focus arriva su un controllo del multi-schermo la lista risale in cima,
-    // così si vede anche il titolo "Multi-schermo"
-    private fun <T : View> T.scrollTopOnFocus(): T {
-        val prev = onFocusChangeListener
-        onFocusChangeListener = View.OnFocusChangeListener { v, has ->
-            prev?.onFocusChange(v, has)
-            if (has) liveScroll.post { liveScroll.smoothScrollTo(0, 0) }
-        }
         return this
     }
 
@@ -1845,10 +1662,10 @@ class MainActivity : AppCompatActivity() {
         val l = Sections.load(prefs)
         val name = l.firstOrNull { it.id == id }?.name ?: ""
         if (SharedSections.isOwned(prefs, id)) {
-            Thread {
+            bg {
                 val r = SharedSections.unpublish(prefs, id, name)
                 if (!r.ok) runOnUiThread { toast("Eliminata qui, ma non dalla condivisione: ${r.message}") }
-            }.start()
+            }
         }
         l.removeAll { it.id == id }
         Sections.save(prefs, l)
@@ -1894,13 +1711,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun runShare(okMsg: String, job: () -> SharedSections.Result) {
         toast("Invio in corso…")
-        Thread {
+        bg {
             val r = job()
             runOnUiThread {
                 Toast.makeText(this, if (r.ok) okMsg else r.message, Toast.LENGTH_LONG).show()
                 if (currentView === adminView && adminEditing == null) refreshAdmin()
             }
-        }.start()
+        }
     }
 
     private fun tokenDialog(then: () -> Unit) {
@@ -2248,7 +2065,7 @@ class MainActivity : AppCompatActivity() {
         var finalShown = false
         loadPlaylistChannels { playlist, _, final ->
             // subito: playlist e partite gia' salvate (nessuna rete); poi la versione aggiornata
-            Thread {
+            bg {
                 val fx = if (final) LiveFixtures.refresh() else LiveFixtures.current()
                 val ev = autos.associate { c ->
                     c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
@@ -2262,7 +2079,7 @@ class MainActivity : AppCompatActivity() {
                     autoEvents = autoEvents + ev
                     if (adminEditing == section) refreshAdmin()
                 }
-            }.start()
+            }
         }
     }
 
@@ -2910,19 +2727,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        multiOverlay?.resumeAll()
     }
 
     override fun onStop() {
         super.onStop()
         player.pause()
-        multiOverlay?.pauseAll()
     }
 
     override fun onDestroy() {
         ui.removeCallbacksAndMessages(null)
-        multiOverlay?.release()
-        multiOverlay = null
         player.release()
         super.onDestroy()
     }

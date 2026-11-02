@@ -101,7 +101,7 @@ object SharedSections {
         val now = System.currentTimeMillis()
         if (now - lastSync < SYNC_EVERY_MS) return
         lastSync = now
-        Thread { if (sync(p)) onChanged() }.start()
+        Thread { try { if (sync(p)) onChanged() } catch (_: Throwable) {} }.start()
     }
 
     private fun fetchRemote(): List<Remote>? {
