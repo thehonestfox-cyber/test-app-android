@@ -67,7 +67,6 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
-import com.google.android.material.button.MaterialButtonGroup
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -152,7 +151,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var errorText: TextView
     private lateinit var nowLogo: ImageView
     private lateinit var listStatus: TextView
-    private lateinit var chipGroup: MaterialButtonGroup
+    private lateinit var chipGroup: LinearLayout
     private lateinit var chipScroll: HorizontalScrollView
     private lateinit var channelList: RecyclerView
     private lateinit var liveScroll: ScrollView
@@ -926,6 +925,8 @@ class MainActivity : AppCompatActivity() {
             adapter = channelAdapter
             setHasFixedSize(true)
             setItemViewCacheSize(12)
+            recycledViewPool.setMaxRecycledViews(1, 24)   // righe canale riusate: meno creazioni durante lo scorrimento
+            isNestedScrollingEnabled = false
             itemAnimator = null   // niente animazioni di cambio: il focus resta sulla riga e la lista è più leggera
             scrollbar()
             clipToPadding = false
@@ -1338,9 +1339,17 @@ class MainActivity : AppCompatActivity() {
         return b
     }
 
+    private var chipsKey: List<String>? = null
+
     private fun rebuildChips(counts: Map<String, Int>) {
+        val labels = listOf("Tutti (${allChannels.size})") + categories.map { "$it (${counts[it]})" }
+        // stesse categorie e stessi numeri: non ricostruisco i pulsanti (era la parte più lenta)
+        val key = labels + (selectedCategory ?: "")
+        if (key == chipsKey && chipGroup.childCount == labels.size) return
+        chipsKey = key
         chipGroup.removeAllViews()
-        val buttons = mutableListOf<Pair<MaterialButton, String?>>()
+        val buttons = ArrayList<Pair<MaterialButton, String?>>(labels.size)
+        val gap = dp(4)
         fun add(label: String, cat: String?) {
             val b = filterButton(chipGroup, label, cat == selectedCategory)
             b.setOnClickListener {
@@ -1349,14 +1358,15 @@ class MainActivity : AppCompatActivity() {
                     return@setOnClickListener
                 }
                 selectedCategory = cat
+                chipsKey = null
                 buttons.forEach { (btn, other) -> btn.isChecked = other == cat }
                 applyFilter()
             }
             buttons += b to cat
-            chipGroup.addView(b)
+            chipGroup.addView(b, LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = gap })
         }
-        add("Tutti (${allChannels.size})", null)
-        categories.forEach { add("$it (${counts[it]})", it) }
+        add(labels[0], null)
+        categories.forEachIndexed { i, it -> add(labels[i + 1], it) }
     }
 
     // Intestazioni di categoria + canali, nell'ordine indicato

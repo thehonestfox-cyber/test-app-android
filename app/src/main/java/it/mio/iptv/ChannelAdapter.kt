@@ -110,6 +110,7 @@ class ChannelAdapter(
     private val cOnSec by lazy { col(MR.attr.colorOnSecondaryContainer) }
 
     fun submit(r: List<Row>) {
+        if (r === rows || r == rows) return   // identica: niente rebind né ricarica dei loghi
         rows = r
         notifyDataSetChanged()
     }
