@@ -478,8 +478,9 @@ class MainActivity : AppCompatActivity() {
 
     // Colori dei rettangoli della home (stessa palette morbida di "Browse all"): si alternano in ordine
     private val homeTileColors = intArrayOf(
-        0xFF7A5578.toInt(), 0xFF4F7F7D.toInt(), 0xFF485E80.toInt(), 0xFF66825F.toInt(),
-        0xFF7C5560.toInt(), 0xFF7A6550.toInt(), 0xFF5F5688.toInt()
+        0xFF80586A.toInt(), 0xFF4C6482.toInt(), 0xFF4B8060.toInt(), 0xFF7F6150.toInt(),
+        0xFF655A8A.toInt(), 0xFF4F7F78.toInt(), 0xFF7A5578.toInt()
+    )
     )
 
     // Un rettangolo per riga a tutta larghezza, con l'animazione alla pressione (anche quando si entra)

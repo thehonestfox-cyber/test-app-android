@@ -17,7 +17,6 @@ import android.view.MotionEvent
 import android.view.SoundEffectConstants
 import android.view.View
 import android.view.animation.DecelerateInterpolator
-import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -78,6 +77,11 @@ class HomeTile(
         contentDescription = title
         minimumHeight = (72 * d).toInt()
 
+        // icone: grigio chiaro nel tema scuro (come nel riferimento), bianche nel tema chiaro
+        val night = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val iconColor = if (night) Color.rgb(190, 190, 190) else Color.WHITE
+
         val medium: Typeface =
             if (Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 500, false)
             else Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -90,7 +94,7 @@ class HomeTile(
             }
             addView(ImageView(context).apply {
                 setImageResource(iconRes)
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
+                imageTintList = ColorStateList.valueOf(iconColor)
             }, LayoutParams((28 * d).toInt(), (28 * d).toInt(), Gravity.CENTER))
         }
 
@@ -98,7 +102,7 @@ class HomeTile(
             orientation = LinearLayout.VERTICAL
             addView(TextView(context).apply {
                 text = title
-                textSize = 20f
+                textSize = 18f
                 setTextColor(Color.WHITE)
                 typeface = medium
                 maxLines = 1
@@ -117,14 +121,14 @@ class HomeTile(
         val chevron = ImageView(context).apply {
             setImageResource(R.drawable.ic_chevron_left)
             rotation = 180f
-            imageTintList = ColorStateList.valueOf(Color.argb(230, 255, 255, 255))
+            imageTintList = ColorStateList.valueOf(iconColor)
         }
 
         val row = LinearLayout(context).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding((12 * d).toInt(), (12 * d).toInt(), (16 * d).toInt(), (12 * d).toInt())
+            setPadding((12 * d).toInt(), (12 * d).toInt(), (12 * d).toInt(), (12 * d).toInt())
             addView(circle, LinearLayout.LayoutParams((48 * d).toInt(), (48 * d).toInt()).apply {
-                rightMargin = (16 * d).toInt()
+                rightMargin = (12 * d).toInt()
             })
             addView(texts, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             addView(chevron, LinearLayout.LayoutParams((24 * d).toInt(), (24 * d).toInt()))
@@ -185,12 +189,12 @@ class HomeTile(
         scaleY = 1f - 0.12f * press
     }
 
-    private fun animatePress(to: Float, duration: Long, delay: Long, overshoot: Boolean) {
+    private fun animatePress(to: Float, duration: Long, delay: Long) {
         pressAnim?.cancel()
         pressAnim = ValueAnimator.ofFloat(press, to).apply {
             this.duration = duration
             startDelay = delay
-            interpolator = if (overshoot) OvershootInterpolator(2.2f) else DecelerateInterpolator()
+            interpolator = DecelerateInterpolator(1.6f)
             addUpdateListener { press = it.animatedValue as Float; applyPress() }
             start()
         }
@@ -211,13 +215,13 @@ class HomeTile(
             addUpdateListener { veilProgress = it.animatedValue as Float; invalidate() }
             start()
         }
-        animatePress(1f, 110, 0, false)
+        animatePress(1f, 110, 0)
     }
 
     private fun release() {
         val held = System.currentTimeMillis() - downAt
-        // il rettangolo resta un attimo premuto e il velo finisce la corsa, poi tutto torna a riposo
-        animatePress(0f, 260, max(0L, 110 - held), true)
+        // il rettangolo resta un attimo premuto e il velo finisce la corsa, poi torna a riposo senza rimbalzo
+        animatePress(0f, 260, max(0L, 110 - held))
         fadeAnim?.cancel()
         fadeAnim = ValueAnimator.ofFloat(veilAlpha, 0f).apply {
             duration = 240
