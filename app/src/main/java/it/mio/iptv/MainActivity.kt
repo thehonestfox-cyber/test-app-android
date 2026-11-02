@@ -476,18 +476,11 @@ class MainActivity : AppCompatActivity() {
         return card
     }
 
-    // Colori dei rettangoli della home (stessa palette morbida di "Browse all"): si alternano in ordine
-    private val homeTileColors = intArrayOf(
-        0xFF80586A.toInt(), 0xFF4C6482.toInt(), 0xFF4B8060.toInt(), 0xFF7F6150.toInt(),
-        0xFF655A8A.toInt(), 0xFF4F7F78.toInt(), 0xFF7A5578.toInt()
-    )
-
-    // Un rettangolo per riga a tutta larghezza, con l'animazione alla pressione (anche quando si entra)
-    private fun homeCard(index: Int, icon: Int, title: String, sub: String, onClick: () -> Unit): View =
-        HomeTile(
-            this, icon, title, sub, homeTileColors[index % homeTileColors.size], onClick
-        ).apply {
-            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(12) }
+    // Un rettangolo per riga a tutta larghezza (colore unico, pez_tile), con l'animazione alla pressione
+    // anche quando si entra; distanza tra i rettangoli 8dp (griglia M3)
+    private fun homeCard(icon: Int, title: String, sub: String, onClick: () -> Unit): View =
+        HomeTile(this, icon, title, sub, ContextCompat.getColor(this, R.color.pez_tile), onClick).apply {
+            layoutParams = LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = dp(8) }
         }
 
     // ---------- Home: sezioni / Completa / Impostazioni ----------
@@ -551,16 +544,16 @@ class MainActivity : AppCompatActivity() {
         prefetchLive()
         homeCards.removeAllViews()
         val secs = Sections.load(prefs)
-        secs.forEachIndexed { i, sec ->
+        secs.forEach { sec ->
             homeCards.addView(
                 homeCard(
-                    i, Sections.iconRes(sec.icon), sec.name,
+                    Sections.iconRes(sec.icon), sec.name,
                     sec.description
                 ) { showUser(sec.id) }
             )
         }
-        homeCards.addView(homeCard(secs.size, R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
-        homeCards.addView(homeCard(secs.size + 1, R.drawable.ic_settings, "Impostazioni", "Tema, playlist e sezioni della home") { showAdmin() })
+        homeCards.addView(homeCard(R.drawable.ic_tv, "Completa", "Tutti i canali delle playlist") { showUser(null) })
+        homeCards.addView(homeCard(R.drawable.ic_settings, "Impostazioni", "Tema, playlist e sezioni della home") { showAdmin() })
     }
 
     private fun goHome() {

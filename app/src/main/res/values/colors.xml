@@ -8,6 +8,7 @@
     <color name="pez_toolbar">#F2F4F5</color>            <!-- barra del titolo -->
     <color name="pez_card_menu">#E3E7EA</color>          <!-- card, menu e finestre -->
     <color name="pez_card_match">#F2F4F5</color>         <!-- card delle partite -->
+    <color name="pez_tile">#3B474E</color>               <!-- rettangoli della home (colore unico) -->
     <color name="pez_text">#000000</color>
     <color name="pez_text_secondary">#4A555C</color>
     <color name="pez_accent">#000000</color>             <!-- Primary: pulsanti e titoli di sezione -->

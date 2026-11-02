@@ -6,6 +6,7 @@
     <color name="pez_toolbar">#0C161C</color>            <!-- barra del titolo (grigio scuro DAZN) -->
     <color name="pez_card_menu">#1B262D</color>          <!-- card, menu e finestre -->
     <color name="pez_card_match">#0C161C</color>         <!-- card delle partite -->
+    <color name="pez_tile">#2A3640</color>               <!-- rettangoli della home (colore unico) -->
     <color name="pez_text">#FFFFFF</color>
     <color name="pez_text_secondary">#C4CBD0</color>
     <color name="pez_accent">#FFFFFF</color>             <!-- Primary: bianco -->

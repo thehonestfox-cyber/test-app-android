@@ -43,7 +43,9 @@ class HomeTile(
 ) : FrameLayout(context) {
 
     private val d = resources.displayMetrics.density
+    // M3: angoli "extra large" 28dp per il rettangolo, "large" 16dp per il quadrato dell'icona
     private val corner = 28 * d
+    private val iconCorner = 16 * d
 
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tileColor }
     private val veilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
@@ -75,12 +77,14 @@ class HomeTile(
         isFocusableInTouchMode = false
         if (Build.VERSION.SDK_INT >= 26) defaultFocusHighlightEnabled = false
         contentDescription = title
-        minimumHeight = (72 * d).toInt()
+        minimumHeight = (80 * d).toInt()
 
-        // icone: grigio chiaro nel tema scuro (come nel riferimento), bianche nel tema chiaro
+        // tema chiaro: quadrato icona bianco con icona nera; tema scuro: quadrato nero con icona grigio chiaro
         val night = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
-        val iconColor = if (night) Color.rgb(190, 190, 190) else Color.WHITE
+        val boxColor = if (night) Color.BLACK else Color.WHITE
+        val iconColor = if (night) Color.rgb(190, 190, 190) else Color.BLACK
+        val chevronColor = if (night) Color.rgb(190, 190, 190) else Color.WHITE
 
         val medium: Typeface =
             if (Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.DEFAULT, 500, false)
@@ -89,20 +93,21 @@ class HomeTile(
         // cerchio nero con l'icona
         val circle = FrameLayout(context).apply {
             background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(Color.BLACK)
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = iconCorner
+                setColor(boxColor)
             }
             addView(ImageView(context).apply {
                 setImageResource(iconRes)
                 imageTintList = ColorStateList.valueOf(iconColor)
-            }, LayoutParams((28 * d).toInt(), (28 * d).toInt(), Gravity.CENTER))
+            }, LayoutParams((24 * d).toInt(), (24 * d).toInt(), Gravity.CENTER))
         }
 
         val texts = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             addView(TextView(context).apply {
                 text = title
-                textSize = 18f
+                textSize = 16f
                 setTextColor(Color.WHITE)
                 typeface = medium
                 maxLines = 1
@@ -121,7 +126,7 @@ class HomeTile(
         val chevron = ImageView(context).apply {
             setImageResource(R.drawable.ic_chevron_left)
             rotation = 180f
-            imageTintList = ColorStateList.valueOf(iconColor)
+            imageTintList = ColorStateList.valueOf(chevronColor)
         }
 
         val row = LinearLayout(context).apply {
