@@ -43,6 +43,8 @@ open class PressTile(
     context: Context,
     tileColor: Int,
     radii: FloatArray,
+    veilColor: Int = Color.WHITE,
+    private val veilStrength: Float = 0.5f,
     private val onTap: () -> Unit
 ) : FrameLayout(context) {
 
@@ -52,7 +54,7 @@ open class PressTile(
         radii[0], radii[0], radii[1], radii[1], radii[2], radii[2], radii[3], radii[3]
     )
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tileColor }
-    private val veilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+    private val veilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = veilColor }
     private val focusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 8 * d          // metà finisce fuori dal clip: 4dp visibili
@@ -107,7 +109,7 @@ open class PressTile(
                 max(hypot(touchX, touchY), hypot(w - touchX, touchY)),
                 max(hypot(touchX, h - touchY), hypot(w - touchX, h - touchY))
             )
-            veilPaint.alpha = (255 * 0.5f * veilAlpha).toInt()
+            veilPaint.alpha = (255 * veilStrength * veilAlpha).toInt()
             canvas.drawCircle(touchX, touchY, far * veilProgress, veilPaint)
             canvas.restoreToCount(save)
         }
@@ -241,7 +243,7 @@ class HomeTile(
     sub: String,
     tileColor: Int,
     onTap: () -> Unit
-) : PressTile(context, tileColor, uniform(context, 28), onTap) {
+) : PressTile(context, tileColor, uniform(context, 28), onTap = onTap) {
 
     init {
         contentDescription = title
@@ -307,17 +309,19 @@ class HomeTile(
 /**
  * Pulsante del menu (icona + nome), a gruppi uno sotto l'altro: gli angoli esterni del gruppo sono
  * grandi (20dp), quelli tra un pulsante e l'altro piccoli (4dp), come nel video.
+ * I colori arrivano da fuori, così il menu segue il tema chiaro/scuro.
  */
 class MenuButton(
     context: Context,
     iconRes: Int,
     label: String,
-    tileColor: Int,
+    fillColor: Int,
+    textColor: Int,
     first: Boolean,
     last: Boolean,
     onTap: () -> Unit
 ) : PressTile(
-    context, tileColor,
+    context, fillColor,
     context.resources.displayMetrics.density.let { dd ->
         val big = 20 * dd
         val small = 4 * dd
@@ -325,25 +329,27 @@ class MenuButton(
         val bottom = if (last) big else small
         floatArrayOf(top, top, bottom, bottom)
     },
-    onTap
+    // velo bianco sui pulsanti scuri, velo scuro e leggero su quelli chiari
+    veilColor = if (isNight(context)) Color.WHITE else Color.BLACK,
+    veilStrength = if (isNight(context)) 0.14f else 0.10f,
+    onTap = onTap
 ) {
     init {
         contentDescription = label
-        minimumHeight = (56 * d).toInt()
-        val iconColor = if (isNight(context)) Color.rgb(190, 190, 190) else Color.WHITE
+        minimumHeight = (60 * d).toInt()
         val row = LinearLayout(context).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding((16 * d).toInt(), (8 * d).toInt(), (16 * d).toInt(), (8 * d).toInt())
+            setPadding((24 * d).toInt(), (8 * d).toInt(), (16 * d).toInt(), (8 * d).toInt())
             addView(ImageView(context).apply {
                 setImageResource(iconRes)
-                imageTintList = ColorStateList.valueOf(iconColor)
+                imageTintList = ColorStateList.valueOf(textColor)
             }, LinearLayout.LayoutParams((24 * d).toInt(), (24 * d).toInt()).apply {
                 rightMargin = (16 * d).toInt()
             })
             addView(TextView(context).apply {
                 text = label
                 textSize = 14f
-                setTextColor(Color.WHITE)
+                setTextColor(textColor)
                 typeface = mediumFont()
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END

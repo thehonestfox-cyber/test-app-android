@@ -580,33 +580,38 @@ class MainActivity : AppCompatActivity() {
     // Scheda che sale dal basso a metà schermo; con uno swipe verso l'alto si apre a tutto schermo
     private fun showMenu() {
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
-        val tileColor = ContextCompat.getColor(this, R.color.pez_tile)
+        val buttonColor = ContextCompat.getColor(this, R.color.pez_menu_button)
+        val sheetColor = ContextCompat.getColor(this, R.color.pez_menu_sheet)
         val onC = c(MR.attr.colorOnSurface)
+        val side = dp(24)   // margine laterale di tutto il menu
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-        // freccia indietro: la sua punta sta sullo stesso filo (16dp) del titolo
+        // freccia indietro: la punta sta sullo stesso filo del titolo (la freccia ha 16dp di spazio a sinistra)
         root.addView(ImageButton(this).apply {
             setImageResource(R.drawable.ic_back)
             imageTintList = ColorStateList.valueOf(onC)
             background = selectable()
             contentDescription = "Indietro"
             setOnClickListener { dialog.dismiss() }
-        }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { topMargin = dp(8) })
+        }, LinearLayout.LayoutParams(dp(48), dp(48)).apply {
+            topMargin = dp(12)
+            marginStart = side - dp(16)
+        })
 
         // solo nome dell'app e icona a destra, centrata in verticale sul testo
         root.addView(LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(8), dp(16), dp(16))
+            setPadding(side, dp(16), side, dp(24))
             addView(tv("PEZ8", 32f, onC, true), LinearLayout.LayoutParams(0, WRAP, 1f))
             addView(ImageView(context).apply {
                 setImageResource(R.mipmap.ic_launcher)
                 outlineProvider = object : ViewOutlineProvider() {
                     override fun getOutline(view: View, outline: android.graphics.Outline) {
-                        outline.setRoundRect(0, 0, view.width, view.height, dp(16).toFloat())
+                        outline.setRoundRect(0, 0, view.width, view.height, dp(20).toFloat())
                     }
                 }
                 clipToOutline = true
-            }, LinearLayout.LayoutParams(dp(56), dp(56)))
+            }, LinearLayout.LayoutParams(dp(64), dp(64)))
         }, LinearLayout.LayoutParams(MATCH, WRAP))
 
         // linea sotto l'intestazione
@@ -617,8 +622,9 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(0, dp(24), 0, dp(32))
         }
-        list.addView(tv("Impostazioni", 12f, c(MR.attr.colorOnSurfaceVariant), true).apply {
-            setPadding(dp(16), 0, dp(16), dp(8))
+        // titolo del gruppo rientrato di 20dp rispetto ai pulsanti, con aria sotto
+        list.addView(tv("Impostazioni", 14f, onC, true).apply {
+            setPadding(side + dp(20), 0, side, dp(16))
         }, LinearLayout.LayoutParams(MATCH, WRAP))
 
         val items = listOf(
@@ -627,13 +633,14 @@ class MainActivity : AppCompatActivity() {
         )
         items.forEachIndexed { i, (icon, label, tab) ->
             list.addView(
-                MenuButton(this, icon, label, tileColor, i == 0, i == items.lastIndex) {
+                MenuButton(this, icon, label, buttonColor, onC, i == 0, i == items.lastIndex) {
                     dialog.dismiss()
                     adminTab = tab
                     showAdmin()
                 },
                 LinearLayout.LayoutParams(MATCH, WRAP).apply {
-                    setMargins(dp(16), if (i == 0) 0 else dp(2), dp(16), 0)
+                    // 4dp di distanza tra un pulsante e l'altro
+                    setMargins(side, if (i == 0) 0 else dp(4), side, 0)
                 }
             )
         }
@@ -643,6 +650,7 @@ class MainActivity : AppCompatActivity() {
         dialog.setOnShowListener {
             val sheet = dialog.findViewById<FrameLayout>(MR.id.design_bottom_sheet) ?: return@setOnShowListener
             sheet.layoutParams = sheet.layoutParams.apply { height = ViewGroup.LayoutParams.MATCH_PARENT }
+            sheet.backgroundTintList = ColorStateList.valueOf(sheetColor)
             dialog.behavior.apply {
                 isFitToContents = false
                 halfExpandedRatio = 0.6f

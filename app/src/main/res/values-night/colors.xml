@@ -25,4 +25,6 @@
     <color name="pez_on_error">#690005</color>
     <color name="pez_outline">#6B777F</color>
     <color name="pez_outline_variant">#2A3640</color>
+    <color name="pez_menu_sheet">#121212</color>   <!-- sfondo della scheda del menu -->
+    <color name="pez_menu_button">#2A2A2A</color>   <!-- pulsanti del menu -->
 </resources>
