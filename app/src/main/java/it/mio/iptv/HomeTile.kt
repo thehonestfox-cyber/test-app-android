@@ -1,5 +1,7 @@
 package it.mio.iptv
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
@@ -89,6 +91,9 @@ open class PressTile(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         rect.set(0f, 0f, w.toFloat(), h.toFloat())
+        // il perno resta fisso al centro: non va riassegnato a ogni frame dell'animazione
+        pivotX = w / 2f
+        pivotY = h / 2f
         shape.reset()
         shape.addRoundRect(rect, corners, Path.Direction.CW)
     }
@@ -131,15 +136,32 @@ open class PressTile(
         pressAnim?.cancel(); veilAnim?.cancel(); fadeAnim?.cancel()
         press = 0f; veilAlpha = 0f; veilProgress = 0f
         applyPress()
+        setLayerType(LAYER_TYPE_NONE, null)
         super.onDetachedFromWindow()
     }
 
     // ---------- Animazione ----------
 
+    // Durante l'animazione il pulsante diventa un livello GPU (si ridimensiona senza ridisegnare i figli);
+    // a riposo il livello viene tolto, così non occupa memoria grafica per ogni pulsante della lista.
+    private fun layerOn() {
+        if (layerType != LAYER_TYPE_HARDWARE) setLayerType(LAYER_TYPE_HARDWARE, null)
+    }
+
+    private fun layerOffIfIdle() {
+        if (press == 0f && veilAlpha == 0f &&
+            pressAnim?.isRunning != true && veilAnim?.isRunning != true && fadeAnim?.isRunning != true
+        ) setLayerType(LAYER_TYPE_NONE, null)
+    }
+
+    private val endListener = object : AnimatorListenerAdapter() {
+        override fun onAnimationEnd(animation: Animator) {
+            post { layerOffIfIdle() }   // dopo la fine vera dell'animazione
+        }
+    }
+
     private fun applyPress() {
         // si stringe di più in altezza che in larghezza, come nel video
-        pivotX = width / 2f
-        pivotY = height / 2f
         scaleX = 1f - 0.08f * press
         scaleY = 1f - 0.12f * press
     }
@@ -151,11 +173,13 @@ open class PressTile(
             startDelay = delay
             interpolator = DecelerateInterpolator(1.6f)
             addUpdateListener { press = it.animatedValue as Float; applyPress() }
+            addListener(endListener)
             start()
         }
     }
 
     private fun pressIn(x: Float, y: Float) {
+        layerOn()
         cancelled = false
         downAt = System.currentTimeMillis()
         touchX = x.coerceIn(0f, width.toFloat())
@@ -168,6 +192,7 @@ open class PressTile(
             duration = 320
             interpolator = DecelerateInterpolator(1.4f)
             addUpdateListener { veilProgress = it.animatedValue as Float; invalidate() }
+            addListener(endListener)
             start()
         }
         animatePress(1f, 110, 0)
@@ -182,6 +207,7 @@ open class PressTile(
             duration = 240
             startDelay = max(0L, 260 - held)
             addUpdateListener { veilAlpha = it.animatedValue as Float; invalidate() }
+            addListener(endListener)
             start()
         }
     }

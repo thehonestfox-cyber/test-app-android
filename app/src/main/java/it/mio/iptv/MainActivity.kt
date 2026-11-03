@@ -533,12 +533,61 @@ class MainActivity : AppCompatActivity() {
     // Le card della home: le sezioni create dall'admin, poi Completa e Impostazioni
     // Precarica gli stemmi degli eventi delle sezioni live e scarica le partite dei campionati automatici,
     // così è già tutto pronto quando le apri
+    // Eventi gia' calcolati per ogni sezione live (id sezione -> categoria -> eventi): all'avvio si preparano
+    // in background, cosi' aprendo "Eventi" le card ci sono subito, senza attese
+    private val warmEvents = ConcurrentHashMap<String, Map<String, List<Channel>>>()
+    private val warming = java.util.concurrent.atomic.AtomicBoolean(false)
+    @Volatile private var lastWarmNet = 0L
+    @Volatile private var lastFxAt = 0L
+
+    // Partite da disco (subito) oppure aggiornate da rete (al massimo ogni 3 minuti)
+    private fun fixturesNow(refresh: Boolean): Map<String, List<Fixture>> {
+        val now = System.currentTimeMillis()
+        return if (refresh && now - lastFxAt > 3 * 60_000L) {
+            LiveFixtures.refresh().also { lastFxAt = System.currentTimeMillis() }
+        } else LiveFixtures.current()
+    }
+
+    private fun warmCompute(fx: Map<String, List<Fixture>>, playlist: List<Channel>) {
+        Sections.load(prefs).filter { it.isLive }.forEach { sec ->
+            val autos = Featured.load(prefs, sec.id).filter { LiveFixtures.isAuto(it.name) }
+            if (autos.isEmpty()) return@forEach
+            val ev = autos.associate { c ->
+                c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
+            }
+            warmEvents[sec.id] = ev
+            SportsDb.prefetch(ev.values.flatten())
+        }
+    }
+
     private fun prefetchLive() {
         bg {
             val cats = Sections.load(prefs).filter { it.isLive }.flatMap { sec -> Featured.load(prefs, sec.id) }
             val chans = cats.filter { !LiveFixtures.isAuto(it.name) }.flatMap { it.channels }
             if (chans.isNotEmpty()) SportsDb.prefetch(chans)
-            if (cats.any { LiveFixtures.isAuto(it.name) }) LiveFixtures.refresh()
+            val hasAuto = cats.any { LiveFixtures.isAuto(it.name) }
+            // 1) subito, senza rete: playlist e partite gia' salvate
+            if (hasAuto && warming.compareAndSet(false, true)) {
+                try {
+                    val local = loadPlaylists().mapNotNull { cachedPlaylist(it) }
+                    warmCompute(LiveFixtures.current(), if (local.isEmpty()) emptyList() else sortedAll(local))
+                } finally {
+                    warming.set(false)
+                }
+            }
+            // 2) aggiornamento da rete (al massimo ogni 3 minuti), dopo i primi fotogrammi della home;
+            //    scarica anche le playlist, cosi' "Completa" si apre gia' pronta
+            val now = System.currentTimeMillis()
+            if (now - lastWarmNet < 3 * 60_000L) return@bg
+            lastWarmNet = now
+            Thread.sleep(600)
+            val fx = if (hasAuto) fixturesNow(true) else null
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                loadPlaylistChannels { playlist, _, final ->
+                    if (final && fx != null) bg { warmCompute(fx, playlist) }
+                }
+            }
         }
     }
 
@@ -1132,6 +1181,7 @@ class MainActivity : AppCompatActivity() {
         liveScroll.visibility = if (live) View.VISIBLE else View.GONE
         liveBar.visibility = if (live) View.VISIBLE else View.GONE
         liveBar.title = section?.let { id -> Sections.load(prefs).firstOrNull { it.id == id }?.name } ?: ""
+        liveBuildGen++   // ferma le card ancora in costruzione della sezione precedente
         liveBox.removeAllViews()
         liveCards.clear()
         nowSub.text = ""
@@ -1187,21 +1237,29 @@ class MainActivity : AppCompatActivity() {
     // Sezione live con categorie automatiche: mostra subito gli eventi dell'admin, poi crea quelli delle partite
     private fun loadLiveAuto(section: String, name: String, cats: List<FeaturedCategory>) {
         val gen = loadGen
+        // eventi gia' pronti (preparati all'avvio): si vedono subito e poi si aggiornano in silenzio
+        val warm = warmEvents[section]
+        if (warm != null) autoEvents = warm
         showLiveCats(liveCats(section), name)
-        listStatus.text = "$name · caricamento partite…"
+        if (warm == null) listStatus.text = "$name · caricamento partite…"
+        var built = warm != null
         var finalShown = false
         loadPlaylistChannels { playlist, _, final ->
             if (gen != loadGen) return@loadPlaylistChannels
             // subito: playlist e partite gia' salvate (nessuna rete); poi la versione aggiornata
             bg {
-                val fx = if (final) LiveFixtures.refresh() else LiveFixtures.current()
+                val fx = fixturesNow(final)
                 val ev = cats.filter { LiveFixtures.isAuto(it.name) }.associate { c ->
                     c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
                 }
+                if (ev.values.any { it.isNotEmpty() }) warmEvents[section] = ev
                 runOnUiThread {
                     if (gen != loadGen || userSection != section) return@runOnUiThread
                     if (!final && (finalShown || ev.values.all { it.isEmpty() })) return@runOnUiThread
                     if (final) finalShown = true
+                    // niente di nuovo: non ricostruisco le card (nessun scatto)
+                    if (built && ev == autoEvents) return@runOnUiThread
+                    built = true
                     autoEvents = ev
                     showLiveCats(liveCats(section), name)
                     SportsDb.prefetch(ev.values.flatten())
@@ -1434,25 +1492,56 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         }
     }
 
+    private var liveBuildGen = 0
+
+    // Ai bordi della riga il focus resta fermo: non passa alle altre categorie
+    private fun fixRowEdges(row: LinearLayout) {
+        for (k in 0 until row.childCount) {
+            val v = row.getChildAt(k)
+            v.nextFocusLeftId = View.NO_ID
+            v.nextFocusRightId = View.NO_ID
+        }
+        if (row.childCount > 0) {
+            val first = row.getChildAt(0)
+            val last = row.getChildAt(row.childCount - 1)
+            if (first.id == View.NO_ID) first.id = View.generateViewId()
+            if (last.id == View.NO_ID) last.id = View.generateViewId()
+            first.nextFocusLeftId = first.id
+            last.nextFocusRightId = last.id
+        }
+    }
+
+    // Le card si creano a gruppi: le prime subito (la sezione si apre senza attese), le altre
+    // a pochi per volta nei fotogrammi successivi, cosi' non c'e' un blocco unico che fa laggare
     private fun buildLive(cats: List<FeaturedCategory>) {
+        val gen = ++liveBuildGen
         liveBox.removeAllViews()
         liveCards.clear()
         cats.filter { it.channels.isNotEmpty() }.forEach { cat ->
             liveBox.addView(tv(cat.name, 20f, c(MR.attr.colorOnSurface), true).apply {
                 setPadding(dp(4), dp(16), dp(4), dp(8))
             })
+            val items = cat.channels
             val row = LinearLayout(this).apply {
                 setPadding(dp(4), 0, dp(4), 0)
-                cat.channels.forEach { addView(liveCard(it)) }
-                // Ai bordi della riga il focus resta fermo: non passa alle altre categorie
-                if (childCount > 0) {
-                    val first = getChildAt(0)
-                    val last = getChildAt(childCount - 1)
-                    if (first.id == View.NO_ID) first.id = View.generateViewId()
-                    if (last.id == View.NO_ID) last.id = View.generateViewId()
-                    first.nextFocusLeftId = first.id
-                    last.nextFocusRightId = last.id
+                val firstN = minOf(items.size, 5)
+                for (k in 0 until firstN) addView(liveCard(items[k]))
+            }
+            fixRowEdges(row)
+            if (items.size > 5) {
+                var next = 5
+                val step = object : Runnable {
+                    override fun run() {
+                        if (gen != liveBuildGen) return
+                        val end = minOf(items.size, next + 3)
+                        for (k in next until end) row.addView(liveCard(items[k]))
+                        next = end
+                        fixRowEdges(row)
+                        liveSelect(currentChannel?.url)
+                        if (next < items.size) ui.postDelayed(this, 16)
+                    }
                 }
+                ui.postDelayed(step, 48)
             }
             liveBox.addView(
                 HorizontalScrollView(this).apply {
@@ -1605,6 +1694,18 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         }
         add(labels[0], null)
         categories.forEachIndexed { i, it -> add(labels[i + 1], it) }
+        // con tanti pulsanti l'effetto "rimbalzo" (i vicini cambiano larghezza a ogni frame, con un nuovo
+        // calcolo del layout di tutta la fila) fa laggare: sopra i 5 pulsanti lo tolgo
+        if (chipGroup.childCount > 5) {
+            val m = try {
+                MaterialButton::class.java.getMethod("setWidthChangeMax", Int::class.javaPrimitiveType)
+            } catch (_: Throwable) {
+                null
+            }
+            if (m != null) for (k in 0 until chipGroup.childCount) {
+                try { m.invoke(chipGroup.getChildAt(k), 0) } catch (_: Throwable) {}
+            }
+        }
     }
 
     // Intestazioni di categoria + canali, nell'ordine indicato

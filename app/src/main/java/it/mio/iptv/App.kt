@@ -13,6 +13,10 @@ class App : Application(), ImageLoaderFactory {
     override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
         .respectCacheHeaders(false)
         .crossfade(false)
+        .allowRgb565(true)   // immagini senza trasparenza: meta' della memoria, scorrimento piu' fluido
+        .memoryCache {
+            coil.memory.MemoryCache.Builder(this).maxSizePercent(0.20).build()
+        }
         .build()
 
     private var checked = false
