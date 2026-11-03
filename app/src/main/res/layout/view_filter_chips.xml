@@ -6,11 +6,13 @@
     android:paddingHorizontal="16dp"
     android:scrollbars="none">
 
-    <LinearLayout
+    <!-- MaterialButtonGroup: quando premi un pulsante si allarga e quelli accanto si stringono (rimbalzo Expressive) -->
+    <com.google.android.material.button.MaterialButtonGroup
         android:id="@+id/buttonGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginVertical="4dp"
-        android:orientation="horizontal" />
+        android:orientation="horizontal"
+        android:spacing="4dp" />
 
 </HorizontalScrollView>

@@ -7,4 +7,6 @@
     android:checkable="true"
     android:checked="false"
     android:minWidth="0dp"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
     app:toggleCheckedStateOnClick="true" />

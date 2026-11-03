@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var errorText: TextView
     private lateinit var nowLogo: ImageView
     private lateinit var listStatus: TextView
-    private lateinit var chipGroup: LinearLayout
+    private lateinit var chipGroup: com.google.android.material.button.MaterialButtonGroup
     private lateinit var chipScroll: HorizontalScrollView
     private lateinit var channelList: RecyclerView
     private lateinit var liveScroll: ScrollView
@@ -586,16 +586,18 @@ class MainActivity : AppCompatActivity() {
         val side = dp(24)   // margine laterale di tutto il menu
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-        // freccia indietro: la punta sta sullo stesso filo del titolo (la freccia ha 16dp di spazio a sinistra)
+        // "x" per chiudere: area di click piccola (32dp); il tratto della x sta sullo stesso filo del titolo
         root.addView(ImageButton(this).apply {
-            setImageResource(R.drawable.ic_back)
+            setImageResource(R.drawable.ic_close)
             imageTintList = ColorStateList.valueOf(onC)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setPadding(dp(4), dp(4), dp(4), dp(4))
             background = selectable()
-            contentDescription = "Indietro"
+            contentDescription = "Chiudi"
             setOnClickListener { dialog.dismiss() }
-        }, LinearLayout.LayoutParams(dp(48), dp(48)).apply {
-            topMargin = dp(12)
-            marginStart = side - dp(16)
+        }, LinearLayout.LayoutParams(dp(32), dp(32)).apply {
+            topMargin = dp(16)
+            marginStart = side - dp(9)
         })
 
         // solo nome dell'app e icona a destra, centrata in verticale sul testo
@@ -653,12 +655,19 @@ class MainActivity : AppCompatActivity() {
             sheet.backgroundTintList = ColorStateList.valueOf(sheetColor)
             dialog.behavior.apply {
                 isFitToContents = false
-                halfExpandedRatio = 0.6f
+                halfExpandedRatio = if (isTelevision()) 0.9f else 0.6f   // su TV lo schermo è basso: sale di più
                 skipCollapsed = true
                 state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HALF_EXPANDED
             }
         }
         dialog.show()
+    }
+
+    // Android TV / box con telecomando
+    private fun isTelevision(): Boolean {
+        val pm = packageManager
+        return pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK) ||
+            (resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_TELEVISION
     }
 
     private fun goHome() {
@@ -1573,7 +1582,6 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         chipsKey = key
         chipGroup.removeAllViews()
         val buttons = ArrayList<Pair<MaterialButton, String?>>(labels.size)
-        val gap = dp(4)
         fun add(label: String, cat: String?) {
             val b = filterButton(chipGroup, label, cat == selectedCategory)
             b.setOnClickListener {
@@ -1587,7 +1595,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                 applyFilter()
             }
             buttons += b to cat
-            chipGroup.addView(b, LinearLayout.LayoutParams(WRAP, WRAP).apply { marginEnd = gap })
+            chipGroup.addView(b, LinearLayout.LayoutParams(WRAP, WRAP))
         }
         add(labels[0], null)
         categories.forEachIndexed { i, it -> add(labels[i + 1], it) }
