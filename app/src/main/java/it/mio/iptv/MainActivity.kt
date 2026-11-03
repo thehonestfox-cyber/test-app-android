@@ -62,6 +62,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -754,7 +755,7 @@ class MainActivity : AppCompatActivity() {
         ui.removeCallbacks(hideRun)
         channelList.stopScroll()
         currentUrl = ""   // un errore in ritardo non deve far ripartire il canale mentre sei nella home
-        player.stop()
+        player.stop().also { holdingLine = false }
         player.clearMediaItems()   // libera subito decoder e connessione del canale lasciato
         if (fullscreen) setFullscreen(false)
         currentChannel = null
@@ -778,13 +779,25 @@ class MainActivity : AppCompatActivity() {
         // decoder: se quello hardware è occupato prova gli altri; coda asincrona = video più fluido anche su telefoni meno recenti
         val rf = DefaultRenderersFactory(this)
             .setEnableDecoderFallback(true)
+        // Buffer corto = meno ritardo rispetto alla diretta (di default il player accumula fino a 50 secondi)
+        val lc = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                /* minBufferMs */ 4000,
+                /* maxBufferMs */ 8000,
+                /* bufferForPlaybackMs */ 1000,
+                /* bufferForPlaybackAfterRebufferMs */ 2500
+            )
+            .build()
         val b = ExoPlayer.Builder(this, rf)
+            .setLoadControl(lc)
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
         return b.build()
     }
 
     private fun setupPlayer() {
         player = newExo()
+        handoff = LineHandoff(this) { onLineTaken() }
+        handoff.start()
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) = onError(error)
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -955,7 +968,37 @@ class MainActivity : AppCompatActivity() {
 
     // Alcune playlist scrivono le intestazioni dopo l'indirizzo: "http://...|User-Agent=xxx&Referer=yyy".
     // Vanno tolte dall'URL e mandate come intestazioni HTTP, altrimenti il server risponde con errore.
+    // true finché questo dispositivo tiene la linea (dall'avvio di un canale fino allo stop)
+    @Volatile private var holdingLine = false
+    private lateinit var handoff: LineHandoff
+
+    // Prima di avviare un canale chiede agli altri tuoi dispositivi (stessa rete) di rilasciare la linea
     private fun start(fullUrl: String, asHls: Boolean) {
+        if (holdingLine) {
+            startNow(fullUrl, asHls)
+            return
+        }
+        holdingLine = true
+        bg {
+            handoff.claim(400)
+            uiSafe { startNow(fullUrl, asHls) }
+        }
+    }
+
+    // Un altro dispositivo ha preso la linea: questo la rilascia
+    private fun onLineTaken() = uiSafe {
+        if (holdingLine) {
+            player.stop()
+            holdingLine = false
+            player.clearMediaItems()
+            keptAlive = false
+            resumeAfterStop = false
+            stopKeepAlive()
+            toast("Linea passata a un altro tuo dispositivo")
+        }
+    }
+
+    private fun startNow(fullUrl: String, asHls: Boolean) {
         val bar = fullUrl.indexOf('|')
         val url = if (bar > 0) fullUrl.substring(0, bar) else fullUrl
         val headers = LinkedHashMap<String, String>()
@@ -984,12 +1027,21 @@ class MainActivity : AppCompatActivity() {
         }
         httpFactory.setUserAgent(ua)
         httpFactory.setDefaultRequestProperties(headers)
-        val item = MediaItem.Builder().setUri(playUrl).apply {
+        // Diretta: punta a stare vicino al "bordo live" e, se resta indietro, accelera leggermente (fino a 1.05x)
+        val live = MediaItem.LiveConfiguration.Builder()
+            .setTargetOffsetMs(3000)
+            .setMinOffsetMs(1500)
+            .setMaxOffsetMs(8000)
+            .setMinPlaybackSpeed(0.98f)
+            .setMaxPlaybackSpeed(1.05f)
+            .build()
+        val item = MediaItem.Builder().setUri(playUrl).setLiveConfiguration(live).apply {
             if (asHls) setMimeType(MimeTypes.APPLICATION_M3U8)
         }.build()
         player.setMediaItem(item)
         player.prepare()
         player.playWhenReady = true
+        if (keepAliveOn()) startKeepAlive()
     }
 
     // Se il formato non si capisce dall'URL, riprova una volta come HLS.
@@ -1024,7 +1076,7 @@ class MainActivity : AppCompatActivity() {
             val last = currentChannel?.url
             ctl.show(WindowInsetsCompat.Type.systemBars())
             if (userLive && currentView === userView) {
-                player.stop()
+                player.stop().also { holdingLine = false }
                 currentChannel = null
                 liveSelect(null)
             }
@@ -2327,6 +2379,14 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             R.drawable.ic_dark_mode, "Nero AMOLED",
             "Sfondo nero puro nel tema scuro", pitchBlackOn()
         ) { on -> setColorPref("pitch_black", on) }
+        rows += toggleRow(
+            R.drawable.ic_tv, "Resta collegato in background",
+            "Il canale continua anche fuori dall'app e la linea non si libera. Indietro nell'app la libera.",
+            keepAliveOn()
+        ) { on ->
+            prefs.edit().putBoolean("keep_alive", on).apply()
+            if (on) { if (player.playWhenReady && currentUrl.isNotEmpty()) startKeepAlive() } else stopKeepAlive()
+        }
         adminList.addView(roundedGroup(rows))
     }
 
@@ -3283,17 +3343,60 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         return null
     }
 
+    // Collegamento "sempre acceso": con l'interruttore attivo (Impostazioni) il canale continua anche fuori dall'app,
+    // così nessun altro può prendere il posto sulla linea. Con l'interruttore spento, uscendo il collegamento si chiude.
+    private fun keepAliveOn() = prefs.getBoolean("keep_alive", true)
+
+    private fun startKeepAlive() {
+        try {
+            androidx.core.content.ContextCompat.startForegroundService(this, Intent(this, KeepAliveService::class.java))
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun stopKeepAlive() {
+        try { stopService(Intent(this, KeepAliveService::class.java)) } catch (_: Exception) {}
+    }
+
+    private fun setVideoDisabled(off: Boolean) {
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_VIDEO, off).build()
+    }
+
+    private var resumeAfterStop = false
+    private var keptAlive = false
+
     override fun onStart() {
         super.onStart()
+        if (keptAlive) {
+            // il flusso non si è mai fermato: basta riattivare il video
+            keptAlive = false
+            setVideoDisabled(false)
+        } else if (resumeAfterStop && currentUrl.isNotEmpty()) {
+            resumeAfterStop = false
+            triedHls = currentUrl.contains(".m3u8", ignoreCase = true)
+            start(currentUrl, triedHls)
+        }
     }
 
     override fun onStop() {
         super.onStop()
-        player.pause()
+        val playing = currentUrl.isNotEmpty() && player.playWhenReady
+        if (playing && keepAliveOn() && !isFinishing && !isChangingConfigurations) {
+            keptAlive = true
+            setVideoDisabled(true)   // niente video in background: si risparmiano batteria e dati
+            return
+        }
+        resumeAfterStop = playing && !isFinishing
+        player.stop().also { holdingLine = false }
+        player.clearMediaItems()
+        stopKeepAlive()
     }
 
     override fun onDestroy() {
         ui.removeCallbacksAndMessages(null)
+        stopKeepAlive()
+        handoff.stop()
         player.release()
         super.onDestroy()
     }
