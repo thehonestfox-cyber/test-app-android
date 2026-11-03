@@ -390,6 +390,7 @@ class MainActivity : AppCompatActivity() {
         }
 
     private fun show(v: View) {
+        (v.parent as? ViewGroup)?.removeView(v)   // una schermata gia' attaccata da qualche parte non deve far crashare
         root.removeAllViews()
         root.addView(v, ViewGroup.LayoutParams(MATCH, MATCH))
         currentView = v
@@ -560,8 +561,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val prefetching = java.util.concurrent.atomic.AtomicBoolean(false)
+
     private fun prefetchLive() {
+        if (!prefetching.compareAndSet(false, true)) return
         bg {
+          try {
+            Thread.sleep(800)   // prima la home e i suoi primi fotogrammi, poi il lavoro in background
             val cats = Sections.load(prefs).filter { it.isLive }.flatMap { sec -> Featured.load(prefs, sec.id) }
             val chans = cats.filter { !LiveFixtures.isAuto(it.name) }.flatMap { it.channels }
             if (chans.isNotEmpty()) SportsDb.prefetch(chans)
@@ -580,7 +586,6 @@ class MainActivity : AppCompatActivity() {
             val now = System.currentTimeMillis()
             if (now - lastWarmNet < 3 * 60_000L) return@bg
             lastWarmNet = now
-            Thread.sleep(600)
             val fx = if (hasAuto) fixturesNow(true) else null
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
@@ -588,6 +593,9 @@ class MainActivity : AppCompatActivity() {
                     if (final && fx != null) bg { warmCompute(fx, playlist) }
                 }
             }
+          } finally {
+            prefetching.set(false)
+          }
         }
     }
 
@@ -595,10 +603,28 @@ class MainActivity : AppCompatActivity() {
     private fun bg(block: () -> Unit) {
         Thread {
             try {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
                 block()
             } catch (_: Throwable) {
             }
         }.start()
+    }
+
+    // Esegue sul thread UI solo se la schermata esiste ancora; un errore nell'aggiornamento non chiude l'app
+    private fun uiSafe(block: () -> Unit) = runOnUiThread {
+        if (isFinishing || isDestroyed) return@runOnUiThread
+        try {
+            block()
+        } catch (e: Exception) {
+            android.util.Log.e("PEZ8", "aggiornamento interfaccia", e)
+        }
+    }
+
+    private val bgFactory = java.util.concurrent.ThreadFactory { r ->
+        Thread {
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+            r.run()
+        }
     }
 
     private fun refreshHome() {
@@ -720,6 +746,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun goHome() {
+        // uscendo da "Completa"/sezione: i caricamenti e i filtri ancora in corso non devono toccare l'interfaccia
+        loadGen++
+        liveBuildGen++
+        filterGen++
+        ui.removeCallbacks(filterRun)
+        channelList.stopScroll()
         player.stop()
         if (fullscreen) setFullscreen(false)
         currentChannel = null
@@ -1590,9 +1622,9 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             val fresh = urls.map { cache.containsKey(it) && (fetchedAt[it] ?: 0L) + 10 * 60_000L > now }
             if (cached.any { it != null } && !fresh.all { it }) {
                 val first = sortedAll(cached.filterNotNull())
-                runOnUiThread { cb(first, 0, false) }
+                uiSafe { cb(first, 0, false) }
             }
-            val pool = Executors.newFixedThreadPool(minOf(urls.size, 4))
+            val pool = Executors.newFixedThreadPool(minOf(urls.size, 4), bgFactory)
             val futures = urls.mapIndexed { i, u ->
                 pool.submit(Callable<List<Channel>?> { if (fresh[i]) cached[i] else (downloadPlaylist(u) ?: cached[i]) })
             }
@@ -1604,7 +1636,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             }
             pool.shutdown()
             val all = sortedAll(lists.filterNotNull())
-            runOnUiThread { cb(all, errors, true) }
+            uiSafe { cb(all, errors, true) }
         }
     }
 
@@ -1669,16 +1701,32 @@ events:{onError:function(e){Native.onError(e.data)}}});}
 
     private var chipsKey: List<String>? = null
 
+    private val widthChangeMaxSetter by lazy {
+        try {
+            MaterialButton::class.java.getMethod("setWidthChangeMax", Int::class.javaPrimitiveType)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
     private fun rebuildChips(counts: Map<String, Int>) {
         val labels = listOf("Tutti (${allChannels.size})") + categories.map { "$it (${counts[it]})" }
-        // stesse categorie e stessi numeri: non ricostruisco i pulsanti (era la parte più lenta)
+        // stesse categorie e stessi numeri: non tocco i pulsanti
         val key = labels + (selectedCategory ?: "")
         if (key == chipsKey && chipGroup.childCount == labels.size) return
         chipsKey = key
-        chipGroup.removeAllViews()
+        // creare un pulsante Material e' costoso (soprattutto sui telefoni lenti): quelli gia' presenti
+        // si riusano cambiando solo testo e stato, si aggiungono o tolgono solo la differenza
+        while (chipGroup.childCount > labels.size) chipGroup.removeViewAt(chipGroup.childCount - 1)
+        while (chipGroup.childCount < labels.size) {
+            chipGroup.addView(filterButton(chipGroup, "", false), LinearLayout.LayoutParams(WRAP, WRAP))
+        }
         val buttons = ArrayList<Pair<MaterialButton, String?>>(labels.size)
-        fun add(label: String, cat: String?) {
-            val b = filterButton(chipGroup, label, cat == selectedCategory)
+        for (i in labels.indices) {
+            val cat: String? = if (i == 0) null else categories[i - 1]
+            val b = chipGroup.getChildAt(i) as MaterialButton
+            b.text = labels[i]
+            b.isChecked = cat == selectedCategory
             b.setOnClickListener {
                 if (cat == selectedCategory) {
                     b.isChecked = true
@@ -1690,18 +1738,11 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                 applyFilter()
             }
             buttons += b to cat
-            chipGroup.addView(b, LinearLayout.LayoutParams(WRAP, WRAP))
         }
-        add(labels[0], null)
-        categories.forEachIndexed { i, it -> add(labels[i + 1], it) }
         // con tanti pulsanti l'effetto "rimbalzo" (i vicini cambiano larghezza a ogni frame, con un nuovo
         // calcolo del layout di tutta la fila) fa laggare: sopra i 5 pulsanti lo tolgo
         if (chipGroup.childCount > 5) {
-            val m = try {
-                MaterialButton::class.java.getMethod("setWidthChangeMax", Int::class.javaPrimitiveType)
-            } catch (_: Throwable) {
-                null
-            }
+            val m = widthChangeMaxSetter
             if (m != null) for (k in 0 until chipGroup.childCount) {
                 try { m.invoke(chipGroup.getChildAt(k), 0) } catch (_: Throwable) {}
             }
@@ -1724,13 +1765,43 @@ events:{onError:function(e){Native.onError(e.data)}}});}
 
     private val filterRun = Runnable { applyFilter() }
 
+    private var filterGen = 0
+    private val filterExec by lazy {
+        java.util.concurrent.ThreadPoolExecutor(
+            1, 1, 5, java.util.concurrent.TimeUnit.SECONDS,
+            java.util.concurrent.LinkedBlockingQueue<Runnable>(), bgFactory
+        ).apply { allowCoreThreadTimeOut(true) }
+    }
+
+    // Filtro + raggruppamento per categoria: con migliaia di canali (es. "Completa") si fa in background
+    // e sul thread UI arriva solo il risultato pronto, senza bloccare l'apertura della sezione
     private fun applyFilter() {
+        val gen = ++filterGen
+        val list = allChannels
+        val cat = selectedCategory
+        val order = categories
         val q = query.trim().lowercase()
-        val filtered = allChannels.filter {
-            (selectedCategory == null || it.category == selectedCategory) &&
-                (q.isEmpty() || it.name.lowercase().contains(q))
+        fun work(): List<ChannelAdapter.Row> {
+            val filtered = if (cat == null && q.isEmpty()) list else list.filter {
+                (cat == null || it.category == cat) && (q.isEmpty() || it.name.lowercase().contains(q))
+            }
+            return rowsOf(filtered, order)
         }
-        channelAdapter.submit(rowsOf(filtered, categories))
+        if (list.size <= 300) {
+            channelAdapter.submit(work())
+            return
+        }
+        try {
+            filterExec.execute {
+                if (gen != filterGen) return@execute
+                val rows = try { work() } catch (_: Throwable) { return@execute }
+                runOnUiThread {
+                    if (gen == filterGen && !isFinishing && !isDestroyed) channelAdapter.submit(rows)
+                }
+            }
+        } catch (_: Exception) {
+            channelAdapter.submit(work())
+        }
     }
 
     // Mostra nell'interfaccia il canale scelto (titolo, logo, evidenziazione), senza toccare il player
