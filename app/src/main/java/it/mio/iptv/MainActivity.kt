@@ -1568,6 +1568,12 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             ColorStateList(st, intArrayOf(c(MR.attr.colorOnSecondaryContainer), c(MR.attr.colorOnSurface)))
         )
         b.text = label
+        // stessa distanza visibile del testo da tutti i bordi: sopra/sotto si somma l'aria interna della riga
+        // (altezza riga - altezza delle maiuscole), così destra/sinistra risultano uguali ad alto/basso
+        val capH = android.graphics.Rect().also { b.paint.getTextBounds("H", 0, 1, it) }.height()
+        val v = dp(8)
+        val gap = v + ((b.lineHeight - capH) / 2).coerceAtLeast(0)
+        b.setPadding(gap, v, gap, v)
         b.isChecked = checked
         return b
     }
