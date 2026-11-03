@@ -969,9 +969,22 @@ class MainActivity : AppCompatActivity() {
                 if (k.equals("user-agent", ignoreCase = true)) ua = v else headers[k] = v
             }
         }
+        // "http://utente:password@host/...": il sistema ignora le credenziali nell'URL (e il server risponde 401),
+        // quindi vanno mandate come intestazione Authorization
+        var playUrl = url
+        try {
+            val ui = java.net.URI(url).rawUserInfo
+            if (!ui.isNullOrEmpty() && !headers.keys.any { it.equals("Authorization", ignoreCase = true) }) {
+                val dec = java.net.URLDecoder.decode(ui.replace("+", "%2B"), "UTF-8")
+                headers["Authorization"] = "Basic " +
+                    android.util.Base64.encodeToString(dec.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP)
+                playUrl = url.replaceFirst("$ui@", "")
+            }
+        } catch (_: Exception) {
+        }
         httpFactory.setUserAgent(ua)
         httpFactory.setDefaultRequestProperties(headers)
-        val item = MediaItem.Builder().setUri(url).apply {
+        val item = MediaItem.Builder().setUri(playUrl).apply {
             if (asHls) setMimeType(MimeTypes.APPLICATION_M3U8)
         }.build()
         player.setMediaItem(item)
@@ -1733,16 +1746,28 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     }
 
     private fun rebuildChips(counts: Map<String, Int>) {
+        // lista vuota (sezione appena aperta): lascio com'e' e nascondo la fila, senza toccare i pulsanti
+        if (allChannels.isEmpty()) {
+            chipGroup.visibility = View.INVISIBLE
+            return
+        }
+        chipGroup.visibility = View.VISIBLE
         val labels = listOf("Tutti (${allChannels.size})") + categories.map { "$it (${counts[it]})" }
         // stesse categorie e stessi numeri: non tocco i pulsanti
         val key = labels + (selectedCategory ?: "")
         if (key == chipsKey && chipGroup.childCount == labels.size) return
         chipsKey = key
-        // creare un pulsante Material e' costoso (soprattutto sui telefoni lenti): quelli gia' presenti
-        // si riusano cambiando solo testo e stato, si aggiungono o tolgono solo la differenza
-        while (chipGroup.childCount > labels.size) chipGroup.removeViewAt(chipGroup.childCount - 1)
-        while (chipGroup.childCount < labels.size) {
-            chipGroup.addView(filterButton(chipGroup, "", false), LinearLayout.LayoutParams(WRAP, WRAP))
+        // Togliere pulsanti da un MaterialButtonGroup gia' popolato (accade solo quando si rientra in una
+        // sezione) puo' far chiudere l'app: se il numero cambia si mette un gruppo nuovo, senza togliere niente.
+        // Se il numero e' uguale si riusano i pulsanti, cambiando solo testo e stato.
+        if (chipGroup.childCount != labels.size) {
+            val fresh = layoutInflater.inflate(R.layout.view_filter_chips, null) as HorizontalScrollView
+            val g = fresh.findViewById<com.google.android.material.button.MaterialButtonGroup>(R.id.buttonGroup)
+            fresh.removeView(g)
+            chipScroll.removeAllViews()
+            chipScroll.addView(g)
+            chipGroup = g
+            repeat(labels.size) { g.addView(filterButton(g, "", false), LinearLayout.LayoutParams(WRAP, WRAP)) }
         }
         val buttons = ArrayList<Pair<MaterialButton, String?>>(labels.size)
         for (i in labels.indices) {
