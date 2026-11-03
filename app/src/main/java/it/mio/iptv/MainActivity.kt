@@ -751,8 +751,11 @@ class MainActivity : AppCompatActivity() {
         liveBuildGen++
         filterGen++
         ui.removeCallbacks(filterRun)
+        ui.removeCallbacks(hideRun)
         channelList.stopScroll()
+        currentUrl = ""   // un errore in ritardo non deve far ripartire il canale mentre sei nella home
         player.stop()
+        player.clearMediaItems()   // libera subito decoder e connessione del canale lasciato
         if (fullscreen) setFullscreen(false)
         currentChannel = null
         refreshHome()
@@ -762,9 +765,12 @@ class MainActivity : AppCompatActivity() {
     // ---------- Player in stile YouTube ----------
 
     // Un nuovo ExoPlayer con le impostazioni di rete dell'app
+    // Factory HTTP unica: intestazioni e User-Agent si cambiano per ogni canale (vedi start)
+    private val httpFactory = DefaultHttpDataSource.Factory()
+
     private fun newExo(): ExoPlayer {
         // User-Agent da lettore IPTV: molti server rifiutano quello di default.
-        val http = DefaultHttpDataSource.Factory()
+        val http = httpFactory
             .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15000)
@@ -772,7 +778,6 @@ class MainActivity : AppCompatActivity() {
         // decoder: se quello hardware è occupato prova gli altri; coda asincrona = video più fluido anche su telefoni meno recenti
         val rf = DefaultRenderersFactory(this)
             .setEnableDecoderFallback(true)
-            .forceEnableMediaCodecAsynchronousQueueing()
         val b = ExoPlayer.Builder(this, rf)
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
         return b.build()
@@ -948,7 +953,24 @@ class MainActivity : AppCompatActivity() {
         ui.postDelayed({ seekFlash.visibility = View.GONE }, 600)
     }
 
-    private fun start(url: String, asHls: Boolean) {
+    // Alcune playlist scrivono le intestazioni dopo l'indirizzo: "http://...|User-Agent=xxx&Referer=yyy".
+    // Vanno tolte dall'URL e mandate come intestazioni HTTP, altrimenti il server risponde con errore.
+    private fun start(fullUrl: String, asHls: Boolean) {
+        val bar = fullUrl.indexOf('|')
+        val url = if (bar > 0) fullUrl.substring(0, bar) else fullUrl
+        val headers = LinkedHashMap<String, String>()
+        var ua = "VLC/3.0.20 LibVLC/3.0.20"
+        if (bar > 0) fullUrl.substring(bar + 1).split('&').forEach { kv ->
+            val eq = kv.indexOf('=')
+            if (eq > 0) {
+                val k = kv.substring(0, eq).trim()
+                val raw = kv.substring(eq + 1)
+                val v = try { java.net.URLDecoder.decode(raw, "UTF-8") } catch (_: Exception) { raw }
+                if (k.equals("user-agent", ignoreCase = true)) ua = v else headers[k] = v
+            }
+        }
+        httpFactory.setUserAgent(ua)
+        httpFactory.setDefaultRequestProperties(headers)
         val item = MediaItem.Builder().setUri(url).apply {
             if (asHls) setMimeType(MimeTypes.APPLICATION_M3U8)
         }.build()
@@ -969,7 +991,8 @@ class MainActivity : AppCompatActivity() {
         }
         // mostra l'errore vero, non quello (fuorviante) del secondo tentativo
         val shown = Playback.pickError(firstPlayError, e)
-        setError("Impossibile riprodurre questo canale (${shown.errorCodeName}).")
+        val http = (shown.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode
+        setError("Impossibile riprodurre questo canale (${shown.errorCodeName}${if (http != null) ", HTTP $http" else ""}).")
     }
 
     private fun setFullscreen(on: Boolean) {

@@ -27,6 +27,8 @@ object M3U {
         var name = ""
         var group = ""
         var logo = ""
+        var ua = ""    // #EXTVLCOPT:http-user-agent=...
+        var ref = ""   // #EXTVLCOPT:http-referrer=...
         for (raw in text.lines()) {
             val l = raw.trim()
             if (l.isEmpty()) continue
@@ -34,8 +36,24 @@ object M3U {
                 name = if (l.contains(',')) l.substringAfterLast(',').trim() else ""
                 group = groupRe.find(l)?.groupValues?.get(1)?.trim() ?: ""
                 logo = logoRe.find(l)?.groupValues?.get(1)?.trim() ?: ""
+            } else if (l.startsWith("#EXTVLCOPT:", ignoreCase = true)) {
+                val opt = l.substringAfter(':')
+                val v = opt.substringAfter('=', "").trim()
+                when (opt.substringBefore('=').trim().lowercase()) {
+                    "http-user-agent" -> ua = v
+                    "http-referrer", "http-referer" -> ref = v
+                }
             } else if (!l.startsWith("#")) {
-                out.add(Categorizer.build(name.ifEmpty { l }, group, logo, l))
+                var u = l
+                if ((ua.isNotEmpty() || ref.isNotEmpty()) && !u.contains('|')) {
+                    val parts = mutableListOf<String>()
+                    if (ua.isNotEmpty()) parts += "User-Agent=" + java.net.URLEncoder.encode(ua, "UTF-8")
+                    if (ref.isNotEmpty()) parts += "Referer=" + java.net.URLEncoder.encode(ref, "UTF-8")
+                    u = u + "|" + parts.joinToString("&")
+                }
+                out.add(Categorizer.build(name.ifEmpty { u }, group, logo, u))
+                ua = ""
+                ref = ""
                 name = ""
                 group = ""
                 logo = ""
