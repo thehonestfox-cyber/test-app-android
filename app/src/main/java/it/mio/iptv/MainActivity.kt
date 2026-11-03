@@ -2495,20 +2495,52 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         }
     }
 
+    // Formati disponibili per le playlist Xtream (get.php?...&type=...&output=...)
+    private val playlistFormats = listOf(
+        Triple("M3U · MPEGTS", "m3u", "mpegts"),
+        Triple("M3U Plus · MPEGTS", "m3u_plus", "mpegts"),
+        Triple("M3U · HLS", "m3u", "hls"),
+        Triple("M3U Plus · HLS", "m3u_plus", "hls")
+    )
+
+    // Riscrive type= e output= di un indirizzo get.php, lasciando intatto il resto
+    private fun withFormat(url: String, type: String, output: String): String {
+        fun setParam(u: String, key: String, v: String): String {
+            val re = Regex("([?&])$key=[^&]*", RegexOption.IGNORE_CASE)
+            return if (re.containsMatchIn(u)) re.replace(u) { it.groupValues[1] + "$key=$v" }
+            else u + (if (u.contains('?')) "&" else "?") + "$key=$v"
+        }
+        return setParam(setParam(url, "type", type), "output", output)
+    }
+
     private fun addPlaylistDialog() {
         val til = field("URL playlist M3U")
+        val note = tv(
+            "Se l'indirizzo è di tipo get.php (Xtream), spunta uno o più formati: viene aggiunta una playlist per ognuno. " +
+                "Senza spunte l'indirizzo resta com'è.",
+            13f, c(MR.attr.colorOnSurfaceVariant)
+        )
+        val boxes = playlistFormats.map { f ->
+            android.widget.CheckBox(this).apply { text = f.first }
+        }
         showDialog(
             MaterialAlertDialogBuilder(this)
                 .setTitle("Aggiungi playlist")
-                .setView(scroll(padBox(til)))
+                .setView(scroll(padBox(til, note, *boxes.toTypedArray())))
                 .setPositiveButton("Aggiungi") { _, _ ->
                     val u = til.editText!!.text.toString().trim()
-                    if (u.startsWith("http")) {
-                        val l = loadPlaylists()
-                        if (!l.contains(u)) l.add(u)
-                        savePlaylists(l)
-                        refreshAdmin()
-                    } else toast("Inserisci un URL che inizia con http")
+                    if (!u.startsWith("http")) {
+                        toast("Inserisci un URL che inizia con http")
+                        return@setPositiveButton
+                    }
+                    val picked = playlistFormats.filterIndexed { i, _ -> boxes[i].isChecked }
+                    val toAdd = if (picked.isNotEmpty() && u.contains("get.php", ignoreCase = true))
+                        picked.map { withFormat(u, it.second, it.third) }
+                    else listOf(u)
+                    val l = loadPlaylists()
+                    toAdd.forEach { if (!l.contains(it)) l.add(it) }
+                    savePlaylists(l)
+                    refreshAdmin()
                 }
                 .setNegativeButton("Annulla", null)
         )
