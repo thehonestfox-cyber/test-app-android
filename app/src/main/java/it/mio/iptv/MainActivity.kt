@@ -1693,7 +1693,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             }
             listStatus.text = when {
                 !final -> "${all.size} canali · aggiornamento…"
-                errors > 0 -> "Errore nel caricamento di $errors playlist · ${all.size} canali"
+                errors > 0 -> "Errore nel caricamento di $errors playlist" + (if (lastPlaylistError.isNotEmpty()) " ($lastPlaylistError)" else "") + " · ${all.size} canali"
                 all.isEmpty() -> "La playlist è vuota."
                 else -> "${all.size} canali"
             }
@@ -2875,7 +2875,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             status.text = when {
                 !final -> "${list.size} canali · aggiornamento…"
                 list.isEmpty() && errors == 0 -> "Nessun canale: aggiungi prima una playlist."
-                errors > 0 -> "Errore nel caricamento di $errors playlist · ${list.size} canali"
+                errors > 0 -> "Errore nel caricamento di $errors playlist" + (if (lastPlaylistError.isNotEmpty()) " ($lastPlaylistError)" else "") + " · ${list.size} canali"
                 else -> "${list.size} canali · tocca per scegliere"
             }
             refilter()
@@ -3208,22 +3208,79 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     }
 
     // Scarica e salva. Da chiamare fuori dal thread UI.
-    private fun downloadPlaylist(url: String): List<Channel>? = try {
+    // Ultimo motivo di errore del download (mostrato nella barra di stato)
+    @Volatile private var lastPlaylistError = ""
+
+    // Scarica un indirizzo una volta sola: restituisce i canali oppure null (e imposta lastPlaylistError)
+    private fun fetchPlaylistOnce(url: String, ua: String): Pair<List<Channel>, String>? = try {
         val conn = URL(url).openConnection() as HttpURLConnection
-        conn.connectTimeout = 15000
-        conn.readTimeout = 15000
-        conn.setRequestProperty("User-Agent", "VLC/3.0.20 LibVLC/3.0.20")
-        val text = conn.inputStream.bufferedReader().use { it.readText() }
-        val list = M3U.parse(text)
-        cache[url] = list
-        fetchedAt[url] = System.currentTimeMillis()
-        try {
-            cacheFile(url).writeText(text)
-        } catch (_: Exception) {
+        conn.connectTimeout = 20000
+        conn.readTimeout = 60000   // le playlist m3u_plus sono grandi: il server può essere lento
+        conn.instanceFollowRedirects = true
+        conn.setRequestProperty("User-Agent", ua)
+        conn.setRequestProperty("Accept", "*/*")
+        val code = conn.responseCode
+        if (code !in 200..299) {
+            lastPlaylistError = when (code) {
+                401, 403 -> "accesso negato ($code): controlla utente/password o se l'abbonamento è attivo"
+                404 -> "indirizzo non trovato (404)"
+                884, 429, 509 -> "server occupato o connessione già in uso ($code)"
+                else -> "risposta del server: $code"
+            }
+            null
+        } else {
+            val text = conn.inputStream.bufferedReader().use { it.readText() }
+            val list = M3U.parse(text)
+            if (list.isEmpty()) {
+                lastPlaylistError = "il server ha risposto ma senza canali (credenziali errate, scadute o linea già in uso)"
+                null
+            } else list to text
         }
-        list
-    } catch (e: Exception) {
+    } catch (e: java.net.UnknownHostException) {
+        lastPlaylistError = "server non raggiungibile (indirizzo sconosciuto)"
         null
+    } catch (e: java.net.SocketTimeoutException) {
+        lastPlaylistError = "il server non risponde (timeout)"
+        null
+    } catch (e: Exception) {
+        lastPlaylistError = e.javaClass.simpleName + (e.message?.let { ": $it" } ?: "")
+        null
+    }
+
+    // Per i link Xtream (get.php) prova da solo i formati: prima quello scritto, poi le alternative.
+    // Per qualsiasi altro link (M3U diretto, .m3u8, ecc.) usa solo l'indirizzo così com'è.
+    private fun playlistCandidates(url: String): List<String> {
+        if (!url.contains("get.php", ignoreCase = true)) return listOf(url)
+        val out = linkedSetOf(url)
+        for ((t, o) in listOf(
+            "m3u_plus" to "mpegts", "m3u_plus" to "ts", "m3u_plus" to "hls",
+            "m3u" to "mpegts", "m3u" to "ts", "m3u" to "hls"
+        )) out.add(withFormat(url, t, o))
+        return out.toList()
+    }
+
+    private fun downloadPlaylist(url: String): List<Channel>? {
+        val uas = listOf("VLC/3.0.20 LibVLC/3.0.20", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36")
+        var denied = false
+        for ((i, cand) in playlistCandidates(url).withIndex()) {
+            // se il primo tentativo è "accesso negato" riprova con l'altro User-Agent, altrimenti uno solo per variante
+            val res = fetchPlaylistOnce(cand, uas[0])
+                ?: if (i == 0 && lastPlaylistError.contains("negato")) fetchPlaylistOnce(cand, uas[1]) else null
+            if (res != null) {
+                lastPlaylistError = ""
+                cache[url] = res.first
+                fetchedAt[url] = System.currentTimeMillis()
+                try {
+                    cacheFile(url).writeText(res.second)
+                } catch (_: Exception) {
+                }
+                return res.first
+            }
+            if (lastPlaylistError.contains("negato")) denied = true
+            // credenziali rifiutate o server irraggiungibile: inutile provare altri formati
+            if (denied || lastPlaylistError.contains("non raggiungibile") || lastPlaylistError.contains("timeout")) break
+        }
+        return null
     }
 
     override fun onStart() {
