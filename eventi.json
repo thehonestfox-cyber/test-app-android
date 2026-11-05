@@ -3,12 +3,6 @@
   "A": [
    {
     "r": 10,
-    "h": "Bologna",
-    "a": "Monza",
-    "s": 1793455200000
-   },
-   {
-    "r": 10,
     "h": "Udinese",
     "a": "Roma",
     "s": 1793466000000
@@ -1745,30 +1739,6 @@
   "B": [
    {
     "r": 10,
-    "h": "Cremonese",
-    "a": "Benevento",
-    "s": 1793455200000
-   },
-   {
-    "r": 10,
-    "h": "Modena",
-    "a": "Mantova",
-    "s": 1793455200000
-   },
-   {
-    "r": 10,
-    "h": "Südtirol",
-    "a": "Cesena",
-    "s": 1793455200000
-   },
-   {
-    "r": 10,
-    "h": "Catanzaro",
-    "a": "Padova",
-    "s": 1793463300000
-   },
-   {
-    "r": 10,
     "h": "Sampdoria",
     "a": "Virtus Entella",
     "s": 1793471400000
@@ -1925,72 +1895,6 @@
    }
   ],
   "C": [
-   {
-    "r": 12,
-    "h": "Audace Cerignola",
-    "a": "Catania",
-    "s": 1793453400000
-   },
-   {
-    "r": 12,
-    "h": "Bari",
-    "a": "Scafatese",
-    "s": 1793453400000
-   },
-   {
-    "r": 12,
-    "h": "Giugliano",
-    "a": "Casertana",
-    "s": 1793453400000
-   },
-   {
-    "r": 12,
-    "h": "Ospitaletto F.",
-    "a": "Trento",
-    "s": 1793453400000
-   },
-   {
-    "r": 12,
-    "h": "Pescara",
-    "a": "Torres",
-    "s": 1793453400000
-   },
-   {
-    "r": 12,
-    "h": "Sorrento",
-    "a": "Altamura",
-    "s": 1793453400000
-   },
-   {
-    "r": 12,
-    "h": "Barletta",
-    "a": "Monopoli",
-    "s": 1793464200000
-   },
-   {
-    "r": 12,
-    "h": "Cavese",
-    "a": "Picerno",
-    "s": 1793464200000
-   },
-   {
-    "r": 12,
-    "h": "Giana Erminio",
-    "a": "Alcione Milano",
-    "s": 1793464200000
-   },
-   {
-    "r": 12,
-    "h": "Guidonia M.",
-    "a": "Perugia",
-    "s": 1793464200000
-   },
-   {
-    "r": 12,
-    "h": "Vado",
-    "a": "Grosseto",
-    "s": 1793464200000
-   },
    {
     "r": 12,
     "h": "Cosenza",
