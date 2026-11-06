@@ -3,24 +3,6 @@
   "A": [
    {
     "r": 10,
-    "h": "Como",
-    "a": "Venezia",
-    "s": 1793532600000
-   },
-   {
-    "r": 10,
-    "h": "Frosinone",
-    "a": "Torino",
-    "s": 1793541600000
-   },
-   {
-    "r": 10,
-    "h": "Lazio",
-    "a": "Cagliari",
-    "s": 1793541600000
-   },
-   {
-    "r": 10,
     "h": "Lecce",
     "a": "Genoa",
     "s": 1793552400000
@@ -1727,30 +1709,6 @@
   "B": [
    {
     "r": 10,
-    "h": "Arezzo",
-    "a": "Ascoli",
-    "s": 1793541600000
-   },
-   {
-    "r": 10,
-    "h": "Avellino",
-    "a": "Pisa",
-    "s": 1793541600000
-   },
-   {
-    "r": 10,
-    "h": "Empoli",
-    "a": "Juve Stabia",
-    "s": 1793541600000
-   },
-   {
-    "r": 10,
-    "h": "Hellas Verona",
-    "a": "Carrarese",
-    "s": 1793549700000
-   },
-   {
-    "r": 10,
     "h": "Palermo",
     "a": "L.R. Vicenza",
     "s": 1793557800000
@@ -1877,96 +1835,6 @@
    }
   ],
   "C": [
-   {
-    "r": 12,
-    "h": "Cosenza",
-    "a": "Inter Under 23",
-    "s": 1793532600000
-   },
-   {
-    "r": 12,
-    "h": "Folgore Caratese",
-    "a": "Union Brescia",
-    "s": 1793532600000
-   },
-   {
-    "r": 12,
-    "h": "Cittadella",
-    "a": "Treviso",
-    "s": 1793539800000
-   },
-   {
-    "r": 12,
-    "h": "Dolomiti Bellunesi",
-    "a": "Lecco",
-    "s": 1793539800000
-   },
-   {
-    "r": 12,
-    "h": "Gubbio",
-    "a": "Vis Pesaro",
-    "s": 1793539800000
-   },
-   {
-    "r": 12,
-    "h": "Gubbio Gub 0 - 0",
-    "a": "Pesaro",
-    "s": 1793539800000
-   },
-   {
-    "r": 12,
-    "h": "Ravenna",
-    "a": "Pineto",
-    "s": 1793539800000
-   },
-   {
-    "r": 12,
-    "h": "Salernitana",
-    "a": "Savoia",
-    "s": 1793539800000
-   },
-   {
-    "r": 12,
-    "h": "Spezia",
-    "a": "Atalanta Under 23",
-    "s": 1793541600000
-   },
-   {
-    "r": 12,
-    "h": "Campobasso",
-    "a": "Forlì",
-    "s": 1793550600000
-   },
-   {
-    "r": 12,
-    "h": "Carpi",
-    "a": "Renate",
-    "s": 1793550600000
-   },
-   {
-    "r": 12,
-    "h": "Latina",
-    "a": "Pianese",
-    "s": 1793550600000
-   },
-   {
-    "r": 12,
-    "h": "Livorno",
-    "a": "Ostiamare",
-    "s": 1793550600000
-   },
-   {
-    "r": 12,
-    "h": "Lumezzane",
-    "a": "Arzignano V.",
-    "s": 1793550600000
-   },
-   {
-    "r": 12,
-    "h": "Potenza",
-    "a": "Crotone",
-    "s": 1793550600000
-   },
    {
     "r": 12,
     "h": "Casarano",
