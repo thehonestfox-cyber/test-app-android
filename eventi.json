@@ -2,12 +2,6 @@
  "fixtures": {
   "A": [
    {
-    "r": 10,
-    "h": "Atalanta",
-    "a": "Parma",
-    "s": 1793648700000
-   },
-   {
     "r": 11,
     "h": "Venezia",
     "a": "Udinese",
@@ -1812,24 +1806,6 @@
   ],
   "C": [
    {
-    "r": 12,
-    "h": "Casarano",
-    "a": "Foggia",
-    "s": 1793647800000
-   },
-   {
-    "r": 12,
-    "h": "Juventus Next Gen",
-    "a": "Pro Vercelli",
-    "s": 1793647800000
-   },
-   {
-    "r": 12,
-    "h": "Novara",
-    "a": "Desenzano",
-    "s": 1793647800000
-   },
-   {
     "r": 13,
     "h": "Alcione Milano",
     "a": "Lumezzane",
@@ -2421,6 +2397,18 @@
     "r": 16,
     "h": "Lumezzane",
     "a": "Desenzano",
+    "s": 1795883400000
+   },
+   {
+    "r": 16,
+    "h": "Ospitaletto F.",
+    "a": "Union Brescia",
+    "s": 1795883400000
+   },
+   {
+    "r": 16,
+    "h": "Pergolettese",
+    "a": "Giana Erminio",
     "s": 1795883400000
    },
    {
