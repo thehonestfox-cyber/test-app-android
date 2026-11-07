@@ -3,12 +3,6 @@
   "A": [
    {
     "r": 10,
-    "h": "Sassuolo",
-    "a": "Fiorentina",
-    "s": 1793640600000
-   },
-   {
-    "r": 10,
     "h": "Atalanta",
     "a": "Parma",
     "s": 1793648700000
@@ -2377,8 +2371,38 @@
    },
    {
     "r": 16,
+    "h": "Cavese",
+    "a": "Scafatese",
+    "s": 1795807800000
+   },
+   {
+    "r": 16,
+    "h": "Foggia",
+    "a": "Casertana",
+    "s": 1795807800000
+   },
+   {
+    "r": 16,
     "h": "Carpi",
     "a": "Lecco",
+    "s": 1795872600000
+   },
+   {
+    "r": 16,
+    "h": "Giugliano",
+    "a": "Altamura",
+    "s": 1795872600000
+   },
+   {
+    "r": 16,
+    "h": "Gubbio",
+    "a": "Vado",
+    "s": 1795872600000
+   },
+   {
+    "r": 16,
+    "h": "Guidonia M.",
+    "a": "Campobasso",
     "s": 1795872600000
    },
    {
@@ -2386,6 +2410,30 @@
     "h": "Novara",
     "a": "Alcione Milano",
     "s": 1795872600000
+   },
+   {
+    "r": 16,
+    "h": "Pescara",
+    "a": "Pianese",
+    "s": 1795872600000
+   },
+   {
+    "r": 16,
+    "h": "Lumezzane",
+    "a": "Desenzano",
+    "s": 1795883400000
+   },
+   {
+    "r": 16,
+    "h": "Salernitana",
+    "a": "Monopoli",
+    "s": 1795883400000
+   },
+   {
+    "r": 16,
+    "h": "Spezia",
+    "a": "Pineto",
+    "s": 1795951800000
    }
   ]
  },
@@ -2896,6 +2944,7 @@
  ],
  "sky_at": 1794006000000,
  "hl": {
-  "venezia|udinese|11": "CMdE_LzAHWA"
+  "venezia|udinese|11": "CMdE_LzAHWA",
+  "torino|lecce|11": "lAkKfo1zh_4"
  }
 }
