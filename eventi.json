@@ -1981,6 +1981,12 @@
    },
    {
     "r": 13,
+    "h": "Pineto Pin 0 - 0",
+    "a": "Pesaro",
+    "s": 1794252600000
+   },
+   {
+    "r": 13,
     "h": "Picerno",
     "a": "Bari",
     "s": 1794253500000
@@ -2032,18 +2038,6 @@
     "h": "Vis Pesaro",
     "a": "Pianese",
     "s": 1794663000000
-   },
-   {
-    "r": 14,
-    "h": "Atalanta Under 23",
-    "a": "Pineto",
-    "s": 1794673800000
-   },
-   {
-    "r": 14,
-    "h": "Audace Cerignola",
-    "a": "Inter Under 23",
-    "s": 1794673800000
    },
    {
     "r": 14,
@@ -2344,6 +2338,18 @@
     "h": "Lecco",
     "a": "Lumezzane",
     "s": 1795463100000
+   },
+   {
+    "r": 14,
+    "h": "Audace Cerignola",
+    "a": "Inter Under 23",
+    "s": 1795613400000
+   },
+   {
+    "r": 14,
+    "h": "Atalanta Under 23",
+    "a": "Pineto",
+    "s": 1795626000000
    },
    {
     "r": 16,
