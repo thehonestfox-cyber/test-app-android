@@ -2473,6 +2473,12 @@
    },
    {
     "r": 16,
+    "h": "Potenza",
+    "a": "Audace Cerignola",
+    "s": 1795959000000
+   },
+   {
+    "r": 16,
     "h": "Ravenna",
     "a": "Torres",
     "s": 1795959000000
@@ -2487,6 +2493,18 @@
     "r": 16,
     "h": "Atalanta Under 23",
     "a": "Forlì",
+    "s": 1795969800000
+   },
+   {
+    "r": 16,
+    "h": "Bari",
+    "a": "Savoia",
+    "s": 1795969800000
+   },
+   {
+    "r": 16,
+    "h": "Crotone",
+    "a": "Picerno",
     "s": 1795969800000
    },
    {
@@ -2506,6 +2524,12 @@
     "h": "Latina",
     "a": "Grosseto",
     "s": 1796067000000
+   },
+   {
+    "r": 16,
+    "h": "Reggiana",
+    "a": "Ostiamare",
+    "s": 1796067900000
    }
   ]
  },
@@ -3014,7 +3038,7 @@
    ]
   }
  ],
- "sky_at": 1794178800000,
+ "sky_at": 1794265200000,
  "hl": {
   "venezia|udinese|11": "CMdE_LzAHWA",
   "torino|lecce|11": "lAkKfo1zh_4",
