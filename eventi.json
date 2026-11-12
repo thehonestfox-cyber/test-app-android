@@ -3,30 +3,6 @@
   "A": [
    {
     "r": 11,
-    "h": "Cagliari",
-    "a": "Frosinone",
-    "s": 1794060000000
-   },
-   {
-    "r": 11,
-    "h": "Torino",
-    "a": "Lecce",
-    "s": 1794060000000
-   },
-   {
-    "r": 11,
-    "h": "Parma",
-    "a": "Bologna",
-    "s": 1794070800000
-   },
-   {
-    "r": 11,
-    "h": "Roma",
-    "a": "Sassuolo",
-    "s": 1794080700000
-   },
-   {
-    "r": 11,
     "h": "Napoli",
     "a": "Lazio",
     "s": 1794137400000
@@ -1679,42 +1655,6 @@
   "B": [
    {
     "r": 11,
-    "h": "Cesena",
-    "a": "Catanzaro",
-    "s": 1794060000000
-   },
-   {
-    "r": 11,
-    "h": "Juve Stabia",
-    "a": "Arezzo",
-    "s": 1794060000000
-   },
-   {
-    "r": 11,
-    "h": "Padova",
-    "a": "Empoli",
-    "s": 1794060000000
-   },
-   {
-    "r": 11,
-    "h": "Pisa",
-    "a": "Südtirol",
-    "s": 1794060000000
-   },
-   {
-    "r": 11,
-    "h": "Mantova",
-    "a": "Hellas Verona",
-    "s": 1794068100000
-   },
-   {
-    "r": 11,
-    "h": "Benevento",
-    "a": "Avellino",
-    "s": 1794076200000
-   },
-   {
-    "r": 11,
     "h": "Virtus Entella",
     "a": "Modena",
     "s": 1794146400000
@@ -1853,72 +1793,6 @@
    }
   ],
   "C": [
-   {
-    "r": 13,
-    "h": "Atalanta Under 23",
-    "a": "Reggiana",
-    "s": 1794058200000
-   },
-   {
-    "r": 13,
-    "h": "Casertana",
-    "a": "Casarano",
-    "s": 1794058200000
-   },
-   {
-    "r": 13,
-    "h": "Crotone",
-    "a": "Giugliano",
-    "s": 1794058200000
-   },
-   {
-    "r": 13,
-    "h": "Inter Under 23",
-    "a": "Salernitana",
-    "s": 1794058200000
-   },
-   {
-    "r": 13,
-    "h": "Ostiamare",
-    "a": "Spezia",
-    "s": 1794058200000
-   },
-   {
-    "r": 13,
-    "h": "Pro Vercelli",
-    "a": "Dolomiti Bellunesi",
-    "s": 1794058200000
-   },
-   {
-    "r": 13,
-    "h": "Forlì",
-    "a": "Gubbio",
-    "s": 1794069000000
-   },
-   {
-    "r": 13,
-    "h": "Pergolettese",
-    "a": "Renate",
-    "s": 1794069000000
-   },
-   {
-    "r": 13,
-    "h": "Scafatese",
-    "a": "Audace Cerignola",
-    "s": 1794069000000
-   },
-   {
-    "r": 13,
-    "h": "Trento",
-    "a": "Albinoleffe",
-    "s": 1794069000000
-   },
-   {
-    "r": 13,
-    "h": "Vado",
-    "a": "Ravenna",
-    "s": 1794069000000
-   },
    {
     "r": 13,
     "h": "Grosseto",
@@ -3076,7 +2950,6 @@
  ],
  "sky_at": 1794438000000,
  "hl": {
-  "torino|lecce|11": "lAkKfo1zh_4",
   "napoli|lazio|11": "9LYiUai3a-s",
   "monza|atalanta|11": "Lzno224n7rA",
   "inter|como|11": "skIvKWko_C4"
