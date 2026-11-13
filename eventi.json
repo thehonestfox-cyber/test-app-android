@@ -3,24 +3,6 @@
   "A": [
    {
     "r": 11,
-    "h": "Napoli",
-    "a": "Lazio",
-    "s": 1794137400000
-   },
-   {
-    "r": 11,
-    "h": "Genoa",
-    "a": "Milan",
-    "s": 1794146400000
-   },
-   {
-    "r": 11,
-    "h": "Monza",
-    "a": "Atalanta",
-    "s": 1794146400000
-   },
-   {
-    "r": 11,
     "h": "Inter",
     "a": "Como",
     "s": 1794157200000
@@ -1655,12 +1637,6 @@
   "B": [
    {
     "r": 11,
-    "h": "Virtus Entella",
-    "a": "Modena",
-    "s": 1794146400000
-   },
-   {
-    "r": 11,
     "h": "Carrarese",
     "a": "Sampdoria",
     "s": 1794154500000
@@ -1793,54 +1769,6 @@
    }
   ],
   "C": [
-   {
-    "r": 13,
-    "h": "Grosseto",
-    "a": "Pescara",
-    "s": 1794137400000
-   },
-   {
-    "r": 13,
-    "h": "Torres",
-    "a": "Latina",
-    "s": 1794137400000
-   },
-   {
-    "r": 13,
-    "h": "Campobasso",
-    "a": "Livorno",
-    "s": 1794144600000
-   },
-   {
-    "r": 13,
-    "h": "Catania",
-    "a": "Sorrento",
-    "s": 1794144600000
-   },
-   {
-    "r": 13,
-    "h": "Giana Erminio",
-    "a": "Cittadella",
-    "s": 1794144600000
-   },
-   {
-    "r": 13,
-    "h": "Lecco",
-    "a": "Juventus Next Gen",
-    "s": 1794144600000
-   },
-   {
-    "r": 13,
-    "h": "Monopoli",
-    "a": "Cosenza",
-    "s": 1794144600000
-   },
-   {
-    "r": 13,
-    "h": "Savoia",
-    "a": "Potenza",
-    "s": 1794144600000
-   },
    {
     "r": 13,
     "h": "Desenzano",
@@ -2950,8 +2878,6 @@
  ],
  "sky_at": 1794524400000,
  "hl": {
-  "napoli|lazio|11": "9LYiUai3a-s",
-  "monza|atalanta|11": "Lzno224n7rA",
   "inter|como|11": "skIvKWko_C4"
  }
 }
