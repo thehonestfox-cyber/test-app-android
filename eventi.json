@@ -2,18 +2,6 @@
  "fixtures": {
   "A": [
    {
-    "r": 11,
-    "h": "Inter",
-    "a": "Como",
-    "s": 1794157200000
-   },
-   {
-    "r": 11,
-    "h": "Fiorentina",
-    "a": "Juventus",
-    "s": 1794167100000
-   },
-   {
     "r": 12,
     "h": "Como",
     "a": "Cagliari",
@@ -1636,18 +1624,6 @@
   ],
   "B": [
    {
-    "r": 11,
-    "h": "Carrarese",
-    "a": "Sampdoria",
-    "s": 1794154500000
-   },
-   {
-    "r": 11,
-    "h": "L.R. Vicenza",
-    "a": "Cremonese",
-    "s": 1794162600000
-   },
-   {
     "r": 12,
     "h": "Hellas Verona",
     "a": "Cesena",
@@ -1769,36 +1745,6 @@
    }
   ],
   "C": [
-   {
-    "r": 13,
-    "h": "Desenzano",
-    "a": "Ospitaletto F.",
-    "s": 1794155400000
-   },
-   {
-    "r": 13,
-    "h": "Folgore Caratese",
-    "a": "Carpi",
-    "s": 1794155400000
-   },
-   {
-    "r": 13,
-    "h": "Pianese",
-    "a": "Perugia",
-    "s": 1794155400000
-   },
-   {
-    "r": 13,
-    "h": "Sambenedettese",
-    "a": "Guidonia M.",
-    "s": 1794155400000
-   },
-   {
-    "r": 13,
-    "h": "Treviso",
-    "a": "Novara",
-    "s": 1794155400000
-   },
    {
     "r": 13,
     "h": "Altamura",
@@ -2368,6 +2314,18 @@
     "h": "Reggiana",
     "a": "Ostiamare",
     "s": 1796067900000
+   },
+   {
+    "r": 17,
+    "h": "Livorno",
+    "a": "Vis Pesaro",
+    "s": 1796412600000
+   },
+   {
+    "r": 17,
+    "h": "Pro Vercelli",
+    "a": "Lumezzane",
+    "s": 1796412600000
    }
   ]
  },
@@ -2377,6 +2335,184 @@
   "C": "ok"
  },
  "sky": [
+  {
+   "t": "LATINA-CAMPOBASSO",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "OSPITALETTO-DOLOMITI BELLUNESI",
+   "c": [
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "REGGIANA-LIVORNO",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "ALBINOLEFFE-UNION BRESCIA",
+   "c": [
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "CASARANO-AZ PICERNO",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "VIS PESARO-PIANESE",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "ARZIGNANO VALCHIAMPO-ALCIONE MILANO",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "RENATE-DESENZANO CALVINA",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "BARI-FOGGIA",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "LUMEZZANE-TRENTO",
+   "c": [
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "GUBBIO-GROSSETO",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "CARPI-GIANA ERMINIO",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "NOVARA-LECCO",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 257"
+   ]
+  },
+  {
+   "t": "GIUGLIANO-SAVOIA",
+   "c": [
+    "Sky Sport Arena",
+    "Sky Sport 258"
+   ]
+  },
+  {
+   "t": "SALERNITANA-CATANIA",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 251"
+   ]
+  },
+  {
+   "t": "PESCARA-SAMBENEDETTESE",
+   "c": [
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "SPEZIA-VADO",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "POTENZA-SCAFATESE",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "GUIDONIA MONTECELIO-OSTIAMARE",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "CAVESE-CROTONE",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "RAVENNA-FORLÌ",
+   "c": [
+    "Sky Sport Calcio",
+    "Sky Sport 251",
+    "Sky Sport E"
+   ]
+  },
+  {
+   "t": "JUVENTUS NEXT GEN-TREVISO",
+   "c": [
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "CITTADELLA-FOLGORE CARATESE",
+   "c": [
+    "Sky Sport 253"
+   ]
+  },
+  {
+   "t": "BARLETTA-TEAM ALTAMURA",
+   "c": [
+    "Sky Sport 254"
+   ]
+  },
+  {
+   "t": "COSENZA-CASERTANA",
+   "c": [
+    "Sky Sport 255"
+   ]
+  },
+  {
+   "t": "PERGOLETTESE-PRO VERCELLI",
+   "c": [
+    "Sky Sport 256"
+   ]
+  },
+  {
+   "t": "SORRENTO-MONOPOLI",
+   "c": [
+    "Sky Sport Mix",
+    "Sky Sport 252"
+   ]
+  },
+  {
+   "t": "PERUGIA-TORRES",
+   "c": [
+    "Sky Sport Max",
+    "Sky Sport 251"
+   ]
+  },
   {
    "t": "UNION BRESCIA-ARZIGNANO",
    "c": [
@@ -2752,132 +2888,8 @@
     "Sky Sport Mix",
     "Sky Sport 254"
    ]
-  },
-  {
-   "t": "CASERTANA-BARI",
-   "c": [
-    "Sky Sport Uno",
-    "Sky Sport 252"
-   ]
-  },
-  {
-   "t": "PERUGIA-PESCARA",
-   "c": [
-    "Sky Sport 253"
-   ]
-  },
-  {
-   "t": "ALTAMURA-POTENZA",
-   "c": [
-    "Sky Sport 254"
-   ]
-  },
-  {
-   "t": "OSTIAMARE-VADO",
-   "c": [
-    "Sky Sport 255"
-   ]
-  },
-  {
-   "t": "PINETO-GUBBIO",
-   "c": [
-    "Sky Sport 256"
-   ]
-  },
-  {
-   "t": "INTER U23-SORRENTO",
-   "c": [
-    "Sky Sport Calcio",
-    "Sky Sport 253"
-   ]
-  },
-  {
-   "t": "SPEZIA-LATINA",
-   "c": [
-    "Sky Sport 251"
-   ]
-  },
-  {
-   "t": "SAMBENEDETTESE-LIVORNO",
-   "c": [
-    "Sky Sport 252"
-   ]
-  },
-  {
-   "t": "ATALANTA U23-CAMPOBASSO",
-   "c": [
-    "Sky Sport 254"
-   ]
-  },
-  {
-   "t": "SCAFATESE-BARLETTA",
-   "c": [
-    "Sky Sport 255"
-   ]
-  },
-  {
-   "t": "TREVISO-DOLOMITI BELLUNESI",
-   "c": [
-    "Sky Sport 256"
-   ]
-  },
-  {
-   "t": "UNION BRESCIA-CITTADELLA",
-   "c": [
-    "Sky Sport Calcio",
-    "Sky Sport 251"
-   ]
-  },
-  {
-   "t": "VIS PESARO-RAVENNA",
-   "c": [
-    "Sky Sport Max",
-    "Sky Sport 252"
-   ]
-  },
-  {
-   "t": "SAVOIA-COSENZA",
-   "c": [
-    "Sky Sport Mix",
-    "Sky Sport 253"
-   ]
-  },
-  {
-   "t": "ALCIONE MILANO-CARPI",
-   "c": [
-    "Sky Sport 254"
-   ]
-  },
-  {
-   "t": "TRENTO-JUVENTUS NEXT GEN",
-   "c": [
-    "Sky Sport Calcio",
-    "Sky Sport 252"
-   ]
-  },
-  {
-   "t": "RENATE-ALBINOLEFFE",
-   "c": [
-    "Sky Sport Max",
-    "Sky Sport 258"
-   ]
-  },
-  {
-   "t": "MONOPOLI-AUDACE CERIGNOLA",
-   "c": [
-    "Sky Sport Mix",
-    "Sky Sport 257"
-   ]
-  },
-  {
-   "t": "GROSSETO-REGGIANA",
-   "c": [
-    "Sky Sport 251"
-   ]
   }
  ],
  "sky_at": 1794524400000,
- "hl": {
-  "inter|como|11": "skIvKWko_C4"
- }
+ "hl": {}
 }
