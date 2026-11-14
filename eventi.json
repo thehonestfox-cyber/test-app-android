@@ -1746,12 +1746,6 @@
   ],
   "C": [
    {
-    "r": 13,
-    "h": "Picerno",
-    "a": "Bari",
-    "s": 1794253500000
-   },
-   {
     "r": 14,
     "h": "Latina",
     "a": "Campobasso",
@@ -2293,6 +2287,12 @@
    },
    {
     "r": 17,
+    "h": "Audace Cerignola",
+    "a": "Sorrento",
+    "s": 1796412600000
+   },
+   {
+    "r": 17,
     "h": "Livorno",
     "a": "Vis Pesaro",
     "s": 1796412600000
@@ -2302,13 +2302,67 @@
     "h": "Pro Vercelli",
     "a": "Lumezzane",
     "s": 1796412600000
+   },
+   {
+    "r": 17,
+    "h": "Campobasso",
+    "a": "Pescara",
+    "s": 1796477400000
+   },
+   {
+    "r": 17,
+    "h": "Desenzano",
+    "a": "Carpi",
+    "s": 1796477400000
+   },
+   {
+    "r": 17,
+    "h": "Dolomiti Bellunesi",
+    "a": "Cittadella",
+    "s": 1796477400000
+   },
+   {
+    "r": 17,
+    "h": "Inter Under 23",
+    "a": "Bari",
+    "s": 1796477400000
+   },
+   {
+    "r": 17,
+    "h": "Sambenedettese",
+    "a": "Ravenna",
+    "s": 1796477400000
+   },
+   {
+    "r": 17,
+    "h": "Torres",
+    "a": "Gubbio",
+    "s": 1796477400000
+   },
+   {
+    "r": 17,
+    "h": "Treviso",
+    "a": "Arzignano V.",
+    "s": 1796556600000
+   },
+   {
+    "r": 17,
+    "h": "Folgore Caratese",
+    "a": "Albinoleffe",
+    "s": 1796563800000
+   },
+   {
+    "r": 17,
+    "h": "Giana Erminio",
+    "a": "Novara",
+    "s": 1796563800000
    }
   ]
  },
  "stato": {
   "A": "ok",
   "B": "ok",
-  "C": "errore di rete"
+  "C": "ok"
  },
  "sky": [
   {
@@ -2866,6 +2920,6 @@
    ]
   }
  ],
- "sky_at": 1794610800000,
+ "sky_at": 1794697200000,
  "hl": {}
 }
