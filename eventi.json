@@ -2401,6 +2401,12 @@
    },
    {
     "r": 17,
+    "h": "Cosenza",
+    "a": "Salernitana",
+    "s": 1796563800000
+   },
+   {
+    "r": 17,
     "h": "Folgore Caratese",
     "a": "Albinoleffe",
     "s": 1796563800000
@@ -2413,9 +2419,39 @@
    },
    {
     "r": 17,
+    "h": "Picerno",
+    "a": "Foggia",
+    "s": 1796563800000
+   },
+   {
+    "r": 17,
     "h": "Trento",
     "a": "Renate",
     "s": 1796563800000
+   },
+   {
+    "r": 17,
+    "h": "Union Brescia",
+    "a": "Juventus Next Gen",
+    "s": 1796563800000
+   },
+   {
+    "r": 17,
+    "h": "Alcione Milano",
+    "a": "Pergolettese",
+    "s": 1796574600000
+   },
+   {
+    "r": 17,
+    "h": "Grosseto",
+    "a": "Atalanta Under 23",
+    "s": 1796574600000
+   },
+   {
+    "r": 17,
+    "h": "Lecco",
+    "a": "Ospitaletto F.",
+    "s": 1796574600000
    }
   ]
  },
