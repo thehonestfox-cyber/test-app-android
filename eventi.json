@@ -1885,6 +1885,12 @@
    },
    {
     "r": 14,
+    "h": "Juventus Next",
+    "a": "1 - 0 Tre Treviso",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
     "h": "Juventus Next Gen",
     "a": "Treviso",
     "s": 1794760200000
@@ -1893,6 +1899,12 @@
     "r": 14,
     "h": "Pergolettese",
     "a": "Pro Vercelli",
+    "s": 1794760200000
+   },
+   {
+    "r": 14,
+    "h": "Pergolettese Per 0 - 0",
+    "a": "Vercelli",
     "s": 1794760200000
    },
    {
@@ -2341,6 +2353,48 @@
    },
    {
     "r": 17,
+    "h": "Altamura",
+    "a": "Crotone",
+    "s": 1796488200000
+   },
+   {
+    "r": 17,
+    "h": "Casertana",
+    "a": "Potenza",
+    "s": 1796488200000
+   },
+   {
+    "r": 17,
+    "h": "Forlì",
+    "a": "Spezia",
+    "s": 1796488200000
+   },
+   {
+    "r": 17,
+    "h": "Perugia",
+    "a": "Latina",
+    "s": 1796488200000
+   },
+   {
+    "r": 17,
+    "h": "Savoia",
+    "a": "Barletta",
+    "s": 1796488200000
+   },
+   {
+    "r": 17,
+    "h": "Catania",
+    "a": "Cavese",
+    "s": 1796556600000
+   },
+   {
+    "r": 17,
+    "h": "Pianese",
+    "a": "Reggiana",
+    "s": 1796556600000
+   },
+   {
+    "r": 17,
     "h": "Treviso",
     "a": "Arzignano V.",
     "s": 1796556600000
@@ -2355,6 +2409,12 @@
     "r": 17,
     "h": "Giana Erminio",
     "a": "Novara",
+    "s": 1796563800000
+   },
+   {
+    "r": 17,
+    "h": "Trento",
+    "a": "Renate",
     "s": 1796563800000
    }
   ]
