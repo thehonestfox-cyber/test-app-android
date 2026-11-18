@@ -1747,18 +1747,6 @@
   "C": [
    {
     "r": 14,
-    "h": "Latina",
-    "a": "Campobasso",
-    "s": 1794598200000
-   },
-   {
-    "r": 14,
-    "h": "Ospitaletto F.",
-    "a": "Dolomiti Bellunesi",
-    "s": 1794598200000
-   },
-   {
-    "r": 14,
     "h": "Albinoleffe",
     "a": "Union Brescia",
     "s": 1794663000000
@@ -3028,6 +3016,6 @@
    ]
   }
  ],
- "sky_at": 1794956400000,
+ "sky_at": 1795042800000,
  "hl": {}
 }
