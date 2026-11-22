@@ -554,9 +554,7 @@ class MainActivity : AppCompatActivity() {
         Sections.load(prefs).filter { it.isLive }.forEach { sec ->
             val autos = Featured.load(prefs, sec.id).filter { LiveFixtures.isAuto(it.name) }
             if (autos.isEmpty()) return@forEach
-            val ev = autos.associate { c ->
-                c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
-            }
+            val ev = autos.associate { c -> c.name to LiveFixtures.autoEvents(c.name, fx, playlist) }
             warmEvents[sec.id] = ev
             SportsDb.prefetch(ev.values.flatten())
         }
@@ -1278,7 +1276,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (ch.url.isEmpty()) {
-            toast("Nessun canale trovato per questo evento")
+            // la guida del calendario MandraKodi dice su quali canali va in onda: si sa cosa manca nelle playlist
+            toast(
+                if (ch.tv.isNotEmpty()) "Questo evento va in onda su ${ch.tv}: aggiungi una playlist che abbia quel canale."
+                else "Nessun canale trovato per questo evento"
+            )
             return
         }
         if (userLive) {
@@ -1361,7 +1363,7 @@ class MainActivity : AppCompatActivity() {
         val warm = warmEvents[section]
         if (warm != null) autoEvents = warm
         showLiveCats(liveCats(section), name)
-        if (warm == null) listStatus.text = "$name · caricamento partite…"
+        if (warm == null) listStatus.text = "$name · caricamento eventi…"
         var built = warm != null
         var finalShown = false
         loadPlaylistChannels { playlist, _, final ->
@@ -1370,7 +1372,7 @@ class MainActivity : AppCompatActivity() {
             bg {
                 val fx = fixturesNow(final)
                 val ev = cats.filter { LiveFixtures.isAuto(it.name) }.associate { c ->
-                    c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
+                    c.name to LiveFixtures.autoEvents(c.name, fx, playlist)
                 }
                 if (ev.values.any { it.isNotEmpty() }) warmEvents[section] = ev
                 runOnUiThread {
@@ -1554,6 +1556,15 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         }
     }
 
+    // Riga sotto il nome dell'evento: la qualità del canale trovato, oppure (calendario MandraKodi) i canali della
+    // guida su cui va in onda, così si capisce quale manca nelle playlist
+    private fun liveSub(ch: Channel): String = when {
+        ch.quality.isNotEmpty() -> ch.quality
+        ch.url.isNotEmpty() -> "Diretta"
+        ch.tv.isNotEmpty() -> "Su ${ch.tv}"
+        else -> "Canale non trovato"
+    }
+
     private fun liveCard(ch: Channel): View {
         val badge = liveBadge()
         if (ch.start > 0) paintTag(badge, ch.start)   // orario dal sito della lega; senza orario resta LIVE
@@ -1590,7 +1601,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                 ellipsize = TextUtils.TruncateAt.END
                 setPadding(dp(12), dp(10), dp(12), 0)
             })
-            addView(tv(ch.quality.ifEmpty { if (ch.url.isEmpty()) "Canale non trovato" else "Diretta" }, 12f, c(MR.attr.colorOnSurfaceVariant)).apply {
+            addView(tv(liveSub(ch), 12f, c(MR.attr.colorOnSurfaceVariant)).apply {
                 maxLines = 1
                 setPadding(dp(12), dp(2), dp(12), if (ch.highlight.isEmpty()) dp(12) else dp(8))
             })
@@ -2617,7 +2628,8 @@ events:{onError:function(e){Native.onError(e.data)}}});}
 
     private var adminAutoLoading = false
 
-    // Admin di una sezione live: carica (una volta) gli eventi delle categorie Serie A/B/C per mostrarli nell'elenco
+    // Admin di una sezione live: carica (una volta) gli eventi delle categorie automatiche (Serie A/B/C o sport
+    // del calendario MandraKodi) per mostrarli nell'elenco
     private fun ensureAdminAutoEvents(cats: List<FeaturedCategory>) {
         val autos = cats.filter { LiveFixtures.isAuto(it.name) }
         if (autos.isEmpty() || adminAutoLoading || autos.all { autoEvents.containsKey(it.name) }) return
@@ -2628,9 +2640,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             // subito: playlist e partite gia' salvate (nessuna rete); poi la versione aggiornata
             bg {
                 val fx = if (final) LiveFixtures.refresh() else LiveFixtures.current()
-                val ev = autos.associate { c ->
-                    c.name to LiveFixtures.events(LiveFixtures.leagueOf(c.name)!!, fx, playlist, c.name)
-                }
+                val ev = autos.associate { c -> c.name to LiveFixtures.autoEvents(c.name, fx, playlist) }
                 runOnUiThread {
                     if (!final && (finalShown || ev.values.all { it.isEmpty() })) return@runOnUiThread
                     if (final) {
@@ -2713,24 +2723,26 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             adminList.addView(h)
             if (isCollapsed(cat)) return@forEachIndexed
             if (adminLive && LiveFixtures.isAuto(cat.name)) {
-                // stessi riquadri degli eventi inseriti a mano; si rigenerano da soli, ma modifica e rimozione si ricordano per partita
-                val league = LiveFixtures.leagueOf(cat.name)!!
+                // stessi riquadri degli eventi inseriti a mano; si rigenerano da soli, ma modifica e rimozione si ricordano per evento
                 val evs = autoEvents[cat.name] ?: emptyList()
                 if (evs.isEmpty()) {
                     adminList.addView(
-                        tv("Nessun evento. ${LiveFixtures.diag[league] ?: "Caricamento..."}", 13f, c(MR.attr.colorOnSurfaceVariant))
+                        tv("Nessun evento. ${LiveFixtures.autoDiag(cat.name)}", 13f, c(MR.attr.colorOnSurfaceVariant))
                             .apply { setPadding(dp(16), dp(4), 0, 0) }
                     )
                 }
                 evs.forEach { ch ->
+                    // sotto il nome: il canale trovato nella playlist, oppure dove va in onda se non c'è
+                    val sub = ch.rawName.takeIf { it != ch.name }
+                        ?: if (ch.url.isEmpty() && ch.tv.isNotEmpty()) "Su ${ch.tv}" else null
                     adminList.addView(
                         itemCard(
-                            title = ch.name, sub = ch.rawName.takeIf { it != ch.name }, selected = false,
+                            title = ch.name, sub = sub, selected = false,
                             onClick = { editAutoEventDialog(cat.name, ch) },
                             onEdit = { editAutoEventDialog(cat.name, ch) },
                             onDelete = {
                                 confirmDelete(ch.name) {
-                                    LiveFixtures.removeEvent(league, ch.evKey)
+                                    LiveFixtures.autoRemove(cat.name, ch.evKey)
                                     autoEvents = autoEvents + (cat.name to (autoEvents[cat.name] ?: emptyList()).filter { it.evKey != ch.evKey })
                                     refreshAdmin()
                                 }
@@ -2738,11 +2750,11 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                         )
                     )
                 }
-                val removedN = LiveFixtures.removedCount(league)
+                val removedN = LiveFixtures.autoRemovedCount(cat.name)
                 if (removedN > 0) {
                     adminList.addView(
                         outlinedBtn("Ripristina ${if (removedN == 1) "1 evento rimosso" else "$removedN eventi rimossi"}") {
-                            LiveFixtures.restoreRemoved(league)
+                            LiveFixtures.autoRestore(cat.name)
                             autoEvents = autoEvents - cat.name    // si rigenerano tutti
                             refreshAdmin()
                         },
@@ -3033,10 +3045,10 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         dlg.show()
     }
 
-    // Modifica di un evento automatico (Serie A/B/C): nome e/o canale. Si ricorda per quella partita anche dopo gli aggiornamenti;
-    // "Ripristina" (se già modificato) lo riporta com'è generato da solo
+    // Modifica di un evento automatico (Serie A/B/C o calendario MandraKodi): nome e/o canale. Si ricorda per
+    // quell'evento anche dopo gli aggiornamenti; "Ripristina" (se già modificato) lo riporta com'è generato da solo
     private fun editAutoEventDialog(catName: String, ch: Channel) {
-        val league = LiveFixtures.leagueOf(catName) ?: return
+        if (!LiveFixtures.isAuto(catName)) return
         val land = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
         val til = field("Nome $adminNoun")
@@ -3061,7 +3073,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             addView(pk.status)
             addView(pk.recycler, LinearLayout.LayoutParams(MATCH, listH))
         }
-        val edited = LiveFixtures.hasOverride(league, ch.evKey)
+        val edited = LiveFixtures.autoHasOverride(catName, ch.evKey)
         val builder = MaterialAlertDialogBuilder(this)
             .setTitle("Modifica $adminNoun")
             .setView(scroll(box))
@@ -3073,7 +3085,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             dlg.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                 val p = picked
                 val n = til.editText!!.text.toString().trim().ifEmpty { ch.name }
-                LiveFixtures.editEvent(league, ch.evKey, if (n != ch.name) n else null, p)
+                LiveFixtures.autoEdit(catName, ch.evKey, if (n != ch.name) n else null, p)
                 val upd = ch.copy(
                     name = n,
                     rawName = p?.rawName ?: ch.rawName,
@@ -3088,7 +3100,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             }
             if (edited) {
                 dlg.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
-                    LiveFixtures.resetEvent(league, ch.evKey)
+                    LiveFixtures.autoReset(catName, ch.evKey)
                     autoEvents = autoEvents - catName    // si rigenera com'è generato da solo
                     dlg.dismiss()
                     refreshAdmin()
