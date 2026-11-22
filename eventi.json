@@ -2401,8 +2401,20 @@
    },
    {
     "r": 18,
+    "h": "Cittadella",
+    "a": "Alcione Milano",
+    "s": 1797168600000
+   },
+   {
+    "r": 18,
     "h": "Gubbio",
     "a": "Sambenedettese",
+    "s": 1797168600000
+   },
+   {
+    "r": 18,
+    "h": "Novara",
+    "a": "Union Brescia",
     "s": 1797168600000
    },
    {
@@ -2410,6 +2422,36 @@
     "h": "Potenza",
     "a": "Giugliano",
     "s": 1797168600000
+   },
+   {
+    "r": 18,
+    "h": "Bari",
+    "a": "Monopoli",
+    "s": 1797179400000
+   },
+   {
+    "r": 18,
+    "h": "Ravenna",
+    "a": "Grosseto",
+    "s": 1797179400000
+   },
+   {
+    "r": 18,
+    "h": "Reggiana",
+    "a": "Pescara",
+    "s": 1797179400000
+   },
+   {
+    "r": 18,
+    "h": "Savoia",
+    "a": "Catania",
+    "s": 1797179400000
+   },
+   {
+    "r": 18,
+    "h": "Spezia",
+    "a": "Guidonia M.",
+    "s": 1797179400000
    }
   ]
  },
@@ -2980,310 +3022,15 @@
  "hl": {
   "parma|roma|12": "VYJXPrHvggY",
   "napoli|torino|12": "wu-KW-84vpE",
-  "juventus|venezia|12": "IrKIMUF7V8Q"
+  "juventus|venezia|12": "IrKIMUF7V8Q",
+  "bologna|udinese|12": "6HwYn-nnFeM",
+  "sassuolo|genoa|12": "vVj-DxQ4hIs",
+  "milan|frosinone|12": "0uHFq4wQN4Y"
  },
  "sport": {
-  "aggiornato": "2026-11-22T12:27:25+01:00",
+  "aggiornato": "2026-11-22T20:42:26+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "MotoGP: Portuguese Grand Prix - Warm Up",
-    "c": "Motori",
-    "s": "MotoGP",
-    "i": 1795338000000,
-    "d": 75,
-    "tv": [
-     "Sky Sport MotoGP",
-     "NOW"
-    ]
-   },
-   {
-    "t": "Coppa del Mondo – Gurgl: Slalom M (1a manche): 1a manche",
-    "c": "Altri sport",
-    "s": "Sci alpino",
-    "i": 1795339800000,
-    "d": 150,
-    "tv": [
-     "Eurosport",
-     "Rai 2"
-    ]
-   },
-   {
-    "t": "Primavera 1: Lazio-Milan",
-    "c": "Calcio",
-    "s": "Primavera 1",
-    "i": 1795341600000,
-    "d": 150,
-    "tv": [
-     "Sportitalia"
-    ]
-   },
-   {
-    "t": "Moto2 e Moto3: M3 - Portuguese GP - Race",
-    "c": "Motori",
-    "s": "Moto2 e Moto3",
-    "i": 1795345200000,
-    "d": 150,
-    "tv": [
-     "TV8"
-    ]
-   },
-   {
-    "t": "Serie A: Juventus vs Venezia",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795347000000,
-    "d": 150,
-    "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN1"
-    ]
-   },
-   {
-    "t": "Serie C: Pro Vercelli vs Novara",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795347000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 258",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Serie C: Scafatese vs Foggia",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795347000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 257",
-     "Sky Sport Max",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Serie C: Union Brescia vs Renate",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795347000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 252",
-     "Sky Sport Calcio",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Moto2 e Moto3: M2 - Portuguese GP - Race",
-    "c": "Motori",
-    "s": "Moto2 e Moto3",
-    "i": 1795349700000,
-    "d": 150,
-    "tv": [
-     "TV8"
-    ]
-   },
-   {
-    "t": "Coppa del Mondo – Gurgl: Slalom M (2a manche): 2a manche",
-    "c": "Altri sport",
-    "s": "Sci alpino",
-    "i": 1795350600000,
-    "d": 150,
-    "tv": [
-     "Eurosport",
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "Bundesliga 2: 1. FC Kaiserslautern-Dynamo Dresden",
-    "c": "Calcio",
-    "s": "Bundesliga 2",
-    "i": 1795350600000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix"
-    ]
-   },
-   {
-    "t": "MotoGP: Portuguese Grand Prix - Gara",
-    "c": "Motori",
-    "s": "MotoGP",
-    "i": 1795352400000,
-    "d": 150,
-    "tv": [
-     "TV8",
-     "Sky Sport MotoGP",
-     "NOW"
-    ]
-   },
-   {
-    "t": "Serie C: Alcione vs Ospitaletto",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795354200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 256",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Serie C: Livorno vs Ravenna",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795354200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 253",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Premier League: Hull City-Brighton",
-    "c": "Calcio",
-    "s": "Premier League",
-    "i": 1795356000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Arena"
-    ]
-   },
-   {
-    "t": "Serie A: Bologna vs Udinese",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795356000000,
-    "d": 150,
-    "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN1"
-    ]
-   },
-   {
-    "t": "Serie A: Fiorentina-Como",
-    "c": "Calcio",
-    "s": "Serie A femminile",
-    "i": 1795356000000,
-    "d": 150,
-    "tv": [
-     "Rai 2"
-    ]
-   },
-   {
-    "t": "Serie A: Sassuolo vs Genoa",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795356000000,
-    "d": 150,
-    "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN2"
-    ]
-   },
-   {
-    "t": "Serie B: Avellino vs Mantova",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795356000000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie C: Catania-Bari",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795356000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "ATP Finals Torino: Doubles Finale",
-    "c": "Tennis",
-    "s": "ATP Finals Torino",
-    "i": 1795356000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Tennis"
-    ]
-   },
-   {
-    "t": "Bundesliga: Augsburg-Mainz",
-    "c": "Calcio",
-    "s": "Bundesliga",
-    "i": 1795357800000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Max"
-    ]
-   },
-   {
-    "t": "Serie A: Derthona Tortona-Olimpia Milano",
-    "c": "Basket",
-    "s": "Serie A",
-    "i": 1795359600000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 1",
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "Serie B: Arezzo vs Calcio Padova",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795364100000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Bundesliga: Werder Brema-Amburgo SV",
-    "c": "Calcio",
-    "s": "Bundesliga",
-    "i": 1795365000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix"
-    ]
-   },
-   {
-    "t": "Premier League: Liverpool-Manchester Utd",
-    "c": "Calcio",
-    "s": "Premier League",
-    "i": 1795365000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Arena"
-    ]
-   },
-   {
-    "t": "Serie C: Sambenedettese-Perugia",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795365000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Max"
-    ]
-   },
    {
     "t": "Serie A: Milan vs Frosinone",
     "c": "Calcio",
