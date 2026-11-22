@@ -2371,6 +2371,12 @@
    },
    {
     "r": 18,
+    "h": "Ostiamare",
+    "a": "Campobasso",
+    "s": 1797093000000
+   },
+   {
+    "r": 18,
     "h": "Renate",
     "a": "Pro Vercelli",
     "s": 1797093000000
@@ -2386,6 +2392,24 @@
     "h": "Juventus Next Gen",
     "a": "Folgore Caratese",
     "s": 1797161400000
+   },
+   {
+    "r": 18,
+    "h": "Arzignano V.",
+    "a": "Dolomiti Bellunesi",
+    "s": 1797168600000
+   },
+   {
+    "r": 18,
+    "h": "Gubbio",
+    "a": "Sambenedettese",
+    "s": 1797168600000
+   },
+   {
+    "r": 18,
+    "h": "Potenza",
+    "a": "Giugliano",
+    "s": 1797168600000
    }
   ]
  },
@@ -2955,7 +2979,8 @@
  "sky_at": 1795302000000,
  "hl": {
   "parma|roma|12": "VYJXPrHvggY",
-  "napoli|torino|12": "wu-KW-84vpE"
+  "napoli|torino|12": "wu-KW-84vpE",
+  "juventus|venezia|12": "IrKIMUF7V8Q"
  },
  "sport": {
   "aggiornato": "2026-11-22T12:27:25+01:00",
