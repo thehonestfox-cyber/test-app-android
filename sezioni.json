@@ -21,6 +21,39 @@
      "channels": []
     }
    ]
+  },
+  {
+   "id": "mandrakodi",
+   "name": "MandraKodi",
+   "icon": "fire",
+   "description": "Tutti gli sport col calendario di MandraKodi",
+   "type": "live",
+   "cats": [
+    {
+     "name": "Motori",
+     "channels": []
+    },
+    {
+     "name": "Calcio",
+     "channels": []
+    },
+    {
+     "name": "Tennis",
+     "channels": []
+    },
+    {
+     "name": "Basket",
+     "channels": []
+    },
+    {
+     "name": "Volley",
+     "channels": []
+    },
+    {
+     "name": "Altri sport",
+     "channels": []
+    }
+   ]
   }
  ]
 }

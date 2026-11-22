@@ -24,6 +24,11 @@ import java.net.URL
  *
  * L'admin puo' modificare (nome, canale) o rimuovere ogni evento automatico: le scelte si ricordano per partita
  * (chiave "casa|ospite|giornata") e restano anche quando l'elenco si aggiorna da solo.
+ *
+ * Le categorie automatiche non sono solo i tre campionati: quelle con il nome di uno sport (Motori, Calcio,
+ * Tennis, Basket, Volley, Altri sport) si riempiono col calendario multisport di MandraKodi, che sta nello stesso
+ * eventi.json (chiave "sport") ed e' gestito da [MandraCalendar]. Le funzioni auto* qui sotto vanno bene per
+ * entrambi i tipi, quindi chi le usa non deve sapere di che categoria si tratta.
  */
 object LiveFixtures {
     private const val TAG = "Fixtures"   // diagnostica: Logcat, filtro "Fixtures"
@@ -51,6 +56,7 @@ object LiveFixtures {
 
     fun init(ctx: Context) {
         prefs = ctx.applicationContext.getSharedPreferences("fixtures_v1", Context.MODE_PRIVATE)
+        MandraCalendar.init(ctx)   // il calendario multisport arriva dallo stesso file (eventi.json, chiave "sport")
     }
 
     /** "A", "B" o "C" se la categoria e' una di quelle automatiche, altrimenti null. */
@@ -64,7 +70,50 @@ object LiveFixtures {
         }
     }
 
-    fun isAuto(categoryName: String) = leagueOf(categoryName) != null
+    fun isAuto(categoryName: String) = leagueOf(categoryName) != null || MandraCalendar.isSport(categoryName)
+
+    // ---- categorie automatiche: campionati (Serie A/B/C) oppure sport del calendario MandraKodi ----
+    // Chi usa queste funzioni non deve sapere quale dei due tipi e' una categoria: ci pensa leagueOf().
+
+    /** Gli eventi di una categoria automatica, di qualunque tipo. */
+    fun autoEvents(category: String, fixtures: Map<String, List<Fixture>>, playlist: List<Channel>): List<Channel> =
+        leagueOf(category)?.let { events(it, fixtures, playlist, category) }
+            ?: MandraCalendar.events(category, playlist)
+
+    /** Perche' una categoria automatica e' vuota (si vede nell'Admin al posto dell'elenco). */
+    fun autoDiag(category: String): String =
+        leagueOf(category)?.let { diag[it] ?: "Caricamento..." } ?: MandraCalendar.diag
+
+    /** Toglie l'evento dall'elenco (anche dopo gli aggiornamenti). */
+    fun autoRemove(category: String, evKey: String) {
+        val l = leagueOf(category)
+        if (l != null) removeEvent(l, evKey) else MandraCalendar.removeEvent(evKey)
+    }
+
+    /** Quanti eventi tolti ci sono ancora tra quelli noti. */
+    fun autoRemovedCount(category: String): Int =
+        leagueOf(category)?.let { removedCount(it) } ?: MandraCalendar.removedCount()
+
+    /** Rimette tutti gli eventi tolti di una categoria. */
+    fun autoRestore(category: String) {
+        val l = leagueOf(category)
+        if (l != null) restoreRemoved(l) else MandraCalendar.restoreRemoved()
+    }
+
+    fun autoHasOverride(category: String, evKey: String): Boolean =
+        leagueOf(category)?.let { hasOverride(it, evKey) } ?: MandraCalendar.hasOverride(evKey)
+
+    /** Ricorda nome e/o canale scelti per l'evento. */
+    fun autoEdit(category: String, evKey: String, newName: String?, picked: Channel?) {
+        val l = leagueOf(category)
+        if (l != null) editEvent(l, evKey, newName, picked) else MandraCalendar.editEvent(evKey, newName, picked)
+    }
+
+    /** L'evento torna com'e' generato da solo. */
+    fun autoReset(category: String, evKey: String) {
+        val l = leagueOf(category)
+        if (l != null) resetEvent(l, evKey) else MandraCalendar.resetEvent(evKey)
+    }
 
     // ---- rete ----
 
@@ -141,6 +190,7 @@ object LiveFixtures {
             if (text == null) {
                 lastFetch["DATA"] = now - REFRESH_MS + 10_000L    // errore di rete: si riprova tra 10 secondi
                 for (l in listOf("A", "B", "C")) diag[l] = "eventi.json: errore di rete"
+                MandraCalendar.fail("eventi.json: errore di rete")
             } else {
                 lastFetch["DATA"] = now
                 try {
@@ -148,16 +198,18 @@ object LiveFixtures {
                 } catch (e: Exception) {
                     Log.d(TAG, "eventi.json: errore di lettura ${e.message}")
                     for (l in listOf("A", "B", "C")) diag[l] = "eventi.json: formato non valido"
+                    MandraCalendar.fail("eventi.json: formato non valido")
                 }
             }
         }
         return current()
     }
 
-    /** Mette nel ricordo dell'app le partite e la guida Sky lette dal file. */
+    /** Mette nel ricordo dell'app le partite, la guida Sky e il calendario multisport letti dal file. */
     private fun applyData(o: JSONObject, now: Long) {
         val fx = o.optJSONObject("fixtures")
         val stato = o.optJSONObject("stato")
+        MandraCalendar.applyData(o, now)   // chiave "sport": gli eventi della sezione MandraKodi
         for (league in listOf("A", "B", "C")) {
             val arr = fx?.optJSONArray(league)
             val parsed = ArrayList<Fixture>()

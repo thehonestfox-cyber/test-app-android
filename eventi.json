@@ -2938,5 +2938,1783 @@
  "hl": {
   "parma|roma|12": "VYJXPrHvggY",
   "napoli|torino|12": "wu-KW-84vpE"
+ },
+ "sport": {
+  "aggiornato": "2026-11-22T12:27:25+01:00",
+  "stato": "ok",
+  "eventi": [
+   {
+    "t": "MotoGP: Portuguese Grand Prix - Warm Up",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795338000000,
+    "d": 75,
+    "tv": [
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo – Gurgl: Slalom M (1a manche): 1a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795339800000,
+    "d": 150,
+    "tv": [
+     "Eurosport",
+     "Rai 2"
+    ]
+   },
+   {
+    "t": "Primavera 1: Lazio-Milan",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795341600000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Moto2 e Moto3: M3 - Portuguese GP - Race",
+    "c": "Motori",
+    "s": "Moto2 e Moto3",
+    "i": 1795345200000,
+    "d": 150,
+    "tv": [
+     "TV8"
+    ]
+   },
+   {
+    "t": "Serie A: Juventus vs Venezia",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795347000000,
+    "d": 150,
+    "tv": [
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
+    ]
+   },
+   {
+    "t": "Serie C: Pro Vercelli vs Novara",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795347000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 258",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Serie C: Scafatese vs Foggia",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795347000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 257",
+     "Sky Sport Max",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Serie C: Union Brescia vs Renate",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795347000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 252",
+     "Sky Sport Calcio",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Moto2 e Moto3: M2 - Portuguese GP - Race",
+    "c": "Motori",
+    "s": "Moto2 e Moto3",
+    "i": 1795349700000,
+    "d": 150,
+    "tv": [
+     "TV8"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo – Gurgl: Slalom M (2a manche): 2a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795350600000,
+    "d": 150,
+    "tv": [
+     "Eurosport",
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Bundesliga 2: 1. FC Kaiserslautern-Dynamo Dresden",
+    "c": "Calcio",
+    "s": "Bundesliga 2",
+    "i": 1795350600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "MotoGP: Portuguese Grand Prix - Gara",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795352400000,
+    "d": 150,
+    "tv": [
+     "TV8",
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Serie C: Alcione vs Ospitaletto",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795354200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 256",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Serie C: Livorno vs Ravenna",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795354200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 253",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Premier League: Hull City-Brighton",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795356000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
+    "t": "Serie A: Bologna vs Udinese",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795356000000,
+    "d": 150,
+    "tv": [
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
+    ]
+   },
+   {
+    "t": "Serie A: Fiorentina-Como",
+    "c": "Calcio",
+    "s": "Serie A femminile",
+    "i": 1795356000000,
+    "d": 150,
+    "tv": [
+     "Rai 2"
+    ]
+   },
+   {
+    "t": "Serie A: Sassuolo vs Genoa",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795356000000,
+    "d": 150,
+    "tv": [
+     "DAZN",
+     "DAZN Italia",
+     "DAZN2"
+    ]
+   },
+   {
+    "t": "Serie B: Avellino vs Mantova",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795356000000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie C: Catania-Bari",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795356000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "ATP Finals Torino: Doubles Finale",
+    "c": "Tennis",
+    "s": "ATP Finals Torino",
+    "i": 1795356000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Tennis"
+    ]
+   },
+   {
+    "t": "Bundesliga: Augsburg-Mainz",
+    "c": "Calcio",
+    "s": "Bundesliga",
+    "i": 1795357800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Serie A: Derthona Tortona-Olimpia Milano",
+    "c": "Basket",
+    "s": "Serie A",
+    "i": 1795359600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1",
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie B: Arezzo vs Calcio Padova",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795364100000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Bundesliga: Werder Brema-Amburgo SV",
+    "c": "Calcio",
+    "s": "Bundesliga",
+    "i": 1795365000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "Premier League: Liverpool-Manchester Utd",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795365000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
+    "t": "Serie C: Sambenedettese-Perugia",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795365000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Serie A: Milan vs Frosinone",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795366800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 251",
+     "Sky Sport Calcio",
+     "DAZN",
+     "DAZN Italia",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "ATP Finals Torino: Finale",
+    "c": "Tennis",
+    "s": "ATP Finals Torino",
+    "i": 1795366800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Tennis",
+     "Italia 1"
+    ]
+   },
+   {
+    "t": "ATP Finals Torino: Singolare: Finale",
+    "c": "Tennis",
+    "s": "ATP Finals Torino",
+    "i": 1795366800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "SuperLega: Piacenza-Perugia",
+    "c": "Volley",
+    "s": "SuperLega",
+    "i": 1795366800000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Serie A: Verona-Udine",
+    "c": "Basket",
+    "s": "Serie A",
+    "i": 1795367700000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie A2: Livorno-Sassari",
+    "c": "Basket",
+    "s": "Serie A2",
+    "i": 1795376700000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Serie A: Atalanta vs Internazionale",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795376700000,
+    "d": 150,
+    "tv": [
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
+    ]
+   },
+   {
+    "t": "Liga Profesional: River Plate-Lanus",
+    "c": "Calcio",
+    "s": "Liga Profesional",
+    "i": 1795384800000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "NBA: Miami Heat-Oklahoma City Thunder",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1795388400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket",
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "Serie B: Empoli vs Pisa",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795404600000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Primavera 1: Albinoleffe-Genoa",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795442400000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Mondiali U17 Qatar: Italia-Costa d’Avorio",
+    "c": "Calcio",
+    "s": "Mondiali U17 Qatar",
+    "i": 1795444200000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Primavera 1: Torino-Bologna",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795449600000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Serie C: Grosseto-Guidonia Montecelio",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795462200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "Serie C: Lecco-Lumezzane",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795463100000,
+    "d": 150,
+    "tv": [
+     "Rai Sport",
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Serie A: Monza vs Fiorentina",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795473000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 251",
+     "Sky Sport Calcio",
+     "DAZN",
+     "DAZN Italia",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "NBA: Minnesota Timberwolves-Brooklyn Nets",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1795480200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie B: Catanzaro vs Palermo",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795505400000,
+    "d": 150,
+    "tv": [
+     "Fox Soccer Plus",
+     "fuboTV",
+     "FOX One"
+    ]
+   },
+   {
+    "t": "Serie B: Empoli vs Pisa",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795512600000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Bodo Glimt-LASK",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795542300000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Galatasaray-Aston Villa",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795542300000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Eurolega: Stella Rossa-Virtus Bologna",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1795543200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Serie B: Juve Stabia vs Catanzaro",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795543200000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie B: Benevento vs Empoli",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795546800000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie B: Cesena vs Ascoli",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795546800000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie B: Palermo-Sudtirol",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795546800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Vicenza-Carrarese",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795546800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Virtus Entella-Hellas Verona",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795546800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie A2: Torino-Caserta",
+    "c": "Basket",
+    "s": "Serie A2",
+    "i": 1795548600000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Eurolega: Lyon Villeurbanne-Olimpia Milano",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1795549500000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Arsenal-Borussia Dortmund",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Como-AEK Atene",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Feyenoord-Porto",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Lipsia-Lens",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Manchester City-Napoli",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1",
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Real Madrid-PSV Eindhoven",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Real Madrid-Psv",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Slovan-Real Betis",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795550400000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "NBA: Washington Wizards-Boston Celtics",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1795568400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "NBA: Denver Nuggets-Dallas Mavericks",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1795575600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie B: Cesena vs Ascoli",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795606200000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie C: Audace Cerignola-Inter U23",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795613400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "UEFA Youth League: PSG-Roma",
+    "c": "Calcio",
+    "s": "UEFA Youth League",
+    "i": 1795618800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Eurolega: Dubai Basketball-Partizan Belgrado",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1795622400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie C: Atalanta U23-Pineto",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795626000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Sabah-Barcellona",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795628700000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Slavia Praga-Villarreal",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795628700000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "Serie B: Cremonese-Avellino",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795629600000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie A1: Savona-Brescia",
+    "c": "Altri sport",
+    "s": "Pallanuoto maschile",
+    "i": 1795633200000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Serie B: Mantova-Arezzo",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795633200000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Padova-Sampdoria",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795633200000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Pisa-Modena",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795633200000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "CEV Champions League: Milano-Levalloois Paris",
+    "c": "Volley",
+    "s": "CEV Champions League femminile",
+    "i": 1795633200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Eurolega: Olympiacos-Hapoel Tel Aviv",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1795634100000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Atletico Madrid-Viking",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795636800000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Bruges-Liverpool",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795636800000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Inter-Stoccarda",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795636800000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Lille-Bayern Monaco",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795636800000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport Calcio",
+     "TV8"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: PSG-Roma",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795636800000,
+    "d": 150,
+    "tv": [
+     "Amazon Prime Video"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Shakhtar Donetsk-Fenerbahce",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795636800000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Champions League: Sporting-Manchester United",
+    "c": "Calcio",
+    "s": "UEFA Champions League",
+    "i": 1795636800000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "NBA: Philadelphia 76ers-Miami Heat",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1795640400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Liga Profesional: Boca Juniors-Independiente Rivadavia",
+    "c": "Calcio",
+    "s": "Liga Profesional",
+    "i": 1795651200000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "NBA: Oklahoma City Thunder-Minnesota Timberwolves",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1795653000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie B: Pisa vs Modena",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795665600000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie B: Cremonese vs Avellino",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795689000000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Mondiali U17 Qatar: Uzbekistan-Italia",
+    "c": "Calcio",
+    "s": "Mondiali U17 Qatar",
+    "i": 1795701600000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "UEFA Conference League: Kairat Almaty-Mjallby",
+    "c": "Calcio",
+    "s": "UEFA Conference League",
+    "i": 1795707000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Lituania-Serbia",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1795710600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Besiktas-Hapoel Beer Sheva",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Celta Vigo-Bournemouth",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix",
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Dinamo Zagabria-Bayer Leverkusen",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Marsiglia-Levski Sofia",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Olympiacos-Milan",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Salisburgo-Ararat Armenia",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Union Saint Gilloise-Lech Poznan",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Viktoria Plzen-Benfica",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795715100000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Italia-Turchia",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1795719600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "SuperLega: Perugia-Civitanova",
+    "c": "Volley",
+    "s": "SuperLega",
+    "i": 1795721400000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "UEFA Conference League: Borac-Atalanta",
+    "c": "Calcio",
+    "s": "UEFA Conference League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Crystal Palace-Real Sociedad",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Ferencvaros-Celje",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Hoffenheim-Sturm Graz",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix",
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Juventus-Omonia Nicosia",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Lione-Lillestrom",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: NEC-Rennes",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: OFI-Anderlecht",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Sparta Praga-AZ Alkmaar",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Sunderland-Jagiellonia Bialystok",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "UEFA Europa League: Torreense-Celtic",
+    "c": "Calcio",
+    "s": "UEFA Europa League",
+    "i": 1795723200000,
+    "d": 150,
+    "tv": [
+     "Sky"
+    ]
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - Prove libere",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795772700000,
+    "d": 75,
+    "tv": [
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Formula 1: Qatar Grand Prix - FP1",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1795786200000,
+    "d": 75,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Primavera 1: Bologna-Albinoleffe",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795788000000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - Practice",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795788000000,
+    "d": 75,
+    "tv": [
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Primavera 1: Atalanta-Monza",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795795200000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Formula 2 e Formula 3: F2 - Qatar GP - Quali",
+    "c": "Motori",
+    "s": "Formula 2 e Formula 3",
+    "i": 1795795800000,
+    "d": 75,
+    "tv": []
+   },
+   {
+    "t": "Formula 1: Qatar Grand Prix - FP2",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1795798800000,
+    "d": 75,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Bundesliga 2: Heidenheim-Norimberga",
+    "c": "Calcio",
+    "s": "Bundesliga 2",
+    "i": 1795800600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Slovenia-Finlandia",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1795806000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie C: Foggia-Casertana",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795807800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Polonia-Croazia",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1795808700000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "Serie A2: Rimini-Pesaro",
+    "c": "Basket",
+    "s": "Serie A2",
+    "i": 1795808700000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Serie A: Venezia-Bologna",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795808700000,
+    "d": 150,
+    "tv": [
+     "DAZN",
+     "Sky",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Premier League: Nottingham Forest-Chelsea",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795809600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - FP2",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795857000000,
+    "d": 75,
+    "tv": [
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - Q1",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795859400000,
+    "d": 75,
+    "tv": [
+     "TV8",
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Primavera 1: Milan-Lecce",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795860000000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - Q2",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795860900000,
+    "d": 75,
+    "tv": [
+     "TV8",
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Moto2 e Moto3: M3 - Valencian GP - Quali",
+    "c": "Motori",
+    "s": "Moto2 e Moto3",
+    "i": 1795866900000,
+    "d": 75,
+    "tv": []
+   },
+   {
+    "t": "Bundesliga 2: Hertha-Karlsruhe",
+    "c": "Calcio",
+    "s": "Bundesliga 2",
+    "i": 1795867200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Primavera 1: Juventus-Hellas Verona",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795867200000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Moto2 e Moto3: M2 - Valencian GP - Quali",
+    "c": "Motori",
+    "s": "Moto2 e Moto3",
+    "i": 1795870200000,
+    "d": 75,
+    "tv": []
+   },
+   {
+    "t": "Serie A: Frosinone-Parma",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795874400000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Ascoli-Virtus Entella",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795874400000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Carrarese-Juve Stabia",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795874400000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Empoli-Hellas Verona",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795874400000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - Sprint",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795874400000,
+    "d": 60,
+    "tv": [
+     "TV8",
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Saudi League: Al Ettifaq-Al Hilal",
+    "c": "Calcio",
+    "s": "Saudi League",
+    "i": 1795875600000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo – Killington: Slalom Gigante F (1a manche): 1a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795876200000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Bundesliga: Amburgo-Bayern Monaco",
+    "c": "Calcio",
+    "s": "Bundesliga",
+    "i": 1795876200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Formula 1: Qatar Grand Prix - FP3",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1795876200000,
+    "d": 75,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Premier League: Leeds United-Coventry City",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795878000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "Premier League: Manchester United-Brentford",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795878000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "Serie A1: Napoli-Posillipo",
+    "c": "Altri sport",
+    "s": "Pallanuoto maschile",
+    "i": 1795880700000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Serie B: Vicenza-Cesena",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795882500000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Formula 2 e Formula 3: F2 - Qatar GP - Sprint Race",
+    "c": "Motori",
+    "s": "Formula 2 e Formula 3",
+    "i": 1795882800000,
+    "d": 60,
+    "tv": []
+   },
+   {
+    "t": "Serie A: Torino-Lazio",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795885200000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo – Killington: Slalom Gigante F (2a manche): 2a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795887000000,
+    "d": 150,
+    "tv": [
+     "Eurosport",
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Bundesliga: Stoccarda-Eintracht Francoforte",
+    "c": "Calcio",
+    "s": "Bundesliga",
+    "i": 1795887000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "Premier League: Ipswich-Aston Villa",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795887000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Formula 1: Qatar Grand Prix - Qualifiche",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1795888800000,
+    "d": 75,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "TV8",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Serie B: Palermo-Benevento",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795890600000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo: Copper Mountain. Super G M",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795891500000,
+    "d": 150,
+    "tv": [
+     "Eurosport",
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "Serie A: Inter-Genoa",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795895100000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "DAZN",
+     "Sky Sport 1",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Serie A1: Cuneo-Scandicci",
+    "c": "Volley",
+    "s": "Serie A1 femminile",
+    "i": 1795896000000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - Warm Up",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795941600000,
+    "d": 75,
+    "tv": [
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Moto2 e Moto3: M3 - Valencian GP - Race",
+    "c": "Motori",
+    "s": "Moto2 e Moto3",
+    "i": 1795946400000,
+    "d": 150,
+    "tv": []
+   },
+   {
+    "t": "Moto2 e Moto3: M2 - Valencian GP - Race",
+    "c": "Motori",
+    "s": "Moto2 e Moto3",
+    "i": 1795950900000,
+    "d": 150,
+    "tv": []
+   },
+   {
+    "t": "Formula 2 e Formula 3: F2 - Qatar GP - Feature Race",
+    "c": "Motori",
+    "s": "Formula 2 e Formula 3",
+    "i": 1795954800000,
+    "d": 150,
+    "tv": []
+   },
+   {
+    "t": "MotoGP: Valencian Community Grand Prix - Gara",
+    "c": "Motori",
+    "s": "MotoGP",
+    "i": 1795957200000,
+    "d": 150,
+    "tv": [
+     "TV8",
+     "Sky Sport MotoGP",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Formula 1: Qatar Grand Prix - Gara",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1795968000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "TV8",
+     "NOW"
+    ]
+   }
+  ]
  }
 }

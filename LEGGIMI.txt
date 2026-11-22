@@ -10,3 +10,13 @@ IPTV Player per Android 15 (API 35)
 Per ottenere un file APK da installare/condividere:
 Build > Build Bundle(s) / APK(s) > Build APK(s)
 Il file e' in app/build/outputs/apk/debug/app-debug.apk
+
+Sezione "MandraKodi" (tutti gli sport)
+- Sta in sezioni.json, quindi arriva a tutte le installazioni, e si riempie da sola col calendario multisport
+  di MandraKodi (fonte: output/calendario_sport.json di campipaolo/Livesoccer, la stessa della wiki di Mandra).
+  Lo legge scripts/aggiorna_eventi.py su GitHub Actions ogni 10 minuti e lo scrive in eventi.json (chiave "sport");
+  l'app scarica solo quel file.
+- Categorie: una per sport (Motori, Calcio, Tennis, Basket, Volley, Altri sport).
+- Ogni evento viene abbinato al canale delle tue playlist M3U, per nome ("Sky Sport MotoGP", "TV8", "DAZN 1",
+  "Sportitalia"...). Se quel canale nelle playlist non c'e', la card resta e dice su quale canale va in onda
+  l'evento, cosi' sai quale lista aggiungere (Impostazioni > Admin > Aggiungi playlist).

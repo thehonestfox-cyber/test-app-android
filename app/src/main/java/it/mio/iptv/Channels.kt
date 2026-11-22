@@ -14,7 +14,8 @@ data class Channel(
     val time: String = "",   // non si usa più (l'orario a mano è stato tolto); resta solo per i vecchi codici di esportazione
     val start: Long = 0L,    // inizio dell'evento in millisecondi (eventi creati da soli dai siti delle leghe); 0 = non noto
     val evKey: String = "",  // chiave stabile della partita (eventi automatici): serve a ricordare modifiche e rimozioni dell'admin
-    val highlight: String = ""   // id del video YouTube con gli highlights DAZN (solo Serie A, partita finita); "" = nessuno
+    val highlight: String = "",  // id del video YouTube con gli highlights DAZN (solo Serie A, partita finita); "" = nessuno
+    val tv: String = ""      // canali della guida che trasmettono l'evento (calendario MandraKodi); "" = non noti
 )
 
 /** Legge una playlist M3U e crea i Channel (con categoria e logo automatici). */

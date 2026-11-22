@@ -7,9 +7,13 @@ Gira su GitHub Actions (.github/workflows/eventi.yml); l'app scarica solo il JSO
   - Serie B: legab.it/seriebkt
   - Serie C: seriec.com (partite) + sport.sky.it (canale Sky di ogni partita)
   - Highlights (solo Serie A, solo partite finite): video del canale YouTube ufficiale DAZN Italia, scritti in "hl"
+  - Calendario multisport di MandraKodi: output/calendario_sport.json di campipaolo/Livesoccer (la stessa fonte che
+    usa la wiki di MandraKodi), scritto in "sport"; nell'app riempie la sezione "MandraKodi" (una categoria per
+    sport: Motori, Calcio, Tennis, Basket, Volley, Altri sport) e ogni evento porta i canali che lo trasmettono
 
 E' la stessa logica che prima stava in FixtureParsers.kt, riportata in Python. Solo libreria standard.
 """
+import base64
 import json
 import re
 import urllib.parse
@@ -39,6 +43,15 @@ YT_SEARCH = "https://www.youtube.com/results?sp=EgIQAQ%253D%253D&search_query=" 
 YT_HEADERS = {"Cookie": "CONSENT=YES+cb; SOCS=CAI"}      # salta la schermata dei cookie
 HL_SEARCH_MAX = 12                # ricerche YouTube al massimo per esecuzione
 KEEP_MS = 5 * 86_400_000          # una partita iniziata da meno di 5 giorni resta nell'elenco (la giornata dura dal venerdi al lunedi)
+
+# calendario multisport di MandraKodi (la fonte e' quella della sua wiki): riempie la sezione "MandraKodi" dell'app
+URL_SPORT = "https://raw.githubusercontent.com/campipaolo/Livesoccer/master/output/calendario_sport.json"
+API_SPORT = "https://api.github.com/repos/campipaolo/Livesoccer/contents/output/calendario_sport.json"
+SPORT_CATS = ["Motori", "Calcio", "Tennis", "Basket", "Volley", "Altri sport"]   # le categorie della sezione
+SPORT_DURATA = {"prove": 75, "qualifiche": 75, "sprint_quali": 60, "sprint": 60, "gara": 150, "evento": 150}
+SPORT_MINUTI = 150                # durata stimata quando il calendario non dice che sessione e'
+SPORT_GRACE_MS = 6 * 3_600_000    # un evento finito da meno di 6 ore resta nell'elenco
+SPORT_AHEAD_MS = 8 * 86_400_000   # e ci sono quelli dei prossimi 8 giorni (l'app ne mostra 7)
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
@@ -544,6 +557,109 @@ def find_highlights(fixtures_a, old_hl, now, now_ms):
     return hl
 
 
+# --------------------------------------------- calendario multisport di MandraKodi
+
+def fetch_sport():
+    """Il calendario (JSON) di campipaolo/Livesoccer. Prova raw.githubusercontent.com, poi l'API GitHub (base64)."""
+    text = http(URL_SPORT)
+    if text:
+        try:
+            return json.loads(text)
+        except Exception as e:
+            print(f"Calendario: JSON non valido ({e!r})", file=sys.stderr)
+    api = http(API_SPORT, {"Accept": "application/vnd.github+json"})
+    if api:
+        try:
+            body = json.loads(api)
+            return json.loads(base64.b64decode(body["content"]).decode("utf-8"))
+        except Exception as e:
+            print(f"Calendario: lettura via API GitHub fallita ({e!r})", file=sys.stderr)
+    return None
+
+
+def iso_ms(s):
+    """'2026-11-22T10:00:00+01:00' -> millisecondi; None se non si riesce a leggere."""
+    if not s:
+        return None
+    try:
+        return int(datetime.fromisoformat(str(s).strip()).timestamp() * 1000)
+    except Exception:
+        return None
+
+
+PREFISSO_CAT = re.compile(r"^\s*\[[^\]]*\]\s*")
+
+
+def sport_title(titolo):
+    """'[Motori] MotoGP: Portuguese Grand Prix - Warm Up' -> 'MotoGP: ...' (lo sport e' gia' un campo a parte)."""
+    return " ".join(PREFISSO_CAT.sub("", titolo).split())
+
+
+TV_TIPO = {"diretta": 0, "differita": 1, "streaming": 2}
+
+
+def sport_tv(canali):
+    """I nomi dei canali nell'ordine della guida: prima le dirette, poi differite e streaming; senza doppioni."""
+    out = []
+    for c in sorted(canali or [], key=lambda x: TV_TIPO.get(str(x.get("tipo") or "").strip().lower(), 3)):
+        n = " ".join(str(c.get("nome") or "").split())
+        if n and fold(n) not in {fold(x) for x in out}:
+            out.append(n)
+    return out
+
+
+def sport_events(cal, now_ms):
+    """Dal calendario agli eventi del file: uno per riga, saltando la cartella 'Oggi' (sono gli stessi eventi)."""
+    out, seen = [], set()
+    for cart in cal.get("cartelle", []):
+        if cart.get("nome") == "Oggi":
+            continue
+        for e in cart.get("eventi") or [x for s in cart.get("sottocartelle", []) for x in s.get("eventi", [])]:
+            titolo = str(e.get("titolo") or "").strip()
+            cat = str(e.get("categoria") or cart.get("nome") or "").strip()
+            inizio = iso_ms(e.get("inizio"))
+            if not titolo or cat not in SPORT_CATS or inizio is None:
+                continue
+            minuti = SPORT_DURATA.get(str(e.get("sessione") or "").strip().lower(), SPORT_MINUTI)
+            # niente eventi finiti da ore, niente quelli troppo avanti nel tempo
+            if inizio + minuti * 60_000 + SPORT_GRACE_MS < now_ms or inizio > now_ms + SPORT_AHEAD_MS:
+                continue
+            k = (fold(titolo), inizio)
+            if k in seen:
+                continue
+            seen.add(k)
+            out.append({
+                "t": sport_title(titolo),
+                "c": cat,
+                "s": str(e.get("sottocartella") or e.get("competizione") or "").strip(),
+                "i": inizio,
+                "d": minuti,
+                "tv": sport_tv(e.get("canali")),
+            })
+    out.sort(key=lambda x: (x["i"], x["c"], x["t"]))
+    return out
+
+
+def sport_block(cal, old_sport, now_ms):
+    """La chiave 'sport' del file: il calendario appena letto, oppure quello vecchio se la fonte non risponde."""
+    stato = None
+    if cal is None:
+        stato = "errore di rete"
+    else:
+        try:
+            ev = sport_events(cal, now_ms)
+            if ev:
+                return {"aggiornato": str(cal.get("aggiornato") or ""), "stato": "ok", "eventi": ev}
+            stato = "nessun evento letto"
+        except Exception as e:
+            print(f"Calendario: errore di lettura {e!r}", file=sys.stderr)
+            stato = "errore di lettura"
+    old = old_sport if isinstance(old_sport, dict) else {}
+    ev = [e for e in old.get("eventi", [])
+          if e.get("i", 0) + e.get("d", SPORT_MINUTI) * 60_000 + SPORT_GRACE_MS >= now_ms]
+    return {"aggiornato": str(old.get("aggiornato") or ""), "stato": stato or "nessun dato", "eventi": ev}
+
+
 # ---------------------------------------------------------------- rete e file
 
 def http(url, extra=None):
@@ -632,7 +748,15 @@ def main():
     # highlights DAZN (YouTube): solo Serie A, solo partite finite
     hl = find_highlights(fixtures["A"], old.get("hl", {}), now, now_ms)
 
-    data = {"fixtures": fixtures, "stato": stato, "sky": sky, "sky_at": sky_at, "hl": hl}
+    # calendario multisport di MandraKodi (Motori, Calcio anche estero, Tennis, Basket, Volley, Altri sport)
+    sport = sport_block(fetch_sport(), old.get("sport"), now_ms)
+    conteggio = {}
+    for e in sport["eventi"]:
+        conteggio[e["c"]] = conteggio.get(e["c"], 0) + 1
+    per_cat = ", ".join(f"{k} {conteggio[k]}" for k in SPORT_CATS if k in conteggio)
+    print(f"Calendario MandraKodi: {sport['stato']}, {len(sport['eventi'])} eventi nel file ({per_cat})")
+
+    data = {"fixtures": fixtures, "stato": stato, "sky": sky, "sky_at": sky_at, "hl": hl, "sport": sport}
     text = json.dumps(data, ensure_ascii=False, indent=1) + "\n"
     try:
         same = OUT.read_text(encoding="utf-8") == text
