@@ -2359,6 +2359,12 @@
    },
    {
     "r": 18,
+    "h": "Foggia",
+    "a": "Altamura",
+    "s": 1797093000000
+   },
+   {
+    "r": 18,
     "h": "Ospitaletto F.",
     "a": "Giana Erminio",
     "s": 1797093000000
@@ -2368,6 +2374,18 @@
     "h": "Renate",
     "a": "Pro Vercelli",
     "s": 1797093000000
+   },
+   {
+    "r": 18,
+    "h": "Carpi",
+    "a": "Trento",
+    "s": 1797161400000
+   },
+   {
+    "r": 18,
+    "h": "Juventus Next Gen",
+    "a": "Folgore Caratese",
+    "s": 1797161400000
    }
   ]
  },
