@@ -3018,75 +3018,20 @@
    ]
   }
  ],
- "sky_at": 1795302000000,
+ "sky_at": 1795388400000,
  "hl": {
   "parma|roma|12": "VYJXPrHvggY",
   "napoli|torino|12": "wu-KW-84vpE",
   "juventus|venezia|12": "IrKIMUF7V8Q",
   "bologna|udinese|12": "6HwYn-nnFeM",
   "sassuolo|genoa|12": "vVj-DxQ4hIs",
-  "milan|frosinone|12": "0uHFq4wQN4Y"
+  "milan|frosinone|12": "0uHFq4wQN4Y",
+  "atalanta|inter|12": "Cl6l0wcPZMo"
  },
  "sport": {
-  "aggiornato": "2026-11-22T20:42:26+01:00",
+  "aggiornato": "2026-11-22T22:44:30+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Serie A: Milan vs Frosinone",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795366800000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 251",
-     "Sky Sport Calcio",
-     "DAZN",
-     "DAZN Italia",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "ATP Finals Torino: Finale",
-    "c": "Tennis",
-    "s": "ATP Finals Torino",
-    "i": 1795366800000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Tennis",
-     "Italia 1"
-    ]
-   },
-   {
-    "t": "ATP Finals Torino: Singolare: Finale",
-    "c": "Tennis",
-    "s": "ATP Finals Torino",
-    "i": 1795366800000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 1"
-    ]
-   },
-   {
-    "t": "SuperLega: Piacenza-Perugia",
-    "c": "Volley",
-    "s": "SuperLega",
-    "i": 1795366800000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "Serie A: Verona-Udine",
-    "c": "Basket",
-    "s": "Serie A",
-    "i": 1795367700000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
    {
     "t": "Serie A2: Livorno-Sassari",
     "c": "Basket",
@@ -3098,15 +3043,13 @@
     ]
    },
    {
-    "t": "Serie A: Atalanta vs Internazionale",
+    "t": "Serie A: Atalanta-Inter",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795376700000,
     "d": 150,
     "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN"
     ]
    },
    {
@@ -3137,8 +3080,9 @@
     "i": 1795404600000,
     "d": 150,
     "tv": [
-     "LAB Channel",
-     "DAZN Italia"
+     "Fox Soccer Plus",
+     "fuboTV",
+     "FOX One"
     ]
    },
    {
@@ -3172,6 +3116,19 @@
     ]
    },
    {
+    "t": "Serie C: Grosseto vs Nuova Monterosi",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795462200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 252",
+     "Sky Sport Uno",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
     "t": "Serie C: Grosseto-Guidonia Montecelio",
     "c": "Calcio",
     "s": "Serie C",
@@ -3182,14 +3139,32 @@
     ]
    },
    {
-    "t": "Serie C: Lecco-Lumezzane",
+    "t": "Serie A: Monza vs Fiorentina",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795463100000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 251",
+     "Sky Sport Calcio",
+     "DAZN",
+     "DAZN Italia",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Serie C: Lecco vs Lumezzane",
     "c": "Calcio",
     "s": "Serie C",
     "i": 1795463100000,
     "d": 150,
     "tv": [
+     "Sky Sport 253",
+     "Sky Sport Max",
      "Rai Sport",
-     "Sky Sport Max"
+     "SKY Go Italia",
+     "NOW TV"
     ]
    },
    {
@@ -3201,7 +3176,6 @@
     "tv": [
      "Sky Sport 251",
      "Sky Sport Calcio",
-     "DAZN",
      "DAZN Italia",
      "SKY Go Italia",
      "NOW TV"
@@ -3224,9 +3198,8 @@
     "i": 1795505400000,
     "d": 150,
     "tv": [
-     "Fox Soccer Plus",
-     "fuboTV",
-     "FOX One"
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
@@ -3308,23 +3281,27 @@
     ]
    },
    {
-    "t": "Serie B: Palermo-Sudtirol",
+    "t": "Serie B: Palermo vs Südtirol",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795546800000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
-    "t": "Serie B: Vicenza-Carrarese",
+    "t": "Serie B: Vicenza vs Carrarese",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795546800000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -3471,13 +3448,17 @@
     ]
    },
    {
-    "t": "Serie C: Audace Cerignola-Inter U23",
+    "t": "Serie C: Audace Cerignola vs Inter II",
     "c": "Calcio",
     "s": "Serie C",
     "i": 1795613400000,
     "d": 150,
     "tv": [
-     "Sky Sport 1"
+     "Sky Sport 251",
+     "Sky Sport Uno",
+     "Sky Sport 1",
+     "SKY Go Italia",
+     "NOW TV"
     ]
    },
    {
@@ -3501,13 +3482,16 @@
     ]
    },
    {
-    "t": "Serie C: Atalanta U23-Pineto",
+    "t": "Serie C: Atalanta II vs Pineto",
     "c": "Calcio",
     "s": "Serie C",
     "i": 1795626000000,
     "d": 150,
     "tv": [
-     "Sky Sport Max"
+     "Sky Sport 255",
+     "Sky Sport Max",
+     "SKY Go Italia",
+     "NOW TV"
     ]
    },
    {
@@ -4070,6 +4054,17 @@
     ]
    },
    {
+    "t": "Serie C: Cavese vs Scafatese",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795807800000,
+    "d": 150,
+    "tv": [
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
     "t": "Serie C: Foggia-Casertana",
     "c": "Calcio",
     "s": "Serie C",
@@ -4100,15 +4095,18 @@
     ]
    },
    {
-    "t": "Serie A: Venezia-Bologna",
+    "t": "Serie A: Venezia vs Bologna",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795808700000,
     "d": 150,
     "tv": [
+     "Sky Sport 251",
+     "Sky Sport Calcio",
      "DAZN",
-     "Sky",
-     "Sky Sport Calcio"
+     "DAZN Italia",
+     "SKY Go Italia",
+     "NOW TV"
     ]
    },
    {
@@ -4152,6 +4150,17 @@
     "d": 150,
     "tv": [
      "Sportitalia"
+    ]
+   },
+   {
+    "t": "Serie B: Pisa vs Modena",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795860000000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
@@ -4203,13 +4212,14 @@
     "tv": []
    },
    {
-    "t": "Serie A: Frosinone-Parma",
+    "t": "Serie A: Frosinone vs Parma",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795874400000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -4346,13 +4356,14 @@
     "tv": []
    },
    {
-    "t": "Serie A: Torino-Lazio",
+    "t": "Serie A: Torino vs Lazio",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795885200000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -4422,16 +4433,19 @@
     ]
    },
    {
-    "t": "Serie A: Inter-Genoa",
+    "t": "Serie A: Internazionale vs Genoa",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795895100000,
     "d": 150,
     "tv": [
-     "Sky",
+     "Sky Sport 251",
      "DAZN",
      "Sky Sport 1",
-     "Sky Sport Calcio"
+     "Sky Sport Calcio",
+     "DAZN Italia",
+     "SKY Go Italia",
+     "NOW TV"
     ]
    },
    {
@@ -4442,6 +4456,17 @@
     "d": 150,
     "tv": [
      "Rai Sport"
+    ]
+   },
+   {
+    "t": "Serie B: Empoli vs Verona",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795915800000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
