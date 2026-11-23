@@ -3029,21 +3029,9 @@
   "atalanta|inter|12": "Cl6l0wcPZMo"
  },
  "sport": {
-  "aggiornato": "2026-11-23T03:29:21+01:00",
+  "aggiornato": "2026-11-23T12:57:45+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Serie B: Empoli vs Pisa",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795404600000,
-    "d": 150,
-    "tv": [
-     "Fox Soccer Plus",
-     "fuboTV",
-     "FOX One"
-    ]
-   },
    {
     "t": "Primavera 1: Albinoleffe-Genoa",
     "c": "Calcio",
@@ -3119,6 +3107,7 @@
     "i": 1795463100000,
     "d": 150,
     "tv": [
+     "RAI Sport 1",
      "Sky Sport 253",
      "Sky Sport Max",
      "Rai Sport",
@@ -4118,8 +4107,9 @@
     "i": 1795860000000,
     "d": 150,
     "tv": [
-     "LAB Channel",
-     "DAZN Italia"
+     "Fox Soccer Plus",
+     "fuboTV",
+     "FOX One"
     ]
    },
    {
@@ -4178,7 +4168,8 @@
     "d": 150,
     "tv": [
      "DAZN",
-     "DAZN Italia"
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -4322,7 +4313,8 @@
     "d": 150,
     "tv": [
      "DAZN",
-     "DAZN Italia"
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -4640,6 +4632,28 @@
     "d": 150,
     "tv": [
      "Eurosport"
+    ]
+   },
+   {
+    "t": "Serie B: Sampdoria vs Cremonese",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1796005800000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie B: Arezzo vs Pisa",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1796013000000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
     ]
    }
   ]
