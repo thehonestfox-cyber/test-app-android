@@ -3029,50 +3029,9 @@
   "atalanta|inter|12": "Cl6l0wcPZMo"
  },
  "sport": {
-  "aggiornato": "2026-11-22T22:44:30+01:00",
+  "aggiornato": "2026-11-23T03:29:21+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Serie A2: Livorno-Sassari",
-    "c": "Basket",
-    "s": "Serie A2",
-    "i": 1795376700000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "Serie A: Atalanta-Inter",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795376700000,
-    "d": 150,
-    "tv": [
-     "DAZN"
-    ]
-   },
-   {
-    "t": "Liga Profesional: River Plate-Lanus",
-    "c": "Calcio",
-    "s": "Liga Profesional",
-    "i": 1795384800000,
-    "d": 150,
-    "tv": [
-     "Sportitalia"
-    ]
-   },
-   {
-    "t": "NBA: Miami Heat-Oklahoma City Thunder",
-    "c": "Basket",
-    "s": "NBA",
-    "i": 1795388400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket",
-     "Sky Sport 1"
-    ]
-   },
    {
     "t": "Serie B: Empoli vs Pisa",
     "c": "Calcio",
@@ -4497,6 +4456,26 @@
     "tv": []
    },
    {
+    "t": "Serie A: Udinese-Fiorentina",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795951800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie C: Spezia-Pineto",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795951800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
     "t": "Formula 2 e Formula 3: F2 - Qatar GP - Feature Race",
     "c": "Motori",
     "s": "Formula 2 e Formula 3",
@@ -4517,6 +4496,46 @@
     ]
    },
    {
+    "t": "Serie A: Sassuolo-Napoli",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795960800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Modena-Padova",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795960800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie B: Sudtirol-Mantova",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795960800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Bundesliga: Friburgo-RB Lipsia",
+    "c": "Calcio",
+    "s": "Bundesliga",
+    "i": 1795962600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
     "t": "Formula 1: Qatar Grand Prix - Gara",
     "c": "Motori",
     "s": "Formula 1",
@@ -4528,6 +4547,99 @@
      "Sky Sport 4K",
      "TV8",
      "NOW"
+    ]
+   },
+   {
+    "t": "Serie B: Sampdoria-Cremonese",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795968900000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo – Copper Mountain: Slalom Gigante M (1a manche): 1a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795971600000,
+    "d": 150,
+    "tv": [
+     "Eurosport"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Bosnia ed Erzegovina-Lituania",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1795971600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "Serie A: Roma-Monza",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795971600000,
+    "d": 150,
+    "tv": [
+     "Sky",
+     "DAZN",
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Serbia-Italia",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1795975200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket",
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo – Killington: Slalom F (2a manche): 2a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795977000000,
+    "d": 150,
+    "tv": [
+     "Eurosport"
+    ]
+   },
+   {
+    "t": "Serie B: Arezzo-Pisa",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795977000000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie A: Como-Juventus",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1795981500000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo – Copper Mountain: Slalom Gigante M (2a manche): 2a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795982400000,
+    "d": 150,
+    "tv": [
+     "Eurosport"
     ]
    }
   ]
