@@ -3102,41 +3102,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-24T03:14:00+01:00",
+  "aggiornato": "2026-11-24T14:45:11+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "NBA: Minnesota Timberwolves-Brooklyn Nets",
-    "c": "Basket",
-    "s": "NBA",
-    "i": 1795480200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "Serie B: Catanzaro vs Palermo",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795505400000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Empoli vs Pisa",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795512600000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN Italia"
-    ]
-   },
    {
     "t": "UEFA Champions League: Bodo Glimt-LASK",
     "c": "Calcio",
@@ -3358,8 +3326,9 @@
     "i": 1795606200000,
     "d": 150,
     "tv": [
-     "LAB Channel",
-     "DAZN Italia"
+     "Fox Soccer Plus",
+     "fuboTV",
+     "FOX One"
     ]
    },
    {
@@ -3384,6 +3353,16 @@
     "d": 150,
     "tv": [
      "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Coppa Davis: Italia-Corea del Sud",
+    "c": "Tennis",
+    "s": "Coppa Davis",
+    "i": 1795618800000,
+    "d": 150,
+    "tv": [
+     "SuperTennis"
     ]
    },
    {
@@ -3539,8 +3518,7 @@
     "d": 150,
     "tv": [
      "Sky",
-     "Sky Sport Calcio",
-     "TV8"
+     "Sky Sport Calcio"
     ]
    },
    {
@@ -4632,7 +4610,8 @@
     "i": 1796005800000,
     "d": 150,
     "tv": [
-     "Fox Soccer Plus"
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
