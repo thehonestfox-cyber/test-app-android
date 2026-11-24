@@ -1742,6 +1742,66 @@
     "h": "Pisa",
     "a": "Modena",
     "s": 1795633200000
+   },
+   {
+    "r": 14,
+    "h": "Ascoli",
+    "a": "Virtus Entella",
+    "s": 1795874400000
+   },
+   {
+    "r": 14,
+    "h": "Carrarese",
+    "a": "Juve Stabia",
+    "s": 1795874400000
+   },
+   {
+    "r": 14,
+    "h": "Empoli",
+    "a": "Hellas Verona",
+    "s": 1795874400000
+   },
+   {
+    "r": 14,
+    "h": "L.R. Vicenza",
+    "a": "Cesena",
+    "s": 1795882500000
+   },
+   {
+    "r": 14,
+    "h": "Palermo",
+    "a": "Benevento",
+    "s": 1795890600000
+   },
+   {
+    "r": 14,
+    "h": "Modena",
+    "a": "Padova",
+    "s": 1795960800000
+   },
+   {
+    "r": 14,
+    "h": "Südtirol",
+    "a": "Mantova",
+    "s": 1795960800000
+   },
+   {
+    "r": 14,
+    "h": "Sampdoria",
+    "a": "Cremonese",
+    "s": 1795968900000
+   },
+   {
+    "r": 14,
+    "h": "Arezzo",
+    "a": "Pisa",
+    "s": 1795977000000
+   },
+   {
+    "r": 14,
+    "h": "Catanzaro",
+    "a": "Avellino",
+    "s": 1796067000000
    }
   ],
   "C": [
@@ -2419,6 +2479,12 @@
    },
    {
     "r": 18,
+    "h": "Pergolettese",
+    "a": "Desenzano",
+    "s": 1797168600000
+   },
+   {
+    "r": 18,
     "h": "Potenza",
     "a": "Giugliano",
     "s": 1797168600000
@@ -2451,6 +2517,12 @@
     "r": 18,
     "h": "Spezia",
     "a": "Guidonia M.",
+    "s": 1797179400000
+   },
+   {
+    "r": 18,
+    "h": "Vis Pesaro",
+    "a": "Vado",
     "s": 1797179400000
    }
   ]
@@ -3018,7 +3090,7 @@
    ]
   }
  ],
- "sky_at": 1795388400000,
+ "sky_at": 1795474800000,
  "hl": {
   "parma|roma|12": "VYJXPrHvggY",
   "napoli|torino|12": "wu-KW-84vpE",
@@ -3026,109 +3098,13 @@
   "bologna|udinese|12": "6HwYn-nnFeM",
   "sassuolo|genoa|12": "vVj-DxQ4hIs",
   "milan|frosinone|12": "0uHFq4wQN4Y",
-  "atalanta|inter|12": "Cl6l0wcPZMo"
+  "atalanta|inter|12": "Cl6l0wcPZMo",
+  "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-23T12:57:45+01:00",
+  "aggiornato": "2026-11-24T03:14:00+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Primavera 1: Albinoleffe-Genoa",
-    "c": "Calcio",
-    "s": "Primavera 1",
-    "i": 1795442400000,
-    "d": 150,
-    "tv": [
-     "Sportitalia"
-    ]
-   },
-   {
-    "t": "Mondiali U17 Qatar: Italia-Costa d’Avorio",
-    "c": "Calcio",
-    "s": "Mondiali U17 Qatar",
-    "i": 1795444200000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "Primavera 1: Torino-Bologna",
-    "c": "Calcio",
-    "s": "Primavera 1",
-    "i": 1795449600000,
-    "d": 150,
-    "tv": [
-     "Sportitalia"
-    ]
-   },
-   {
-    "t": "Serie C: Grosseto vs Nuova Monterosi",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795462200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 252",
-     "Sky Sport Uno",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Serie C: Grosseto-Guidonia Montecelio",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795462200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 1"
-    ]
-   },
-   {
-    "t": "Serie A: Monza vs Fiorentina",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795463100000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 251",
-     "Sky Sport Calcio",
-     "DAZN",
-     "DAZN Italia",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Serie C: Lecco vs Lumezzane",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795463100000,
-    "d": 150,
-    "tv": [
-     "RAI Sport 1",
-     "Sky Sport 253",
-     "Sky Sport Max",
-     "Rai Sport",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Serie A: Monza vs Fiorentina",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795473000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 251",
-     "Sky Sport Calcio",
-     "DAZN Italia",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
    {
     "t": "NBA: Minnesota Timberwolves-Brooklyn Nets",
     "c": "Basket",
@@ -3335,22 +3311,13 @@
     ]
    },
    {
-    "t": "UEFA Champions League: Real Madrid-PSV Eindhoven",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix"
-    ]
-   },
-   {
     "t": "UEFA Champions League: Real Madrid-Psv",
     "c": "Calcio",
     "s": "UEFA Champions League",
     "i": 1795550400000,
     "d": 150,
     "tv": [
+     "Sky Sport Mix",
      "Sky"
     ]
    },
@@ -4013,13 +3980,15 @@
     ]
    },
    {
-    "t": "Serie C: Foggia-Casertana",
+    "t": "Serie C: Foggia vs Casertana",
     "c": "Calcio",
     "s": "Serie C",
     "i": 1795807800000,
     "d": 150,
     "tv": [
-     "Sky Sport 1"
+     "Sky Sport 1",
+     "SKY Go Italia",
+     "NOW TV"
     ]
    },
    {
@@ -4107,9 +4076,8 @@
     "i": 1795860000000,
     "d": 150,
     "tv": [
-     "Fox Soccer Plus",
-     "fuboTV",
-     "FOX One"
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
@@ -4159,6 +4127,17 @@
     "i": 1795870200000,
     "d": 75,
     "tv": []
+   },
+   {
+    "t": "Serie C: Athletic Carpi vs Lecco",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795872600000,
+    "d": 150,
+    "tv": [
+     "SKY Go Italia",
+     "NOW TV"
+    ]
    },
    {
     "t": "Serie A: Frosinone vs Parma",
@@ -4448,13 +4427,15 @@
     "tv": []
    },
    {
-    "t": "Serie A: Udinese-Fiorentina",
+    "t": "Serie A: Udinese vs Fiorentina",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795951800000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -4515,6 +4496,16 @@
     "d": 150,
     "tv": [
      "DAZN"
+    ]
+   },
+   {
+    "t": "SuperLega: Verona-Trentino",
+    "c": "Volley",
+    "s": "SuperLega",
+    "i": 1795960800000,
+    "d": 150,
+    "tv": [
+     "Rai 2"
     ]
    },
    {
@@ -4641,8 +4632,7 @@
     "i": 1796005800000,
     "d": 150,
     "tv": [
-     "LAB Channel",
-     "DAZN Italia"
+     "Fox Soccer Plus"
     ]
    },
    {
@@ -4654,6 +4644,56 @@
     "tv": [
      "LAB Channel",
      "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Ungheria-Slovenia",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1796058000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie A: Lecce-Atalanta",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1796059800000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Qualificazioni FIBA Mondiali: Francia-Svezia",
+    "c": "Basket",
+    "s": "Qualificazioni FIBA Mondiali",
+    "i": 1796067000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie B: Catanzaro-Avellino",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1796067000000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie A: Cagliari-Milan",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1796067900000,
+    "d": 150,
+    "tv": [
+     "DAZN"
     ]
    }
   ]
