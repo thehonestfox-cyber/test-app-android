@@ -3090,7 +3090,7 @@
    ]
   }
  ],
- "sky_at": 1795474800000,
+ "sky_at": 1795561200000,
  "hl": {
   "parma|roma|12": "VYJXPrHvggY",
   "napoli|torino|12": "wu-KW-84vpE",
@@ -3102,203 +3102,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-24T14:45:11+01:00",
+  "aggiornato": "2026-11-25T00:54:47+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "UEFA Champions League: Bodo Glimt-LASK",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795542300000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Galatasaray-Aston Villa",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795542300000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "Eurolega: Stella Rossa-Virtus Bologna",
-    "c": "Basket",
-    "s": "Eurolega",
-    "i": 1795543200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Max"
-    ]
-   },
-   {
-    "t": "Serie B: Juve Stabia vs Catanzaro",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795543200000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Benevento vs Empoli",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795546800000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Cesena vs Ascoli",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795546800000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Palermo vs Südtirol",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795546800000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Vicenza vs Carrarese",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795546800000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Virtus Entella-Hellas Verona",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795546800000,
-    "d": 150,
-    "tv": [
-     "DAZN"
-    ]
-   },
-   {
-    "t": "Serie A2: Torino-Caserta",
-    "c": "Basket",
-    "s": "Serie A2",
-    "i": 1795548600000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "Eurolega: Lyon Villeurbanne-Olimpia Milano",
-    "c": "Basket",
-    "s": "Eurolega",
-    "i": 1795549500000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Arsenal-Borussia Dortmund",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Como-AEK Atene",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Feyenoord-Porto",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Lipsia-Lens",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Manchester City-Napoli",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 1",
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Real Madrid-Psv",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix",
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Slovan-Real Betis",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795550400000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
    {
     "t": "NBA: Washington Wizards-Boston Celtics",
     "c": "Basket",
@@ -3517,6 +3323,7 @@
     "i": 1795636800000,
     "d": 150,
     "tv": [
+     "TV8",
      "Sky",
      "Sky Sport Calcio"
     ]
@@ -4673,6 +4480,37 @@
     "d": 150,
     "tv": [
      "DAZN"
+    ]
+   },
+   {
+    "t": "NBA: Houston-L.A. Lakers",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1796085000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Qualificazioni Mondiali Brasile: Finlandia-Italia",
+    "c": "Calcio",
+    "s": "Qualificazioni Mondiali Brasile femminile",
+    "i": 1796142600000,
+    "d": 150,
+    "tv": [
+     "Rai 2"
+    ]
+   },
+   {
+    "t": "Coppa Italia: Inter-Genoa",
+    "c": "Calcio",
+    "s": "Coppa Italia",
+    "i": 1796155200000,
+    "d": 150,
+    "tv": [
+     "Mediaset Infinity",
+     "Canale 5"
     ]
    }
   ]
