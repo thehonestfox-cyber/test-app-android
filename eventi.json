@@ -3102,29 +3102,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-25T00:54:47+01:00",
+  "aggiornato": "2026-11-25T09:37:03+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "NBA: Washington Wizards-Boston Celtics",
-    "c": "Basket",
-    "s": "NBA",
-    "i": 1795568400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 1"
-    ]
-   },
-   {
-    "t": "NBA: Denver Nuggets-Dallas Mavericks",
-    "c": "Basket",
-    "s": "NBA",
-    "i": 1795575600000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
    {
     "t": "Serie B: Cesena vs Ascoli",
     "c": "Calcio",
@@ -3132,9 +3112,8 @@
     "i": 1795606200000,
     "d": 150,
     "tv": [
-     "Fox Soccer Plus",
-     "fuboTV",
-     "FOX One"
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
@@ -3216,13 +3195,15 @@
     ]
    },
    {
-    "t": "Serie B: Cremonese-Avellino",
+    "t": "Serie B: Cremonese vs Avellino",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795629600000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -3236,33 +3217,40 @@
     ]
    },
    {
-    "t": "Serie B: Mantova-Arezzo",
+    "t": "Serie B: Calcio Padova vs Sampdoria",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795633200000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "Onefootball",
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
-    "t": "Serie B: Padova-Sampdoria",
+    "t": "Serie B: Mantova vs Arezzo",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795633200000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
-    "t": "Serie B: Pisa-Modena",
+    "t": "Serie B: Pisa vs Modena",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795633200000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -3438,6 +3426,17 @@
     "d": 150,
     "tv": [
      "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Serie B: Pisa vs Modena",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1795712400000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
@@ -3937,13 +3936,15 @@
     ]
    },
    {
-    "t": "Serie B: Ascoli-Virtus Entella",
+    "t": "Serie B: Ascoli vs Virtus Entella",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795874400000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -4443,16 +4444,6 @@
     ]
    },
    {
-    "t": "Serie A: Lecce-Atalanta",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1796059800000,
-    "d": 150,
-    "tv": [
-     "DAZN"
-    ]
-   },
-   {
     "t": "Qualificazioni FIBA Mondiali: Francia-Svezia",
     "c": "Basket",
     "s": "Qualificazioni FIBA Mondiali",
@@ -4473,13 +4464,27 @@
     ]
    },
    {
-    "t": "Serie A: Cagliari-Milan",
+    "t": "Serie A: Lecce vs Atalanta",
     "c": "Calcio",
     "s": "Serie A",
-    "i": 1796067900000,
+    "i": 1796070600000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
+    ]
+   },
+   {
+    "t": "Serie A: Cagliari vs Milan",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1796077800000,
+    "d": 150,
+    "tv": [
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
