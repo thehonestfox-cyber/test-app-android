@@ -2524,6 +2524,18 @@
     "h": "Vis Pesaro",
     "a": "Vado",
     "s": 1797179400000
+   },
+   {
+    "r": 18,
+    "h": "Barletta",
+    "a": "Sorrento",
+    "s": 1797276600000
+   },
+   {
+    "r": 18,
+    "h": "Latina",
+    "a": "Livorno",
+    "s": 1797277500000
    }
   ]
  },
@@ -3102,20 +3114,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-25T09:37:03+01:00",
+  "aggiornato": "2026-11-25T14:59:24+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Serie B: Cesena vs Ascoli",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795606200000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN Italia"
-    ]
-   },
    {
     "t": "Serie C: Audace Cerignola vs Inter II",
     "c": "Calcio",
@@ -3223,7 +3224,6 @@
     "i": 1795633200000,
     "d": 150,
     "tv": [
-     "Onefootball",
      "LAB Channel",
      "DAZN",
      "DAZN Italia"
@@ -3860,8 +3860,9 @@
     "i": 1795860000000,
     "d": 150,
     "tv": [
-     "LAB Channel",
-     "DAZN Italia"
+     "Fox Soccer Plus",
+     "fuboTV",
+     "FOX One"
     ]
    },
    {
@@ -3914,6 +3915,17 @@
    },
    {
     "t": "Serie C: Athletic Carpi vs Lecco",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795872600000,
+    "d": 150,
+    "tv": [
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Serie C: Giugliano vs Team Altamura",
     "c": "Calcio",
     "s": "Serie C",
     "i": 1795872600000,
