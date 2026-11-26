@@ -3,30 +3,6 @@
   "A": [
    {
     "r": 12,
-    "h": "Como",
-    "a": "Cagliari",
-    "s": 1795269600000
-   },
-   {
-    "r": 12,
-    "h": "Lazio",
-    "a": "Lecce",
-    "s": 1795269600000
-   },
-   {
-    "r": 12,
-    "h": "Parma",
-    "a": "Roma",
-    "s": 1795280400000
-   },
-   {
-    "r": 12,
-    "h": "Napoli",
-    "a": "Torino",
-    "s": 1795290300000
-   },
-   {
-    "r": 12,
     "h": "Juventus",
     "a": "Venezia",
     "s": 1795347000000
@@ -1625,48 +1601,6 @@
   "B": [
    {
     "r": 12,
-    "h": "Ascoli",
-    "a": "L.R. Vicenza",
-    "s": 1795269600000
-   },
-   {
-    "r": 12,
-    "h": "Carrarese",
-    "a": "Virtus Entella",
-    "s": 1795269600000
-   },
-   {
-    "r": 12,
-    "h": "Modena",
-    "a": "Juve Stabia",
-    "s": 1795269600000
-   },
-   {
-    "r": 12,
-    "h": "Sampdoria",
-    "a": "Benevento",
-    "s": 1795269600000
-   },
-   {
-    "r": 12,
-    "h": "Südtirol",
-    "a": "Cremonese",
-    "s": 1795269600000
-   },
-   {
-    "r": 12,
-    "h": "Catanzaro",
-    "a": "Palermo",
-    "s": 1795277700000
-   },
-   {
-    "r": 12,
-    "h": "Empoli",
-    "a": "Pisa",
-    "s": 1795285800000
-   },
-   {
-    "r": 12,
     "h": "Avellino",
     "a": "Mantova",
     "s": 1795356000000
@@ -1799,78 +1733,6 @@
    }
   ],
   "C": [
-   {
-    "r": 15,
-    "h": "Audace Cerignola",
-    "a": "Barletta",
-    "s": 1795267800000
-   },
-   {
-    "r": 15,
-    "h": "Inter Under 23",
-    "a": "Potenza",
-    "s": 1795267800000
-   },
-   {
-    "r": 15,
-    "h": "Monopoli",
-    "a": "Cavese",
-    "s": 1795267800000
-   },
-   {
-    "r": 15,
-    "h": "Ostiamare",
-    "a": "Atalanta Under 23",
-    "s": 1795267800000
-   },
-   {
-    "r": 15,
-    "h": "Treviso",
-    "a": "Pergolettese",
-    "s": 1795267800000
-   },
-   {
-    "r": 15,
-    "h": "Vado",
-    "a": "Latina",
-    "s": 1795267800000
-   },
-   {
-    "r": 15,
-    "h": "Campobasso",
-    "a": "Vis Pesaro",
-    "s": 1795278600000
-   },
-   {
-    "r": 15,
-    "h": "Crotone",
-    "a": "Cosenza",
-    "s": 1795278600000
-   },
-   {
-    "r": 15,
-    "h": "Folgore Caratese",
-    "a": "Arzignano V.",
-    "s": 1795278600000
-   },
-   {
-    "r": 15,
-    "h": "Giana Erminio",
-    "a": "Juventus Next Gen",
-    "s": 1795278600000
-   },
-   {
-    "r": 15,
-    "h": "Pineto",
-    "a": "Pescara",
-    "s": 1795278600000
-   },
-   {
-    "r": 15,
-    "h": "Savoia",
-    "a": "Sorrento",
-    "s": 1795278600000
-   },
    {
     "r": 15,
     "h": "Pro Vercelli",
@@ -3086,8 +2948,6 @@
  ],
  "sky_at": 1795647600000,
  "hl": {
-  "parma|roma|12": "VYJXPrHvggY",
-  "napoli|torino|12": "wu-KW-84vpE",
   "juventus|venezia|12": "IrKIMUF7V8Q",
   "bologna|udinese|12": "6HwYn-nnFeM",
   "sassuolo|genoa|12": "vVj-DxQ4hIs",
@@ -3096,32 +2956,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-26T05:57:34+01:00",
+  "aggiornato": "2026-11-26T15:48:15+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Serie B: Pisa vs Modena",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795665600000,
-    "d": 150,
-    "tv": [
-     "Fox Soccer Plus",
-     "fuboTV",
-     "FOX One"
-    ]
-   },
-   {
-    "t": "Serie B: Cremonese vs Avellino",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795689000000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN Italia"
-    ]
-   },
    {
     "t": "Mondiali U17 Qatar: Uzbekistan-Italia",
     "c": "Calcio",
@@ -4284,10 +4121,64 @@
     ]
    },
    {
+    "t": "Serie B: Empoli vs Verona",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1796252400000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie B: Sampdoria vs Cremonese",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1796259600000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Serie B: Arezzo vs Pisa",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1796266800000,
+    "d": 150,
+    "tv": [
+     "LAB Channel",
+     "DAZN Italia"
+    ]
+   },
+   {
     "t": "Formula 1: Abu Dhabi Grand Prix - FP1",
     "c": "Motori",
     "s": "Formula 1",
     "i": 1796376600000,
+    "d": 75,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Formula 2 e Formula 3: F2 - Abu Dhabi GP - Quali",
+    "c": "Motori",
+    "s": "Formula 2 e Formula 3",
+    "i": 1796382000000,
+    "d": 75,
+    "tv": []
+   },
+   {
+    "t": "Formula 1: Abu Dhabi Grand Prix - FP2",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1796389200000,
     "d": 75,
     "tv": [
      "Sky Sport F1",
