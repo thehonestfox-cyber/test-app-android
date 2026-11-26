@@ -1625,12 +1625,6 @@
   "B": [
    {
     "r": 12,
-    "h": "Hellas Verona",
-    "a": "Cesena",
-    "s": 1795203000000
-   },
-   {
-    "r": 12,
     "h": "Ascoli",
     "a": "L.R. Vicenza",
     "s": 1795269600000
@@ -1805,18 +1799,6 @@
    }
   ],
   "C": [
-   {
-    "r": 15,
-    "h": "Casertana",
-    "a": "Salernitana",
-    "s": 1795203000000
-   },
-   {
-    "r": 15,
-    "h": "Trento",
-    "a": "Cittadella",
-    "s": 1795203000000
-   },
    {
     "r": 15,
     "h": "Audace Cerignola",
@@ -3102,7 +3084,7 @@
    ]
   }
  ],
- "sky_at": 1795561200000,
+ "sky_at": 1795647600000,
  "hl": {
   "parma|roma|12": "VYJXPrHvggY",
   "napoli|torino|12": "wu-KW-84vpE",
@@ -3114,238 +3096,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-25T14:59:24+01:00",
+  "aggiornato": "2026-11-26T00:04:51+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Serie C: Audace Cerignola vs Inter II",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795613400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 251",
-     "Sky Sport Uno",
-     "Sky Sport 1",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "UEFA Youth League: PSG-Roma",
-    "c": "Calcio",
-    "s": "UEFA Youth League",
-    "i": 1795618800000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "Coppa Davis: Italia-Corea del Sud",
-    "c": "Tennis",
-    "s": "Coppa Davis",
-    "i": 1795618800000,
-    "d": 150,
-    "tv": [
-     "SuperTennis"
-    ]
-   },
-   {
-    "t": "Eurolega: Dubai Basketball-Partizan Belgrado",
-    "c": "Basket",
-    "s": "Eurolega",
-    "i": 1795622400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "Serie C: Atalanta II vs Pineto",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795626000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 255",
-     "Sky Sport Max",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Sabah-Barcellona",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795628700000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Slavia Praga-Villarreal",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795628700000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "Serie B: Cremonese vs Avellino",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795629600000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie A1: Savona-Brescia",
-    "c": "Altri sport",
-    "s": "Pallanuoto maschile",
-    "i": 1795633200000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "Serie B: Calcio Padova vs Sampdoria",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795633200000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Mantova vs Arezzo",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795633200000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "Serie B: Pisa vs Modena",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795633200000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "CEV Champions League: Milano-Levalloois Paris",
-    "c": "Volley",
-    "s": "CEV Champions League femminile",
-    "i": 1795633200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Max"
-    ]
-   },
-   {
-    "t": "Eurolega: Olympiacos-Hapoel Tel Aviv",
-    "c": "Basket",
-    "s": "Eurolega",
-    "i": 1795634100000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Atletico Madrid-Viking",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795636800000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Bruges-Liverpool",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795636800000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Inter-Stoccarda",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795636800000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport 1"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Lille-Bayern Monaco",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795636800000,
-    "d": 150,
-    "tv": [
-     "TV8",
-     "Sky",
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: PSG-Roma",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795636800000,
-    "d": 150,
-    "tv": [
-     "Amazon Prime Video"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Shakhtar Donetsk-Fenerbahce",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795636800000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Champions League: Sporting-Manchester United",
-    "c": "Calcio",
-    "s": "UEFA Champions League",
-    "i": 1795636800000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
    {
     "t": "NBA: Philadelphia 76ers-Miami Heat",
     "c": "Basket",
@@ -3860,9 +3613,8 @@
     "i": 1795860000000,
     "d": 150,
     "tv": [
-     "Fox Soccer Plus",
-     "fuboTV",
-     "FOX One"
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
@@ -3936,6 +3688,17 @@
     ]
    },
    {
+    "t": "Serie C: Gubbio vs Vado",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795872600000,
+    "d": 150,
+    "tv": [
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
     "t": "Serie A: Frosinone vs Parma",
     "c": "Calcio",
     "s": "Serie A",
@@ -3960,23 +3723,27 @@
     ]
    },
    {
-    "t": "Serie B: Carrarese-Juve Stabia",
+    "t": "Serie B: Carrarese vs Juve Stabia",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795874400000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
-    "t": "Serie B: Empoli-Hellas Verona",
+    "t": "Serie B: Empoli vs Verona",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795874400000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -4065,13 +3832,15 @@
     ]
    },
    {
-    "t": "Serie B: Vicenza-Cesena",
+    "t": "Serie B: Vicenza vs Cesena",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795882500000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
@@ -4140,13 +3909,15 @@
     ]
    },
    {
-    "t": "Serie B: Palermo-Benevento",
+    "t": "Serie B: Palermo vs Benevento",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1795890600000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "LAB Channel",
+     "DAZN",
+     "DAZN Italia"
     ]
    },
    {
