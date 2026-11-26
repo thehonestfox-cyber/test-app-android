@@ -3096,39 +3096,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-26T00:04:51+01:00",
+  "aggiornato": "2026-11-26T05:57:34+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "NBA: Philadelphia 76ers-Miami Heat",
-    "c": "Basket",
-    "s": "NBA",
-    "i": 1795640400000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "Liga Profesional: Boca Juniors-Independiente Rivadavia",
-    "c": "Calcio",
-    "s": "Liga Profesional",
-    "i": 1795651200000,
-    "d": 150,
-    "tv": [
-     "Sportitalia"
-    ]
-   },
-   {
-    "t": "NBA: Oklahoma City Thunder-Minnesota Timberwolves",
-    "c": "Basket",
-    "s": "NBA",
-    "i": 1795653000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
    {
     "t": "Serie B: Pisa vs Modena",
     "c": "Calcio",
@@ -3136,8 +3106,9 @@
     "i": 1795665600000,
     "d": 150,
     "tv": [
-     "LAB Channel",
-     "DAZN Italia"
+     "Fox Soccer Plus",
+     "fuboTV",
+     "FOX One"
     ]
    },
    {
@@ -4299,6 +4270,30 @@
     "tv": [
      "Mediaset Infinity",
      "Canale 5"
+    ]
+   },
+   {
+    "t": "Coppa Italia: Como-Cremonese",
+    "c": "Calcio",
+    "s": "Coppa Italia",
+    "i": 1796241600000,
+    "d": 150,
+    "tv": [
+     "Mediaset Infinity",
+     "Italia 1"
+    ]
+   },
+   {
+    "t": "Formula 1: Abu Dhabi Grand Prix - FP1",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1796376600000,
+    "d": 75,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "NOW"
     ]
    }
   ]
