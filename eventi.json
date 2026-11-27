@@ -2946,7 +2946,7 @@
    ]
   }
  ],
- "sky_at": 1795647600000,
+ "sky_at": 1795734000000,
  "hl": {
   "juventus|venezia|12": "IrKIMUF7V8Q",
   "bologna|udinese|12": "6HwYn-nnFeM",
@@ -2956,267 +2956,9 @@
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-26T15:48:15+01:00",
+  "aggiornato": "2026-11-27T00:32:49+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Mondiali U17 Qatar: Uzbekistan-Italia",
-    "c": "Calcio",
-    "s": "Mondiali U17 Qatar",
-    "i": 1795701600000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "UEFA Conference League: Kairat Almaty-Mjallby",
-    "c": "Calcio",
-    "s": "UEFA Conference League",
-    "i": 1795707000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "Qualificazioni FIBA Mondiali: Lituania-Serbia",
-    "c": "Basket",
-    "s": "Qualificazioni FIBA Mondiali",
-    "i": 1795710600000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "Serie B: Pisa vs Modena",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795712400000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN Italia"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Besiktas-Hapoel Beer Sheva",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Celta Vigo-Bournemouth",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix",
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Dinamo Zagabria-Bayer Leverkusen",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Marsiglia-Levski Sofia",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Olympiacos-Milan",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport 1"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Salisburgo-Ararat Armenia",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Union Saint Gilloise-Lech Poznan",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Viktoria Plzen-Benfica",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795715100000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "Qualificazioni FIBA Mondiali: Italia-Turchia",
-    "c": "Basket",
-    "s": "Qualificazioni FIBA Mondiali",
-    "i": 1795719600000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "SuperLega: Perugia-Civitanova",
-    "c": "Volley",
-    "s": "SuperLega",
-    "i": 1795721400000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "UEFA Conference League: Borac-Atalanta",
-    "c": "Calcio",
-    "s": "UEFA Conference League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport Max"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Crystal Palace-Real Sociedad",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport Calcio"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Ferencvaros-Celje",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Hoffenheim-Sturm Graz",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix",
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Juventus-Omonia Nicosia",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky",
-     "Sky Sport 1"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Lione-Lillestrom",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: NEC-Rennes",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: OFI-Anderlecht",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Sparta Praga-AZ Alkmaar",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Sunderland-Jagiellonia Bialystok",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
-   {
-    "t": "UEFA Europa League: Torreense-Celtic",
-    "c": "Calcio",
-    "s": "UEFA Europa League",
-    "i": 1795723200000,
-    "d": 150,
-    "tv": [
-     "Sky"
-    ]
-   },
    {
     "t": "MotoGP: Valencian Community Grand Prix - Prove libere",
     "c": "Motori",
@@ -3263,6 +3005,17 @@
     ]
    },
    {
+    "t": "Coppa Davis: Italia-Cechia",
+    "c": "Tennis",
+    "s": "Coppa Davis",
+    "i": 1795791600000,
+    "d": 150,
+    "tv": [
+     "SuperTennis",
+     "Rai 1"
+    ]
+   },
+   {
     "t": "Primavera 1: Atalanta-Monza",
     "c": "Calcio",
     "s": "Primavera 1",
@@ -3279,6 +3032,17 @@
     "i": 1795795800000,
     "d": 75,
     "tv": []
+   },
+   {
+    "t": "Nations Championship: Italia-Fiji",
+    "c": "Altri sport",
+    "s": "Rugby",
+    "i": 1795797600000,
+    "d": 150,
+    "tv": [
+     "TV8",
+     "Sky Sport Arena"
+    ]
    },
    {
     "t": "Formula 1: Qatar Grand Prix - FP2",
@@ -3766,6 +3530,26 @@
     ]
    },
    {
+    "t": "Liga Profesional: Velez Sarsfield-Independiente",
+    "c": "Calcio",
+    "s": "Liga Profesional",
+    "i": 1795906800000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Liga Profesional: Instituto-River Plate",
+    "c": "Calcio",
+    "s": "Liga Profesional",
+    "i": 1795914000000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
     "t": "Serie B: Empoli vs Verona",
     "c": "Calcio",
     "s": "Serie B",
@@ -3785,6 +3569,16 @@
     "tv": [
      "Sky Sport MotoGP",
      "NOW"
+    ]
+   },
+   {
+    "t": "Primavera 1: Sassuolo-Inter",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795946400000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
     ]
    },
    {
@@ -3823,6 +3617,16 @@
     "d": 150,
     "tv": [
      "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "Primavera 1: Roma-Fiorentina",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1795953600000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
     ]
    },
    {
@@ -4003,6 +3807,16 @@
     ]
    },
    {
+    "t": "Liga Profesional: Boca Juniors-Gymnasia La Plata",
+    "c": "Calcio",
+    "s": "Liga Profesional",
+    "i": 1795995000000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
     "t": "Serie B: Sampdoria vs Cremonese",
     "c": "Calcio",
     "s": "Serie B",
@@ -4132,6 +3946,16 @@
     ]
    },
    {
+    "t": "NBA: Chicago-New York",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1796259600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
     "t": "Serie B: Sampdoria vs Cremonese",
     "c": "Calcio",
     "s": "Serie B",
@@ -4151,6 +3975,58 @@
     "tv": [
      "LAB Channel",
      "DAZN Italia"
+    ]
+   },
+   {
+    "t": "NBA: Golden State Warriors-Utah Jazz",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1796270400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Saudi League: Al Hilal-Al Diriyah",
+    "c": "Calcio",
+    "s": "Saudi League",
+    "i": 1796319000000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo: Beaver Creek. Discesa Libera M",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1796320800000,
+    "d": 150,
+    "tv": [
+     "Eurosport",
+     "Rai 2"
+    ]
+   },
+   {
+    "t": "Eurolega: Virtus Bologna-Partizan",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1796328000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Coppa Italia: Juventus-Sassuolo",
+    "c": "Calcio",
+    "s": "Coppa Italia",
+    "i": 1796328000000,
+    "d": 150,
+    "tv": [
+     "Mediaset Infinity",
+     "Italia 1"
     ]
    },
    {
