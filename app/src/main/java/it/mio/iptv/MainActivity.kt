@@ -178,6 +178,8 @@ class MainActivity : AppCompatActivity() {
     private var currentUrl = ""
     private var triedHls = false
     private var firstPlayError: PlaybackException? = null   // errore del primo tentativo (prima del riprovo come HLS)
+    private var playGen = 0
+    private val fallbackQueue = ArrayDeque<String>()
     private var fullscreen = false
     private var userLive = false             // la sezione aperta è di tipo "eventi live": niente player, schermo intero alla scelta
     private var userSection: String? = null   // sezione aperta dall'utente (null = Completa)
@@ -571,10 +573,12 @@ class MainActivity : AppCompatActivity() {
             val chans = cats.filter { !LiveFixtures.isAuto(it.name) }.flatMap { it.channels }
             if (chans.isNotEmpty()) SportsDb.prefetch(chans)
             val hasAuto = cats.any { LiveFixtures.isAuto(it.name) }
-            // 1) subito, senza rete: playlist e partite gia' salvate
+            // 1) subito, senza rete: catalogo automatico Mandra, playlist e partite gia' salvate
             if (hasAuto && warming.compareAndSet(false, true)) {
                 try {
-                    val local = loadPlaylists().mapNotNull { cachedPlaylist(it) }
+                    val local = ArrayList<List<Channel>>()
+                    if (mandraAutoOn()) local.add(MandraStreams.cached(cacheDir))
+                    loadPlaylists().mapNotNullTo(local) { cachedPlaylist(it) }
                     warmCompute(LiveFixtures.current(), if (local.isEmpty()) emptyList() else sortedAll(local))
                 } finally {
                     warming.set(false)
@@ -749,6 +753,8 @@ class MainActivity : AppCompatActivity() {
         loadGen++
         liveBuildGen++
         filterGen++
+        playGen++
+        fallbackQueue.clear()
         ui.removeCallbacks(filterRun)
         ui.removeCallbacks(hideRun)
         channelList.stopScroll()
@@ -976,16 +982,22 @@ class MainActivity : AppCompatActivity() {
             startNow(fullUrl, asHls)
             return
         }
+        val gen = playGen
         holdingLine = true
         bg {
             handoff.claim(400)
-            uiSafe { startNow(fullUrl, asHls) }
+            uiSafe {
+                if (gen == playGen && currentUrl == fullUrl) startNow(fullUrl, asHls)
+            }
         }
     }
 
     // Un altro dispositivo ha preso la linea: questo la rilascia
     private fun onLineTaken() = uiSafe {
         if (holdingLine) {
+            playGen++
+            fallbackQueue.clear()
+            currentUrl = ""
             player.stop()
             holdingLine = false
             player.clearMediaItems()
@@ -1033,8 +1045,12 @@ class MainActivity : AppCompatActivity() {
             .setMinPlaybackSpeed(0.98f)
             .setMaxPlaybackSpeed(1.05f)
             .build()
+        val cleanPath = playUrl.substringBefore('?')
         val item = MediaItem.Builder().setUri(playUrl).setLiveConfiguration(live).apply {
-            if (asHls) setMimeType(MimeTypes.APPLICATION_M3U8)
+            when {
+                cleanPath.endsWith(".mpd", ignoreCase = true) -> setMimeType(MimeTypes.APPLICATION_MPD)
+                asHls -> setMimeType(MimeTypes.APPLICATION_M3U8)
+            }
         }.build()
         player.setMediaItem(item)
         player.prepare()
@@ -1042,20 +1058,27 @@ class MainActivity : AppCompatActivity() {
         if (keepAliveOn()) startKeepAlive()
     }
 
-    // Se il formato non si capisce dall'URL, riprova una volta come HLS.
+    // Se il formato non si capisce dall'URL, riprova una volta come HLS; se fallisce ancora, prova il server successivo.
     private fun onError(e: PlaybackException) {
         if (currentUrl.isEmpty()) return
-        // Riprova come HLS solo se il problema può essere il formato (non per errori del decoder)
-        if (!triedHls && !Playback.isDecoderError(e)) {
+        val isDash = currentUrl.substringBefore('|').substringBefore('?').endsWith(".mpd", ignoreCase = true)
+        // Riprova come HLS solo se il problema può essere il formato (non per errori del decoder o flussi DASH)
+        if (!triedHls && !isDash && !Playback.isDecoderError(e)) {
             triedHls = true
             firstPlayError = e
             start(currentUrl, true)
             return
         }
-        // mostra l'errore vero, non quello (fuorviante) del secondo tentativo
         val shown = Playback.pickError(firstPlayError, e)
+        if (fallbackQueue.isNotEmpty()) {
+            tryNextCandidate(playGen, shown)
+            return
+        }
+        // mostra l'errore vero, non quello (fuorviante) del secondo tentativo
         val http = (shown.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode
-        setError("Impossibile riprodurre questo canale (${shown.errorCodeName}${if (http != null) ", HTTP $http" else ""}).")
+        val msg = "Impossibile riprodurre questo canale (${shown.errorCodeName}${if (http != null) ", HTTP $http" else ""})."
+        setError(msg)
+        if (fullscreen) toast(msg)
     }
 
     private fun setFullscreen(on: Boolean) {
@@ -1074,6 +1097,10 @@ class MainActivity : AppCompatActivity() {
             val last = currentChannel?.url
             ctl.show(WindowInsetsCompat.Type.systemBars())
             if (userLive && currentView === userView) {
+                playGen++
+                fallbackQueue.clear()
+                currentUrl = ""
+                spinner.visibility = View.GONE
                 player.stop().also { holdingLine = false }
                 currentChannel = null
                 liveSelect(null)
@@ -1276,11 +1303,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (ch.url.isEmpty()) {
-            // la guida del calendario MandraKodi dice su quali canali va in onda: si sa cosa manca nelle playlist
-            toast(
-                if (ch.tv.isNotEmpty()) "Questo evento va in onda su ${ch.tv}: aggiungi una playlist che abbia quel canale."
-                else "Nessun canale trovato per questo evento"
-            )
+            // la guida del calendario MandraKodi dice su quali canali va in onda
+            val hint = when {
+                !mandraAutoOn() && ch.tv.isNotEmpty() ->
+                    "Questo evento va in onda su ${ch.tv}: attiva i Canali automatici MandraKodi o aggiungi una playlist."
+                ch.tv.isNotEmpty() ->
+                    "Nessun flusso trovato per ${ch.tv} al momento."
+                else -> "Nessun canale trovato per questo evento"
+            }
+            toast(hint)
             return
         }
         if (userLive) {
@@ -1710,23 +1741,34 @@ events:{onError:function(e){Native.onError(e.data)}}});}
 
     private fun loadPlaylistChannels(cb: (List<Channel>, Int, Boolean) -> Unit) {
         val urls = loadPlaylists()
-        if (urls.isEmpty()) {
+        val autoOn = mandraAutoOn()
+        if (urls.isEmpty() && !autoOn) {
             cb(emptyList(), 0, true)
             return
         }
         bg {
+            val mandraCached = if (autoOn) MandraStreams.cached(cacheDir) else null
             val cached = urls.map { cachedPlaylist(it) }
             val now = System.currentTimeMillis()
             // se scaricata da meno di 10 minuti non serve riscaricarla
             val fresh = urls.map { cache.containsKey(it) && (fetchedAt[it] ?: 0L) + 10 * 60_000L > now }
-            if (cached.any { it != null } && !fresh.all { it }) {
-                val first = sortedAll(cached.filterNotNull())
+            val anyCached = !mandraCached.isNullOrEmpty() || cached.any { it != null }
+            if (anyCached && (!fresh.all { it } || autoOn)) {
+                val firstLists = ArrayList<List<Channel>>()
+                if (!mandraCached.isNullOrEmpty()) firstLists.add(mandraCached)
+                cached.filterNotNullTo(firstLists)
+                val first = sortedAll(firstLists)
                 uiSafe { cb(first, 0, false) }
             }
-            val pool = Executors.newFixedThreadPool(minOf(urls.size, 4), bgFactory)
+            val tasks = (if (autoOn) 1 else 0) + urls.size
+            val pool = Executors.newFixedThreadPool(minOf(tasks.coerceAtLeast(1), 4), bgFactory)
+            val mandraFuture = if (autoOn) {
+                pool.submit(Callable<List<Channel>?> { MandraStreams.refresh(cacheDir) })
+            } else null
             val futures = urls.mapIndexed { i, u ->
                 pool.submit(Callable<List<Channel>?> { if (fresh[i]) cached[i] else (downloadPlaylist(u) ?: cached[i]) })
             }
+            val mandraList = try { mandraFuture?.get() } catch (_: Exception) { mandraCached }
             var errors = 0
             val lists = futures.map { f ->
                 val r = try { f.get() } catch (e: Exception) { null }
@@ -1734,16 +1776,20 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                 r
             }
             pool.shutdown()
-            val all = sortedAll(lists.filterNotNull())
-            uiSafe { cb(all, errors, true) }
+            val finalLists = ArrayList<List<Channel>>()
+            if (!mandraList.isNullOrEmpty()) finalLists.add(mandraList)
+            lists.filterNotNullTo(finalLists)
+            val all = sortedAll(finalLists)
+            val onlyDefaultFailed = errors == 1 && urls == listOf(defaultPlaylist) && !mandraList.isNullOrEmpty()
+            uiSafe { cb(all, if (onlyDefaultFailed) 0 else errors, true) }
         }
     }
 
-    // "Completa": tutte le playlist, con le categorie create da sole
+    // "Completa": tutte le playlist + catalogo automatico Mandra, con le categorie create da sole
     private fun loadAllChannels() {
         val gen = loadGen
-        if (loadPlaylists().isEmpty()) {
-            listStatus.text = "Nessuna playlist: aggiungila da Impostazioni › Admin."
+        if (loadPlaylists().isEmpty() && !mandraAutoOn()) {
+            listStatus.text = "Nessuna playlist: aggiungila da Impostazioni › Admin o attiva i Canali automatici."
             return
         }
         listStatus.text = "Caricamento canali…"
@@ -1928,14 +1974,68 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     }
 
     private fun playChannel(ch: Channel) {
+        val gen = ++playGen
         currentChannel = ch
+        currentUrl = ""
+        fallbackQueue.clear()
+        fallbackQueue.add(ch.url)
+        ch.fallbacks.forEach { if (it.isNotEmpty() && it != ch.url) fallbackQueue.add(it) }
+        player.stop()
+        player.clearMediaItems()
         showNowPlaying(ch)
         spinner.visibility = View.VISIBLE
+        playBtn.visibility = View.INVISIBLE
         showControls()
-        currentUrl = ch.url
-        triedHls = ch.url.contains(".m3u8", ignoreCase = true)
+        tryNextCandidate(gen, null)
+    }
+
+    // Prova il prossimo flusso disponibile: se è un indirizzo dinamico Mandra (mandra://...) lo risolve in background
+    private fun tryNextCandidate(gen: Int, lastErr: PlaybackException?) {
+        if (gen != playGen) return
+        val next = fallbackQueue.removeFirstOrNull()
+        if (next == null) {
+            spinner.visibility = View.GONE
+            playBtn.visibility = View.VISIBLE
+            val msg = if (lastErr != null) {
+                val http = (lastErr.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode
+                "Impossibile riprodurre questo canale (${lastErr.errorCodeName}${if (http != null) ", HTTP $http" else ""})."
+            } else {
+                "Impossibile risolvere il flusso di questo canale al momento."
+            }
+            setError(msg)
+            if (fullscreen) toast(msg)
+            return
+        }
+        if (!MandraStreams.isDynamic(next)) {
+            launchDirectUrl(gen, next)
+            return
+        }
+        spinner.visibility = View.VISIBLE
+        playBtn.visibility = View.INVISIBLE
+        bg {
+            val resolved = MandraStreams.resolve(next)
+            uiSafe {
+                if (gen != playGen) return@uiSafe
+                if (resolved.isEmpty()) {
+                    tryNextCandidate(gen, lastErr)
+                } else {
+                    for (i in resolved.lastIndex downTo 1) {
+                        val r = resolved[i]
+                        if (r !in fallbackQueue) fallbackQueue.addFirst(r)
+                    }
+                    launchDirectUrl(gen, resolved[0])
+                }
+            }
+        }
+    }
+
+    private fun launchDirectUrl(gen: Int, url: String) {
+        if (gen != playGen) return
+        currentUrl = url
+        val clean = url.substringBefore('|').substringBefore('?')
+        triedHls = clean.contains(".m3u8", ignoreCase = true)
         firstPlayError = null
-        start(ch.url, triedHls)
+        start(url, triedHls)
     }
 
     // ---------- Schermata admin: playlist + sezioni, categorie e canali ----------
@@ -2390,6 +2490,16 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             R.drawable.ic_dark_mode, "Nero AMOLED",
             "Sfondo nero puro nel tema scuro", pitchBlackOn()
         ) { on -> setColorPref("pitch_black", on) }
+        rows += toggleRow(
+            R.drawable.ic_sec_fire, "Canali automatici MandraKodi",
+            "Recupera e collega da solo i canali agli eventi, senza dover aggiungere liste M3U",
+            mandraAutoOn()
+        ) { on ->
+            prefs.edit().putBoolean("mandra_auto", on).apply()
+            warmEvents.clear()
+            lastWarmNet = 0L
+            prefetchLive()
+        }
         rows += toggleRow(
             R.drawable.ic_tv, "Resta collegato in background",
             "Il canale continua anche fuori dall'app e la linea non si libera. Indietro nell'app la libera.",
@@ -3023,7 +3133,8 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                             quality = p?.quality ?: old.quality,
                             url = p?.url ?: old.url,
                             category = dest.name,
-                            logos = logos
+                            logos = logos,
+                            fallbacks = p?.fallbacks ?: old.fallbacks
                         )
                         if (pickedCat == ci) {
                             val chs = from.channels.toMutableList()
@@ -3091,7 +3202,10 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                     rawName = p?.rawName ?: ch.rawName,
                     quality = p?.quality ?: ch.quality,
                     url = p?.url ?: ch.url,
-                    logos = p?.logos ?: ch.logos
+                    logos = p?.logos ?: ch.logos,
+                    fallbacks = if (p != null) {
+                        (p.fallbacks + listOf(ch.url) + ch.fallbacks).filter { it.isNotEmpty() && it != p.url }.distinct()
+                    } else ch.fallbacks
                 )
                 autoEvents = autoEvents + (catName to (autoEvents[catName] ?: emptyList()).map { if (it.evKey == ch.evKey) upd else it })
                 dlg.dismiss()
@@ -3157,7 +3271,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
                         val cat = l.getOrNull(ci)
                         if (cat != null) {
                             val logos = (p.logos + listOfNotNull(Logos.repoUrl(nm))).distinct()
-                            val ch = Channel(nm, p.rawName, p.quality, cat.name, p.url, logos)
+                            val ch = Channel(nm, p.rawName, p.quality, cat.name, p.url, logos, fallbacks = p.fallbacks)
                             l[ci] = cat.copy(channels = cat.channels + ch)
                         }
                     }
@@ -3268,12 +3382,14 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     private fun cacheFile(url: String) =
         java.io.File(cacheDir, "pl_" + Integer.toHexString(url.hashCode()) + ".m3u")
 
+    private fun playlistRank(url: String) = if (url == defaultPlaylist) 3 else 1
+
     // Dalla memoria o dal disco (nessuna rete). Da chiamare fuori dal thread UI.
     private fun cachedPlaylist(url: String): List<Channel>? {
         cache[url]?.let { return it }
         return try {
             val f = cacheFile(url)
-            if (f.exists()) M3U.parse(f.readText()).also { cache[url] = it } else null
+            if (f.exists()) M3U.parse(f.readText(), playlistRank(url)).also { cache[url] = it } else null
         } catch (e: Exception) {
             null
         }
@@ -3284,7 +3400,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     @Volatile private var lastPlaylistError = ""
 
     // Scarica un indirizzo una volta sola: restituisce i canali oppure null (e imposta lastPlaylistError)
-    private fun fetchPlaylistOnce(url: String, ua: String): Pair<List<Channel>, String>? = try {
+    private fun fetchPlaylistOnce(url: String, ua: String, rank: Int): Pair<List<Channel>, String>? = try {
         val conn = URL(url).openConnection() as HttpURLConnection
         conn.connectTimeout = 20000
         conn.readTimeout = 60000   // le playlist m3u_plus sono grandi: il server può essere lento
@@ -3302,7 +3418,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             null
         } else {
             val text = conn.inputStream.bufferedReader().use { it.readText() }
-            val list = M3U.parse(text)
+            val list = M3U.parse(text, rank)
             if (list.isEmpty()) {
                 lastPlaylistError = "il server ha risposto ma senza canali (credenziali errate, scadute o linea già in uso)"
                 null
@@ -3332,12 +3448,13 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     }
 
     private fun downloadPlaylist(url: String): List<Channel>? {
+        val rank = playlistRank(url)
         val uas = listOf("VLC/3.0.20 LibVLC/3.0.20", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36")
         var denied = false
         for ((i, cand) in playlistCandidates(url).withIndex()) {
             // se il primo tentativo è "accesso negato" riprova con l'altro User-Agent, altrimenti uno solo per variante
-            val res = fetchPlaylistOnce(cand, uas[0])
-                ?: if (i == 0 && lastPlaylistError.contains("negato")) fetchPlaylistOnce(cand, uas[1]) else null
+            val res = fetchPlaylistOnce(cand, uas[0], rank)
+                ?: if (i == 0 && lastPlaylistError.contains("negato")) fetchPlaylistOnce(cand, uas[1], rank) else null
             if (res != null) {
                 lastPlaylistError = ""
                 cache[url] = res.first
@@ -3354,6 +3471,8 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         }
         return null
     }
+
+    private fun mandraAutoOn() = prefs.getBoolean("mandra_auto", true)
 
     // Collegamento "sempre acceso": con l'interruttore attivo (Impostazioni) il canale continua anche fuori dall'app,
     // così nessun altro può prendere il posto sulla linea. Con l'interruttore spento, uscendo il collegamento si chiude.

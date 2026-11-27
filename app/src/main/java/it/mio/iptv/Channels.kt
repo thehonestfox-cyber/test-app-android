@@ -15,7 +15,9 @@ data class Channel(
     val start: Long = 0L,    // inizio dell'evento in millisecondi (eventi creati da soli dai siti delle leghe); 0 = non noto
     val evKey: String = "",  // chiave stabile della partita (eventi automatici): serve a ricordare modifiche e rimozioni dell'admin
     val highlight: String = "",  // id del video YouTube con gli highlights DAZN (solo Serie A, partita finita); "" = nessuno
-    val tv: String = ""      // canali della guida che trasmettono l'evento (calendario MandraKodi); "" = non noti
+    val tv: String = "",     // canali della guida che trasmettono l'evento (calendario MandraKodi); "" = non noti
+    val fallbacks: List<String> = emptyList(), // URL alternativi da provare se il flusso principale non parte
+    val sourceRank: Int = 1  // priorità della fonte (0 = DTT ufficiale, 1 = playlist utente, 2 = Mandra auto, 3 = playlist default)
 )
 
 /** Legge una playlist M3U e crea i Channel (con categoria e logo automatici). */
@@ -23,7 +25,7 @@ object M3U {
     private val groupRe = Regex("group-title=\"([^\"]*)\"", RegexOption.IGNORE_CASE)
     private val logoRe = Regex("tvg-logo=\"([^\"]*)\"", RegexOption.IGNORE_CASE)
 
-    fun parse(text: String): List<Channel> {
+    fun parse(text: String, sourceRank: Int = 1): List<Channel> {
         val out = mutableListOf<Channel>()
         var name = ""
         var group = ""
@@ -37,6 +39,8 @@ object M3U {
                 name = if (l.contains(',')) l.substringAfterLast(',').trim() else ""
                 group = groupRe.find(l)?.groupValues?.get(1)?.trim() ?: ""
                 logo = logoRe.find(l)?.groupValues?.get(1)?.trim() ?: ""
+                ua = ""
+                ref = ""
             } else if (l.startsWith("#EXTVLCOPT:", ignoreCase = true)) {
                 val opt = l.substringAfter(':')
                 val v = opt.substringAfter('=', "").trim()
@@ -52,7 +56,7 @@ object M3U {
                     if (ref.isNotEmpty()) parts += "Referer=" + java.net.URLEncoder.encode(ref, "UTF-8")
                     u = u + "|" + parts.joinToString("&")
                 }
-                out.add(Categorizer.build(name.ifEmpty { u }, group, logo, u))
+                out.add(Categorizer.build(name.ifEmpty { u }, group, logo, u, sourceRank))
                 ua = ""
                 ref = ""
                 name = ""
@@ -149,12 +153,12 @@ object Categorizer {
         return if (g.lowercase() in genericGroups) ALTRI else g
     }
 
-    fun build(rawName: String, group: String, logo: String, url: String): Channel {
+    fun build(rawName: String, group: String, logo: String, url: String, sourceRank: Int = 1): Channel {
         val (name, quality) = clean(rawName)
         val logos = mutableListOf<String>()
         if (logo.startsWith("http", ignoreCase = true)) logos.add(logo)
         Logos.repoUrl(name)?.let { logos.add(it) }
-        return Channel(name, rawName, quality, categorize(name, group), url, logos)
+        return Channel(name, rawName, quality, categorize(name, group), url, logos, sourceRank = sourceRank)
     }
 
     fun sortCategories(cats: Collection<String>): List<String> =
@@ -210,7 +214,9 @@ object Logos {
 
     private val aliases = mapOf(
         "raiuno" to "rai1", "raidue" to "rai2", "raitre" to "rai3",
-        "raiquattro" to "rai4", "raicinque" to "rai5", "20mediaset" to "20"
+        "raiquattro" to "rai4", "raicinque" to "rai5", "20mediaset" to "20",
+        "dazn1" to "zonadazn", "dazn" to "daznchannel",
+        "skysport1" to "skysportuno", "skysportbasket" to "skysportnba", "skysportmix" to "skysport"
     )
     private val hdTag = Regex("""-(hd|hz)(?=-|$)""")
 
@@ -233,7 +239,10 @@ object Logos {
 
     fun repoUrl(cleanName: String): String? {
         val k = compact(cleanName)
-        val path = index[aliases[k] ?: k] ?: return null
+        val lookup = aliases[k] ?: k
+        val path = index[lookup]
+            ?: (if (lookup.startsWith("skysport25")) index["skysport"] else null)
+            ?: return null
         return BASE + path
     }
 }

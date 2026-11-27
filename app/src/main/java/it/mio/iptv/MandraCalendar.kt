@@ -141,26 +141,41 @@ object MandraCalendar {
             .sortedBy { it.start }
     }
 
-    // ---- abbinamento coi canali delle playlist ----
+    // ---- abbinamento coi canali delle playlist e del catalogo automatico Mandra ----
 
+    private val plusShiftRe = Regex("""\+(\d{1,2})\b""")
     private val nonAlnumRe = Regex("""[^a-z0-9]+""")
     private val tok = Regex("""\d+|\D+""")
     private val qualityTok = setOf("fhd", "hd", "sd", "uhd", "4k", "hevc", "h265", "h264", "1080p", "720p")
     private val numWords = mapOf("uno" to "1", "due" to "2", "tre" to "3")
 
+    // Piattaforme solo-streaming / estere senza canale lineare italiano diretto
+    private val appOnlyTv = setOf(
+        "sky go italia", "sky go", "mediaset infinity", "raiplay", "rai play",
+        "dazn canada", "fubotv", "fubotv canada", "disney+ premium caribbean",
+        "peacock", "paramount+", "lab channel", "discovery+", "eurosport player"
+    )
+    private val nowApps = setOf("now", "now tv")
+    private val genericDazn = setOf("dazn", "dazn italia")
+
+    private val f1Re = Regex("""\b(formula ?[123]|f[123]|porsche)\b""", RegexOption.IGNORE_CASE)
+    private val motoRe = Regex("""\b(moto ?gp|moto ?[23e]|superbike|wsbk|supersport)\b""", RegexOption.IGNORE_CASE)
+
     /** "SKY SPORT MOTOGP FHD" -> [sky, sport, motogp]; "DAZN1" e "DAZN 1" diventano entrambi [dazn, 1]. */
-    private fun chanKey(s: String): List<String> =
-        nonAlnumRe.replace(FixtureParsers.fold(s), " ").trim().split(' ')
+    private fun chanKey(s: String): List<String> {
+        val shifted = plusShiftRe.replace(s) { " plus${it.groupValues[1]} " }
+        return nonAlnumRe.replace(FixtureParsers.fold(shifted), " ").trim().split(' ')
             .filter { it.isNotEmpty() && it !in qualityTok }              // via la qualità ("FHD", "4K", ...)
             .flatMap { w -> tok.findAll(w).map { it.value }.toList() }    // "dazn1" -> [dazn, 1]
             .filter { it.isNotEmpty() }
             .map { numWords[it] ?: it }
             .toList()
+    }
 
     private class Idx(
-        val exact: Map<String, Channel>,                  // "sky sport motogp" -> canale migliore con quel nome
-        val joined: Map<String, Channel>,                 // "sportitalia" (senza spazi) -> canale migliore
-        val size: Int,                                    // quanti canali ha la playlist
+        val exact: Map<String, List<Channel>>,            // "sky sport motogp" -> canali ordinati per fonte/qualità
+        val joined: Map<String, List<Channel>>,           // "sportitalia" (senza spazi) -> canali ordinati
+        val size: Int,                                    // quanti canali ha il catalogo
         val byToken: Map<String, List<Pair<List<String>, Channel>>>   // per cercare solo dove serve
     )
 
@@ -171,28 +186,27 @@ object MandraCalendar {
         "FHD" -> 0; "HD" -> 1; "4K" -> 2; "" -> 3; else -> 4
     }
 
-    /** Tra due canali con lo stesso nome tiene quello di qualità migliore. */
-    private fun better(old: Channel?, ch: Channel): Channel =
-        if (old == null || qualityRank(ch.quality) < qualityRank(old.quality)) ch else old
+    private val chanComparator = compareBy<Channel>({ it.sourceRank }, { qualityRank(it.quality) })
 
-    // L'indice si rifà solo quando cambia la playlist: le categorie della sezione lo chiedono una dopo l'altra
+    // L'indice si rifà solo quando cambia la lista canali: le categorie della sezione lo chiedono una dopo l'altra
     @Synchronized
     private fun index(playlist: List<Channel>): Idx {
         idxVal?.let { if (idxFor === playlist) return it }
-        val exact = HashMap<String, Channel>()
-        val joined = HashMap<String, Channel>()
+        val exact = HashMap<String, MutableList<Channel>>()
+        val joined = HashMap<String, MutableList<Channel>>()
         val byToken = HashMap<String, MutableList<Pair<List<String>, Channel>>>()
         var n = 0
         for (ch in playlist) {
             val t = chanKey(ch.name)
             if (t.isEmpty()) continue
             n++
-            // a parità di nome vince la qualità migliore (FHD prima di HD)
-            exact[t.joinToString(" ")] = better(exact[t.joinToString(" ")], ch)
-            joined[t.joinToString("")] = better(joined[t.joinToString("")], ch)
+            exact.getOrPut(t.joinToString(" ")) { ArrayList() }.add(ch)
+            joined.getOrPut(t.joinToString("")) { ArrayList() }.add(ch)
             val pair = t to ch
             t.distinct().forEach { byToken.getOrPut(it) { ArrayList() }.add(pair) }
         }
+        exact.values.forEach { it.sortWith(chanComparator) }
+        joined.values.forEach { it.sortWith(chanComparator) }
         val r = Idx(exact, joined, n, byToken)
         idxFor = playlist
         idxVal = r
@@ -200,33 +214,129 @@ object MandraCalendar {
     }
 
     /**
-     * Il canale delle playlist che trasmette l'evento: prima il nome uguale a uno di quelli della guida
-     * (anche senza spazi: "Sportitalia" = "Sport Italia"), poi quello che lo contiene ("DAZN" sta in "DAZN 1").
-     * I nomi troppo generici ("Sky", "NOW") si abbinano solo se uguali, per non finire su un canale a caso.
+     * Espande e ordina i nomi dei canali della guida TV per massimizzare l'abbinamento automatico:
+     *  - prima i canali lineari specifici (es. "Sky Sport Calcio", "Sky Sport 253", "Rai 2", "TV8", "Sportitalia")
+     *  - poi gli alias noti ("Sky Sport Basket" -> "Sky Sport NBA", "Eurosport" -> "Eurosport 1"/"2")
+     *  - poi i canali generici ("DAZN" -> "DAZN 1", "Zona DAZN") e 4K
+     *  - se il calendario non riporta l'emittente (es. prove F2/F3 o Moto2/Moto3), deduce il canale dallo sport.
      */
-    private fun findChannel(e: Event, idx: Idx): Channel? {
-        if (idx.size == 0 || e.tv.isEmpty()) return null
-        val keys = e.tv.map { chanKey(it) }.filter { it.isNotEmpty() }
-        for (t in keys) {
-            idx.exact[t.joinToString(" ")]?.let { return it }
-            idx.joined[t.joinToString("")]?.let { return it }
+    private fun candidateBroadcasters(e: Event): List<String> {
+        val primary = ArrayList<String>()
+        val secondary = ArrayList<String>()
+        var sawNow = false
+
+        for (raw in e.tv) {
+            val norm = FixtureParsers.fold(raw).trim()
+            if (norm.isEmpty() || norm in appOnlyTv) continue
+            if (norm in nowApps) {
+                sawNow = true
+                continue
+            }
+            when {
+                norm in genericDazn -> {
+                    secondary.add("DAZN 1")
+                    secondary.add("Zona DAZN")
+                    secondary.add("DAZN")
+                }
+                norm == "sky sport basket" -> {
+                    primary.add("Sky Sport Basket")
+                    primary.add("Sky Sport NBA")
+                }
+                norm == "sky sport mix" -> {
+                    primary.add("Sky Sport Mix")
+                    secondary.add("Sky Sport Action")
+                    secondary.add("Sky Sport Max")
+                }
+                norm == "eurosport" -> {
+                    primary.add("Eurosport 1")
+                    primary.add("Eurosport 2")
+                    primary.add("Eurosport")
+                }
+                norm.endsWith("4k") -> secondary.add(raw)
+                else -> primary.add(raw)
+            }
         }
-        for (t in keys) {
-            if (t.size < 2 && t.joinToString("").length < 4) continue
-            val ts = t.toSet()
-            // confronto solo i canali che hanno almeno una delle parole del nome (parto dalla più rara)
-            val pool = t.mapNotNull { idx.byToken[it] }.minByOrNull { it.size } ?: continue
-            val found = pool.filter { (ct, _) -> ct.toSet().containsAll(ts) }
-                .minWithOrNull(
-                    compareBy<Pair<List<String>, Channel>>({ it.first.size }, { qualityRank(it.second.quality) })
-                )
-            if (found != null) return found.second
+
+        val combined = (primary + secondary).distinct()
+        if (combined.isNotEmpty()) return combined
+        if (sawNow) return listOf("Sky Sport Uno", "Sky Sport Arena")
+
+        // Emittente non indicata nel calendario (frequente per sessioni F2/F3, Moto2/Moto3, Superbike, Tennis)
+        val probe = "${e.sub} ${e.title}"
+        return when (e.sport) {
+            "Motori" -> when {
+                f1Re.containsMatchIn(probe) -> listOf("Sky Sport F1")
+                motoRe.containsMatchIn(probe) -> listOf("Sky Sport MotoGP")
+                else -> emptyList()
+            }
+            "Tennis" -> listOf("Sky Sport Tennis", "SuperTennis")
+            else -> emptyList()
         }
-        return null
     }
 
-    /** Dove va in onda l'evento (al massimo due canali): si vede nella card quando la playlist non li ha. */
-    private fun onTv(e: Event): String = e.tv.take(2).joinToString(", ")
+    /**
+     * Tutti i canali disponibili per l'evento (in ordine di priorità: playlist utente / DTT ufficiale /
+     * risolutori automatici Mandra / playlist predefinita), così se un flusso fallisce il player passa al successivo.
+     */
+    private fun findChannels(e: Event, idx: Idx, playlist: List<Channel>): List<Channel> {
+        if (idx.size == 0) return emptyList()
+        val out = ArrayList<Channel>()
+
+        // Per Serie A/B/C controlla anche eventuali canali dedicati alla squadra di casa nelle playlist utente
+        val isSerieABC = e.sport == "Calcio" && (
+            e.sub.equals("Serie A", true) || e.sub.equals("Serie B", true) || e.sub.equals("Serie C", true) ||
+                e.title.startsWith("Serie A:", true) || e.title.startsWith("Serie B:", true) ||
+                e.title.startsWith("Serie C:", true)
+            )
+        val isSerieC = e.sub.equals("Serie C", true) || e.title.startsWith("Serie C:", true)
+        val teamChannels = if (isSerieABC) {
+            val home = SportsDb.teams(e.title)?.first
+            if (home != null) LiveFixtures.findChannels(home, playlist, partial = !isSerieC) else emptyList()
+        } else emptyList()
+
+        // I canali dedicati alla squadra provenienti da una playlist utente (sourceRank <= 1) hanno priorità massima
+        out.addAll(teamChannels.filter { it.sourceRank <= 1 })
+
+        val keys = candidateBroadcasters(e).map { chanKey(it) }.filter { it.isNotEmpty() }
+        for (t in keys) {
+            val ex = idx.exact[t.joinToString(" ")]
+            val jn = idx.joined[t.joinToString("")]
+            if (!ex.isNullOrEmpty() || !jn.isNullOrEmpty()) {
+                ex?.let { out.addAll(it) }
+                jn?.let { out.addAll(it) }
+            }
+        }
+        if (out.isEmpty()) {
+            for (t in keys) {
+                if (t.size < 2 && t.joinToString("").length < 4) continue
+                val ts = t.toSet()
+                val pool = t.mapNotNull { idx.byToken[it] }.minByOrNull { it.size } ?: continue
+                val found = pool.filter { (ct, _) -> ct.toSet().containsAll(ts) }
+                    .sortedWith(
+                        compareBy<Pair<List<String>, Channel>>(
+                            { it.second.sourceRank },
+                            { it.first.size },
+                            { qualityRank(it.second.quality) }
+                        )
+                    )
+                    .map { it.second }
+                out.addAll(found)
+            }
+        }
+
+        // In coda eventuali canali squadra della playlist di backup (sourceRank >= 2)
+        out.addAll(teamChannels.filter { it.sourceRank >= 2 })
+        return out
+    }
+
+    /** Dove va in onda l'evento (al massimo due canali): privilegia i nomi dei canali TV rispetto alle app. */
+    private fun onTv(e: Event): String {
+        val linear = e.tv.filter {
+            val n = FixtureParsers.fold(it).trim()
+            n.isNotEmpty() && n !in appOnlyTv && n !in nowApps
+        }
+        return (if (linear.isNotEmpty()) linear else e.tv).take(2).joinToString(", ")
+    }
 
     private fun key(e: Event) = "${FixtureParsers.fold(e.title)}|${e.start}"
 
@@ -289,19 +399,22 @@ object MandraCalendar {
         val n = o.optString("n", "").ifEmpty { ch.name }
         if (!o.has("u")) return ch.copy(name = n)
         val lg = o.optJSONArray("l") ?: JSONArray()
+        val u = o.getString("u")
+        val fb = (listOf(ch.url) + ch.fallbacks).filter { it.isNotEmpty() && it != u }.distinct()
         return ch.copy(
             name = n,
             rawName = o.optString("rn", ch.rawName),
             quality = o.optString("q", ch.quality),
-            url = o.getString("u"),
-            logos = List(lg.length()) { lg.getString(it) }
+            url = u,
+            logos = List(lg.length()) { lg.getString(it) },
+            fallbacks = fb
         )
     }
 
     // ---- API ----
 
     /**
-     * Gli eventi (come Channel) di una categoria/sport; chi non ha un canale nelle playlist ha url vuoto e porta
+     * Gli eventi (come Channel) di una categoria/sport; chi non ha un canale ha url vuoto e porta
      * in [Channel.tv] i nomi dei canali della guida. Le card si vedono comunque, senza riproduzione.
      */
     fun events(category: String, playlist: List<Channel>): List<Channel> {
@@ -310,17 +423,20 @@ object MandraCalendar {
         val edits = memo(OVR)
         val idx = index(playlist)
         return current().filter { it.sport == sport && !removed.has(key(it)) }.map { e ->
-            val ch = findChannel(e, idx)
+            val matches = findChannels(e, idx, playlist)
+            val allUrls = matches.flatMap { listOf(it.url) + it.fallbacks }.filter { it.isNotEmpty() }.distinct()
+            val ch = matches.firstOrNull()
             val base = Channel(
                 name = e.title,
                 rawName = ch?.rawName ?: e.title,
                 quality = ch?.quality ?: "",
                 category = category,
-                url = ch?.url ?: "",
+                url = allUrls.firstOrNull() ?: "",
                 logos = ch?.logos ?: emptyList(),
                 start = e.start,
                 evKey = key(e),
-                tv = onTv(e)
+                tv = onTv(e),
+                fallbacks = allUrls.drop(1)
             )
             applyOverride(base, edits.optJSONObject(key(e)))
         }
