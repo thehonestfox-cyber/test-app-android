@@ -340,21 +340,24 @@ object LiveFixtures {
             .map { if (it == "uno") "1" else it }
             .joinToString(" ")
 
-    /** Canali Sky della playlist per nome (FHD, o HD se manca l'FHD). */
-    private fun skyIndex(playlist: List<Channel>): Map<String, Channel> =
+    /** Canali Sky della playlist per nome, ordinati per priorità fonte e poi qualità. */
+    private fun skyIndex(playlist: List<Channel>): Map<String, List<Channel>> =
         playlist.filter { FixtureParsers.fold(it.name).contains("sky") }
             .groupBy { skyKey(it.name) }
-            .mapValues { e -> e.value.minByOrNull { qualityRank(it.quality) }!! }
+            .mapValues { e ->
+                e.value.sortedWith(compareBy<Channel>({ it.sourceRank }, { qualityRank(it.quality) }))
+            }
 
-    /** Il canale Sky della partita che c'e' nella playlist: prima i numerati (251, 252... dedicati alla Serie C), poi gli altri. */
-    private fun skyChannel(f: Fixture, idx: Map<String, Channel>): Channel? {
-        if (idx.isEmpty()) return null
+    /** I canali Sky della partita presenti in catalogo: prima i numerati (251, 252... dedicati alla Serie C), poi gli altri. */
+    private fun skyChannels(f: Fixture, idx: Map<String, List<Channel>>): List<Channel> {
+        if (idx.isEmpty()) return emptyList()
         val names = skyChannelNames(f)
-        if (names.isEmpty()) return null
+        if (names.isEmpty()) return emptyList()
+        val out = ArrayList<Channel>()
         for (n in names.sortedBy { if (numberedRe.containsMatchIn(it)) 0 else 1 }) {
-            idx[skyKey(n)]?.let { return it }
+            idx[skyKey(n)]?.let { out.addAll(it) }
         }
-        return null
+        return out
     }
 
     // ---- modifiche e rimozioni dell'admin sugli eventi automatici (per partita) ----
@@ -417,12 +420,15 @@ object LiveFixtures {
         val n = o.optString("n", "").ifEmpty { ch.name }
         if (!o.has("u")) return ch.copy(name = n)
         val lg = o.optJSONArray("l") ?: JSONArray()
+        val u = o.getString("u")
+        val fb = (listOf(ch.url) + ch.fallbacks).filter { it.isNotEmpty() && it != u }.distinct()
         return ch.copy(
             name = n,
             rawName = o.optString("rn", ch.rawName),
             quality = o.optString("q", ch.quality),
-            url = o.getString("u"),
-            logos = List(lg.length()) { lg.getString(it) }
+            url = u,
+            logos = List(lg.length()) { lg.getString(it) },
+            fallbacks = fb
         )
     }
 
@@ -447,12 +453,11 @@ object LiveFixtures {
     }
 
     /**
-     * Canale della playlist col nome della squadra. Prima il nome uguale, poi (se [partial]) quello che contiene
-     * o e' contenuto (es. squadra "L.R. Vicenza", canale "Vicenza"). Tra i canali trovati: FHD, poi HD, poi gli altri.
+     * Tutti i canali del catalogo col nome della squadra, ordinati per priorità fonte e poi qualità.
      */
-    fun findChannel(team: String, playlist: List<Channel>, partial: Boolean): Channel? {
+    fun findChannels(team: String, playlist: List<Channel>, partial: Boolean): List<Channel> {
         val tw = words(team)
-        if (tw.isEmpty()) return null
+        if (tw.isEmpty()) return emptyList()
         val joined = tw.joinToString("")
         val exact = playlist.filter { ch ->
             val cw = words(ch.name)
@@ -467,8 +472,15 @@ object LiveFixtures {
                     (cs.containsAll(ts) || ts.containsAll(cs)) && (cs intersect ts).any { it.length >= 4 }
             }
         } else emptyList()
-        return pool.minByOrNull { qualityRank(it.quality) }   // minByOrNull tiene il primo in caso di parita'
+        return pool.sortedWith(compareBy<Channel>({ it.sourceRank }, { qualityRank(it.quality) }))
     }
+
+    /**
+     * Canale della playlist col nome della squadra. Prima il nome uguale, poi (se [partial]) quello che contiene
+     * o e' contenuto (es. squadra "L.R. Vicenza", canale "Vicenza"). Tra i canali trovati: fonte migliore, poi FHD/HD.
+     */
+    fun findChannel(team: String, playlist: List<Channel>, partial: Boolean): Channel? =
+        findChannels(team, playlist, partial).firstOrNull()
 
     /**
      * Gli eventi (come Channel) di una categoria automatica; chi non ha un canale ha url vuoto.
@@ -482,8 +494,11 @@ object LiveFixtures {
         val now = System.currentTimeMillis()
         val hl = if (league == "A") highlightsStored() else emptyMap()   // highlights DAZN: solo Serie A
         return (fixtures[league] ?: emptyList()).filter { !removed.has(key(it)) }.map { f ->
-            val ch = (if (league == "C") skyChannel(f, skyIdx) else null)
-                ?: findChannel(f.home, playlist, partial = league != "C")
+            val candidates = ArrayList<Channel>()
+            if (league == "C") candidates.addAll(skyChannels(f, skyIdx))
+            candidates.addAll(findChannels(f.home, playlist, partial = league != "C"))
+            val allUrls = candidates.flatMap { listOf(it.url) + it.fallbacks }.filter { it.isNotEmpty() }.distinct()
+            val ch = candidates.firstOrNull()
             // nomi ESATTAMENTE come nel repo degli stemmi (pez8-images); se la squadra non c'e' resta il nome della fonte
             val home = SportsDb.canonicalName(f.home, league) ?: f.home
             val away = SportsDb.canonicalName(f.away, league) ?: f.away
@@ -493,12 +508,13 @@ object LiveFixtures {
                 rawName = ch?.rawName ?: name,
                 quality = ch?.quality ?: "",
                 category = category,
-                url = ch?.url ?: "",
+                url = allUrls.firstOrNull() ?: "",
                 logos = ch?.logos ?: emptyList(),
                 start = f.start,
                 evKey = key(f),
                 // solo se la partita e' gia' finita
-                highlight = if (now >= f.start + FixtureParsers.FINISH_MS) hl[key(f)] ?: "" else ""
+                highlight = if (now >= f.start + FixtureParsers.FINISH_MS) hl[key(f)] ?: "" else "",
+                fallbacks = allUrls.drop(1)
             )
             applyOverride(base, edits.optJSONObject(key(f)))
         }
