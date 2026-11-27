@@ -3,36 +3,6 @@
   "A": [
    {
     "r": 12,
-    "h": "Juventus",
-    "a": "Venezia",
-    "s": 1795347000000
-   },
-   {
-    "r": 12,
-    "h": "Bologna",
-    "a": "Udinese",
-    "s": 1795356000000
-   },
-   {
-    "r": 12,
-    "h": "Sassuolo",
-    "a": "Genoa",
-    "s": 1795356000000
-   },
-   {
-    "r": 12,
-    "h": "Milan",
-    "a": "Frosinone",
-    "s": 1795366800000
-   },
-   {
-    "r": 12,
-    "h": "Atalanta",
-    "a": "Inter",
-    "s": 1795376700000
-   },
-   {
-    "r": 12,
     "h": "Monza",
     "a": "Fiorentina",
     "s": 1795463100000
@@ -1600,18 +1570,6 @@
   ],
   "B": [
    {
-    "r": 12,
-    "h": "Avellino",
-    "a": "Mantova",
-    "s": 1795356000000
-   },
-   {
-    "r": 12,
-    "h": "Arezzo",
-    "a": "Padova",
-    "s": 1795364100000
-   },
-   {
     "r": 13,
     "h": "Juve Stabia",
     "a": "Catanzaro",
@@ -1793,90 +1751,6 @@
    }
   ],
   "C": [
-   {
-    "r": 15,
-    "h": "Pro Vercelli",
-    "a": "Novara",
-    "s": 1795347000000
-   },
-   {
-    "r": 15,
-    "h": "Scafatese",
-    "a": "Foggia",
-    "s": 1795347000000
-   },
-   {
-    "r": 15,
-    "h": "Union Brescia",
-    "a": "Renate",
-    "s": 1795347000000
-   },
-   {
-    "r": 15,
-    "h": "Alcione Milano",
-    "a": "Ospitaletto F.",
-    "s": 1795354200000
-   },
-   {
-    "r": 15,
-    "h": "Altamura",
-    "a": "Casarano",
-    "s": 1795354200000
-   },
-   {
-    "r": 15,
-    "h": "Livorno",
-    "a": "Ravenna",
-    "s": 1795354200000
-   },
-   {
-    "r": 15,
-    "h": "Pianese",
-    "a": "Gubbio",
-    "s": 1795354200000
-   },
-   {
-    "r": 15,
-    "h": "Torres",
-    "a": "Spezia",
-    "s": 1795354200000
-   },
-   {
-    "r": 15,
-    "h": "Catania",
-    "a": "Bari",
-    "s": 1795356000000
-   },
-   {
-    "r": 15,
-    "h": "Desenzano",
-    "a": "Albinoleffe",
-    "s": 1795365000000
-   },
-   {
-    "r": 15,
-    "h": "Dolomiti Bellunesi",
-    "a": "Carpi",
-    "s": 1795365000000
-   },
-   {
-    "r": 15,
-    "h": "Forlì",
-    "a": "Reggiana",
-    "s": 1795365000000
-   },
-   {
-    "r": 15,
-    "h": "Picerno",
-    "a": "Giugliano",
-    "s": 1795365000000
-   },
-   {
-    "r": 15,
-    "h": "Sambenedettese",
-    "a": "Perugia",
-    "s": 1795365000000
-   },
    {
     "r": 15,
     "h": "Grosseto",
@@ -3020,73 +2894,12 @@
  ],
  "sky_at": 1795734000000,
  "hl": {
-  "juventus|venezia|12": "IrKIMUF7V8Q",
-  "bologna|udinese|12": "6HwYn-nnFeM",
-  "sassuolo|genoa|12": "vVj-DxQ4hIs",
-  "milan|frosinone|12": "0uHFq4wQN4Y",
-  "atalanta|inter|12": "Cl6l0wcPZMo",
   "monza|fiorentina|12": "10B18PMOwK0"
  },
  "sport": {
-  "aggiornato": "2026-11-27T00:32:49+01:00",
+  "aggiornato": "2026-11-27T19:01:50+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "MotoGP: Valencian Community Grand Prix - Prove libere",
-    "c": "Motori",
-    "s": "MotoGP",
-    "i": 1795772700000,
-    "d": 75,
-    "tv": [
-     "Sky Sport MotoGP",
-     "NOW"
-    ]
-   },
-   {
-    "t": "Formula 1: Qatar Grand Prix - FP1",
-    "c": "Motori",
-    "s": "Formula 1",
-    "i": 1795786200000,
-    "d": 75,
-    "tv": [
-     "Sky Sport F1",
-     "Sky Sport 1",
-     "Sky Sport 4K",
-     "NOW"
-    ]
-   },
-   {
-    "t": "Primavera 1: Bologna-Albinoleffe",
-    "c": "Calcio",
-    "s": "Primavera 1",
-    "i": 1795788000000,
-    "d": 150,
-    "tv": [
-     "Sportitalia"
-    ]
-   },
-   {
-    "t": "MotoGP: Valencian Community Grand Prix - Practice",
-    "c": "Motori",
-    "s": "MotoGP",
-    "i": 1795788000000,
-    "d": 75,
-    "tv": [
-     "Sky Sport MotoGP",
-     "NOW"
-    ]
-   },
-   {
-    "t": "Coppa Davis: Italia-Cechia",
-    "c": "Tennis",
-    "s": "Coppa Davis",
-    "i": 1795791600000,
-    "d": 150,
-    "tv": [
-     "SuperTennis",
-     "Rai 1"
-    ]
-   },
    {
     "t": "Primavera 1: Atalanta-Monza",
     "c": "Calcio",
@@ -3156,6 +2969,7 @@
     "i": 1795807800000,
     "d": 150,
     "tv": [
+     "Sky Sport 253",
      "SKY Go Italia",
      "NOW TV"
     ]
@@ -3167,6 +2981,8 @@
     "i": 1795807800000,
     "d": 150,
     "tv": [
+     "Sky Sport 252",
+     "Sky Sport Uno",
      "Sky Sport 1",
      "SKY Go Italia",
      "NOW TV"
@@ -3199,12 +3015,13 @@
     "i": 1795808700000,
     "d": 150,
     "tv": [
-     "Sky Sport 251",
-     "Sky Sport Calcio",
+     "Paramount+",
+     "Peacock",
+     "Disney+ Premium Caribbean",
+     "fuboTV Canada",
      "DAZN",
-     "DAZN Italia",
-     "SKY Go Italia",
-     "NOW TV"
+     "Sky Sport Calcio",
+     "DAZN Canada"
     ]
    },
    {
@@ -3215,6 +3032,16 @@
     "d": 150,
     "tv": [
      "Sky Sport Max"
+    ]
+   },
+   {
+    "t": "Nations Championship: Irlanda-Australia",
+    "c": "Altri sport",
+    "s": "Rugby",
+    "i": 1795810200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
     ]
    },
    {
@@ -3248,17 +3075,6 @@
     "d": 150,
     "tv": [
      "Sportitalia"
-    ]
-   },
-   {
-    "t": "Serie B: Pisa vs Modena",
-    "c": "Calcio",
-    "s": "Serie B",
-    "i": 1795860000000,
-    "d": 150,
-    "tv": [
-     "LAB Channel",
-     "DAZN Italia"
     ]
    },
    {
@@ -3316,6 +3132,7 @@
     "i": 1795872600000,
     "d": 150,
     "tv": [
+     "Sky Sport 254",
      "SKY Go Italia",
      "NOW TV"
     ]
@@ -3327,6 +3144,7 @@
     "i": 1795872600000,
     "d": 150,
     "tv": [
+     "Sky Sport 255",
      "SKY Go Italia",
      "NOW TV"
     ]
@@ -3338,6 +3156,7 @@
     "i": 1795872600000,
     "d": 150,
     "tv": [
+     "Sky Sport 253",
      "SKY Go Italia",
      "NOW TV"
     ]
@@ -3349,9 +3168,12 @@
     "i": 1795874400000,
     "d": 150,
     "tv": [
+     "Paramount+",
+     "Peacock",
+     "ESPN Mexico",
+     "Disney+ Premium Caribbean",
      "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN Canada"
     ]
    },
    {
@@ -3502,9 +3324,12 @@
     "i": 1795885200000,
     "d": 150,
     "tv": [
+     "Paramount+",
+     "Peacock",
+     "Disney+ Premium Caribbean",
+     "fuboTV Canada",
      "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN Canada"
     ]
    },
    {
@@ -3582,13 +3407,14 @@
     "i": 1795895100000,
     "d": 150,
     "tv": [
-     "Sky Sport 251",
+     "Paramount+",
+     "fuboTV",
+     "Peacock",
+     "Telemundo",
+     "Telemundo Deportes En Vivo",
      "DAZN",
      "Sky Sport 1",
-     "Sky Sport Calcio",
-     "DAZN Italia",
-     "SKY Go Italia",
-     "NOW TV"
+     "Sky Sport Calcio"
     ]
    },
    {
@@ -3676,9 +3502,12 @@
     "i": 1795951800000,
     "d": 150,
     "tv": [
+     "CBS Sports Network",
+     "Paramount+",
+     "fuboTV",
+     "Peacock",
      "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN Canada"
     ]
    },
    {
@@ -3719,6 +3548,16 @@
      "TV8",
      "Sky Sport MotoGP",
      "NOW"
+    ]
+   },
+   {
+    "t": "Serie A Elite: Vicenza-Roma",
+    "c": "Altri sport",
+    "s": "Rugby",
+    "i": 1795958100000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
     ]
    },
    {
@@ -3772,6 +3611,16 @@
     ]
    },
    {
+    "t": "Coppa del Mondo – Killington: Slalom F (1a manche): 1a manche",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1795966200000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
     "t": "Formula 1: Qatar Grand Prix - Gara",
     "c": "Motori",
     "s": "Formula 1",
@@ -3802,7 +3651,8 @@
     "i": 1795971600000,
     "d": 150,
     "tv": [
-     "Eurosport"
+     "Eurosport",
+     "Rai Sport"
     ]
    },
    {
@@ -3845,7 +3695,8 @@
     "i": 1795977000000,
     "d": 150,
     "tv": [
-     "Eurosport"
+     "Eurosport",
+     "Rai Sport"
     ]
    },
    {
@@ -3875,7 +3726,8 @@
     "i": 1795982400000,
     "d": 150,
     "tv": [
-     "Eurosport"
+     "Eurosport",
+     "Rai Sport"
     ]
    },
    {
@@ -3941,15 +3793,24 @@
     ]
    },
    {
+    "t": "Serie C: Reggiana-Ostiamare",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1796067900000,
+    "d": 150,
+    "tv": [
+     "Rai Sport"
+    ]
+   },
+   {
     "t": "Serie A: Lecce vs Atalanta",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1796070600000,
     "d": 150,
     "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "TeleXitos",
+     "DAZN"
     ]
    },
    {
@@ -3959,9 +3820,8 @@
     "i": 1796077800000,
     "d": 150,
     "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "TeleXitos",
+     "DAZN"
     ]
    },
    {
@@ -4145,6 +4005,28 @@
      "Sky Sport F1",
      "Sky Sport 1",
      "Sky Sport 4K",
+     "NOW"
+    ]
+   },
+   {
+    "t": "Formula 2 e Formula 3: F2 - Abu Dhabi GP - Sprint Race",
+    "c": "Motori",
+    "s": "Formula 2 e Formula 3",
+    "i": 1796472900000,
+    "d": 60,
+    "tv": []
+   },
+   {
+    "t": "Formula 1: Abu Dhabi Grand Prix - Qualifiche",
+    "c": "Motori",
+    "s": "Formula 1",
+    "i": 1796479200000,
+    "d": 75,
+    "tv": [
+     "Sky Sport F1",
+     "Sky Sport 1",
+     "Sky Sport 4K",
+     "TV8",
      "NOW"
     ]
    }
