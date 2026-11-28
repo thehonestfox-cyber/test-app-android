@@ -260,7 +260,8 @@ object MandraStreams {
             }
             if (json.isNull("nextCursor")) break
             val next = json.opt("nextCursor")
-            if (next == null || next == false || next == 0 || next.toString().isEmpty()) break
+            val nextStr = next?.toString()?.trim().orEmpty()
+            if (next == null || nextStr.isEmpty() || nextStr == "false" || nextStr == "0" || nextStr == "null") break
             cursor = next
         }
         return out
