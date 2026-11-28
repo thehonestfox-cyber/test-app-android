@@ -30,8 +30,11 @@ object M3U {
         var name = ""
         var group = ""
         var logo = ""
-        var ua = ""    // #EXTVLCOPT:http-user-agent=...
-        var ref = ""   // #EXTVLCOPT:http-referrer=...
+        var ua = ""       // #EXTVLCOPT:http-user-agent=...
+        var ref = ""      // #EXTVLCOPT:http-referrer=...
+        var origin = ""   // #EXTVLCOPT:http-header=Origin: ...
+        var licType = ""  // #KODIPROP:inputstream.adaptive.license_type=...
+        var clearKey = "" // #KODIPROP:inputstream.adaptive.license_key=...
         for (raw in text.lines()) {
             val l = raw.trim()
             if (l.isEmpty()) continue
@@ -41,24 +44,64 @@ object M3U {
                 logo = logoRe.find(l)?.groupValues?.get(1)?.trim() ?: ""
                 ua = ""
                 ref = ""
+                origin = ""
+                licType = ""
+                clearKey = ""
             } else if (l.startsWith("#EXTVLCOPT:", ignoreCase = true)) {
                 val opt = l.substringAfter(':')
-                val v = opt.substringAfter('=', "").trim()
+                val v = opt.substringAfter('=', "").trim().removeSurrounding("\"")
                 when (opt.substringBefore('=').trim().lowercase()) {
                     "http-user-agent" -> ua = v
                     "http-referrer", "http-referer" -> ref = v
+                    "http-header" -> {
+                        val hk = v.substringBefore(':').trim()
+                        val hv = v.substringAfter(':', "").trim()
+                        if (hk.equals("origin", ignoreCase = true) && hv.isNotEmpty()) origin = hv
+                    }
+                }
+            } else if (l.startsWith("#KODIPROP:", ignoreCase = true)) {
+                val opt = l.substringAfter(':')
+                val k = opt.substringBefore('=').trim().lowercase()
+                val v = opt.substringAfter('=', "").trim().removeSurrounding("\"")
+                when (k) {
+                    "inputstream.adaptive.license_type" -> licType = v.lowercase()
+                    "inputstream.adaptive.license_key" -> {
+                        if ((licType.isEmpty() || "clearkey" in licType) && !v.startsWith("http", ignoreCase = true)) {
+                            clearKey = v
+                        }
+                    }
+                    "inputstream.adaptive.stream_headers" -> {
+                        for (pair in v.split('&')) {
+                            val hk = pair.substringBefore('=').trim()
+                            val hv = try {
+                                java.net.URLDecoder.decode(pair.substringAfter('=', "").trim(), "UTF-8")
+                            } catch (_: Exception) {
+                                pair.substringAfter('=', "").trim()
+                            }
+                            when (hk.lowercase()) {
+                                "user-agent" -> if (hv.isNotEmpty()) ua = hv
+                                "referer", "referrer" -> if (hv.isNotEmpty()) ref = hv
+                                "origin" -> if (hv.isNotEmpty()) origin = hv
+                            }
+                        }
+                    }
                 }
             } else if (!l.startsWith("#")) {
                 var u = l
-                if ((ua.isNotEmpty() || ref.isNotEmpty()) && !u.contains('|')) {
+                if ((ua.isNotEmpty() || ref.isNotEmpty() || origin.isNotEmpty() || clearKey.isNotEmpty()) && !u.contains('|')) {
                     val parts = mutableListOf<String>()
                     if (ua.isNotEmpty()) parts += "User-Agent=" + java.net.URLEncoder.encode(ua, "UTF-8")
                     if (ref.isNotEmpty()) parts += "Referer=" + java.net.URLEncoder.encode(ref, "UTF-8")
+                    if (origin.isNotEmpty()) parts += "Origin=" + java.net.URLEncoder.encode(origin, "UTF-8")
+                    if (clearKey.isNotEmpty()) parts += "X-ClearKey=" + java.net.URLEncoder.encode(clearKey, "UTF-8")
                     u = u + "|" + parts.joinToString("&")
                 }
                 out.add(Categorizer.build(name.ifEmpty { u }, group, logo, u, sourceRank))
                 ua = ""
                 ref = ""
+                origin = ""
+                licType = ""
+                clearKey = ""
                 name = ""
                 group = ""
                 logo = ""
@@ -216,7 +259,8 @@ object Logos {
         "raiuno" to "rai1", "raidue" to "rai2", "raitre" to "rai3",
         "raiquattro" to "rai4", "raicinque" to "rai5", "20mediaset" to "20",
         "dazn1" to "zonadazn", "dazn" to "daznchannel",
-        "skysport1" to "skysportuno", "skysportbasket" to "skysportnba", "skysportmix" to "skysport"
+        "skysport1" to "skysportuno", "skysportbasket" to "skysportnba",
+        "skysportmix" to "skysport", "skysportlegend" to "skysport"
     )
     private val hdTag = Regex("""-(hd|hz)(?=-|$)""")
 

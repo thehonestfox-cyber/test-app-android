@@ -30,12 +30,13 @@ import java.util.concurrent.Executors
 object MandraStreams {
     private const val TAG = "MandraStreams"
     private const val SCHEME = "mandra://"
-    private const val CACHE_FILE = "mandra_auto_v1.json"
+    private const val CACHE_FILE = "mandra_auto_v2.json"
     private const val REFRESH_MS = 15 * 60_000L
     private const val SIG_TTL_MS = 8 * 60_000L
 
     private const val URL_DTT_M3U =
         "https://raw.githubusercontent.com/Tundrak/IPTV-Italia/main/iptvitaplus.m3u"
+    private const val URL_AMSTAFF_FEED = "https://test34344.herokuapp.com/filter.php?numTest=A1A260"
     private const val URL_VAVOO_PING = "https://www.vavoo.tv/api/app/ping"
     private const val URL_VAVOO_CATALOG = "https://vavoo.to/mediahubmx-catalog.json"
     private const val URL_VAVOO_RESOLVE = "https://vavoo.to/mediahubmx-resolve.json"
@@ -45,14 +46,186 @@ object MandraStreams {
 
     private const val CHROME_UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+    private const val NOW_UA =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
     private const val DADDY_UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 OPR/130.0.0.0"
     private const val VAVOO_PING_UA =
         "electron-fetch/1.0 electron (+https://github.com/arantes555/electron-fetch)"
+    private const val MANDRA_FEED_UA = "MandraKodi2@@2.0.0@@MandraKodi3@@2K1WPN"
 
     // Vettore per la firma TS di fallback (stesso di VavooResolver in myResolver.py di MandraKodi)
     private const val LOKKE_VEC =
         "9frjpxPjxSNilxJPCJ0XGYs6scej3dW/h/VWlnKUiLSG8IP7mfyDU7NirOlld+VtCKGj03XjetfliDMhIev7wcARo+YTU8KPFuVQP9E2DVXzY2BFo1NhE6qEmPfNDnm74eyl/7iFJ0EETm6XbYyz8IKBkAqPN/Spp3PZ2ulKg3QBSDxcVN4R5zRn7OsgLJ2CNTuWkd/h451lDCp+TtTuvnAEhcQckdsydFhTZCK5IiWrrTIC/d4qDXEd+GtOP4hPdoIuCaNzYfX3lLCwFENC6RZoTBYLrcKVVgbqyQZ7DnLqfLqvf3z0FVUWx9H21liGFpByzdnoxyFkue3NzrFtkRL37xkx9ITucepSYKzUVEfyBh+/3mtzKY26VIRkJFkpf8KVcCRNrTRQn47Wuq4gC7sSwT7eHCAydKSACcUMMdpPSvbvfOmIqeBNA83osX8FPFYUMZsjvYNEE3arbFiGsQlggBKgg1V3oN+5ni3Vjc5InHg/xv476LHDFnNdAJx448ph3DoAiJjr2g4ZTNynfSxdzA68qSuJY8UjyzgDjG0RIMv2h7DlQNjkAXv4k1BrPpfOiOqH67yIarNmkPIwrIV+W9TTV/yRyE1LEgOr4DK8uW2AUtHOPA2gn6P5sgFyi68w55MZBPepddfYTQ+E1N6R/hWnMYPt/i0xSUeMPekX47iucfpFBEv9Uh9zdGiEB+0P3LVMP+q+pbBU4o1NkKyY1V8wH1Wilr0a+q87kEnQ1LWYMMBhaP9yFseGSbYwdeLsX9uR1uPaN+u4woO2g8sw9Y5ze5XMgOVpFCZaut02I5k0U4WPyN5adQjG8sAzxsI3KsV04DEVymj224iqg2Lzz53Xz53Xz9yEy+7/85ILQpJ6llCyqpHLFyHq/kJxYPhDUF755WaHJEaFRPxUqbparNX+mCE9Xzy7Q/KTgAPiRS41FHXXv+7XSPp4cy9jli0BVnYf13Xsp28OGs/D8Nl3NgEn3/eUcMN80JRdsOrV62fnBVMBNf36+LbISdvsFAFr0xyuPGmlIETcFyxJkrGZnhHAxwzsvZ+Uwf8lffBfZFPRrNv+tgeeLpatVcHLHZGeTgWWml6tIHwWUqv2TVJeMkAEL5PPS4Gtbscau5HM+FEjtGS+KClfX1CNKvgYJl7mLDEf5ZYQv5kHaoQ6RcPaR6vUNn02zpq5/X3EPIgUKF0r/0ctmoT84B2J1BKfCbctdFY9br7JSJ6DvUxyde68jB+Il6qNcQwTFj4cNErk4x719Y42NoAnnQYC2/qfL/gAhJl8TKMvBt3Bno+va8ve8E0z8yEuMLUqe8OXLce6nCa+L5LYK1aBdb60BYbMeWk1qmG6Nk9OnYLhzDyrd9iHDd7X95OM6X5wiMVZRn5ebw4askTTc50xmrg4eic2U1w1JpSEjdH/u/hXrWKSMWAxaj34uQnMuWxPZEXoVxzGyuUbroXRfkhzpqmqqqOcypjsWPdq5BOUGL/Riwjm6yMI0x9kbO8+VoQ6RYfjAbxNriZ1cQ+AW1fqEgnRWXmjt4Z1M0ygUBi8w71bDML1YG6UHeC2cJ2CCCxSrfycKQhpSdI1QIuwd2eyIpd4LgwrMiY3xNWreAF+qobNxvE7ypKTISNrz0iYIhU0aKNlcGwYd0FXIRfKVBzSBe4MRK2pGLDNO6ytoHxvJweZ8h1XG8RWc4aB5gTnB7Tjiqym4b64lRdj1DPHJnzD4aqRixpXhzYzWVDN2kONCR5i2quYbnVFN4sSfLiKeOwKX4JdmzpYixNZXjLkG14seS6KR0Wl8Itp5IMIWFpnNokjRH76RYRZAcx0jP0V5/GfNNTi5QsEU98en0SiXHQGXnROiHpRUDXTl8FmJORjwXc0AjrEMuQ2FDJDmAIlKUSLhjbIiKw3iaqp5TVyXuz0ZMYBhnqhcwqULqtFSuIKpaW8FgF8QJfP2frADf4kKZG1bQ99MrRrb2A="
+
+    private class MpdEntry(
+        val name: String,
+        val s1Url: String,
+        val s1Key: String,
+        val h1Url: String? = null,
+        val h1Key: String? = null,
+        val referer: String = "https://www.nowtv.it/",
+        val origin: String = "https://www.nowtv.it"
+    )
+
+    // Flussi CMAF DASH (.mpd) con ClearKey per tutta la numerazione Sky Sport (inclusi 251..259, Mix, Legend) ed Eurosport
+    private val NOW_MPD_CHANNELS = listOf(
+        MpdEntry(
+            "Sky Sport 251",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport251)/master_2hr-aac.mpd",
+            "11151be3428480868250f38fd1b7f372:43c8bf86dc2f6cba8778e7cdff0496cd",
+            "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport251)/master_2hr-all.mpd",
+            "11181407f455ebe812f1756485deb7ca:2245122344d8f4d87a780c6ccc3cac22"
+        ),
+        MpdEntry(
+            "Sky Sport 252",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport252)/master_2hr-aac.mpd",
+            "1115ef7a71a700a8a00d028fd70dc4be:8742adddc304a5e3aa5376879b02888c",
+            "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport252)/master_2hr-all.mpd",
+            "11183e52b0f1b1da52b7fea82e390bfd:470395d6b7a0e7004cbecbf73052d55e"
+        ),
+        MpdEntry(
+            "Sky Sport 253",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport253)/master_2hr-aac.mpd",
+            "11151848f262b43a21d7a61bc958c6aa:400f5a392c6c5893643b8df74a0e1eec",
+            "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport253)/master_2hr-all.mpd",
+            "1118fd92d668c4c91177ccdee292a362:c9eb2b63cf1a8a00dcad6a6359138a56"
+        ),
+        MpdEntry(
+            "Sky Sport 254",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport254)/master_2hr-aac.mpd",
+            "11159862c693989cb235f5371dd11fba:25e15b3762a2cfc26d471324f197aff6",
+            "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport254)/master_2hr-all.mpd",
+            "1118bc79025d7afe4aade4026f773831:c99b86dd3c6abc3d388bb73372077152"
+        ),
+        MpdEntry(
+            "Sky Sport 255",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport255)/master_2hr-aac.mpd",
+            "111545473a34f1fe05aae0e10700a7e3:fdee7c55cb25797ea9918644f3db4ef5",
+            "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport255)/master_2hr-all.mpd",
+            "11185f7f78307d91e36803f72663b517:d09f471173d6c7a82105abf216cd919c"
+        ),
+        MpdEntry(
+            "Sky Sport 256",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport256)/master_2hr-aac.mpd",
+            "1115e30272b48b327a666414728f89c0:e17fd69cf15cd8e9a57b3b2127f7e0bc",
+            "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport256)/master_2hr-all.mpd",
+            "1118ffed75c4bff557566129f32bf4b3:1337caf53cedb8ca483b9a06fdce7611"
+        ),
+        MpdEntry(
+            "Sky Sport 257",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport257)/master_2hr-aac.mpd",
+            "111550e7ba986b365bcc67dd01cdd27e:c292fe7e970841aa795e8832414c5b2e",
+            "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport257)/master_2hr-all.mpd",
+            "11182387e418b26faf1cb29e34059998:c3094e97055c3f2542d58ccb6257f820"
+        ),
+        MpdEntry(
+            "Sky Sport 258",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport258)/master_2hr-aac.mpd",
+            "1115bb0040c6d04b822da9ae1af8977d:c80ba56fdee7782313a33691e9cc2146",
+            "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport258)/master_2hr-all.mpd",
+            "1118ff2d07a864e2026664f5b1aeb906:a1368f1b5a3e67d403d3e2b2bf5473d3"
+        ),
+        MpdEntry(
+            "Sky Sport 259",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport259)/master_2hr-aac.mpd",
+            "11158627294fcbd5e724e2b521c87aeb:c26bc6e33e8f39dc748f66885935a63f",
+            "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport259)/master_2hr-all.mpd",
+            "1118b48f56f299784a495d1c8ffe75d6:d7ee1d1d1d75ce18e379a2751d89bc1f"
+        ),
+        MpdEntry(
+            "Sky Sport Mix",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportmix)/master_2hr-aac.mpd",
+            "111551e04765ca479505e4ea0447b66e:eb88a080518c6b45f0c921cfbc9f92a4"
+        ),
+        MpdEntry(
+            "Sky Sport Legend",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportlegend)/master_2hr-aac.mpd",
+            "1115a083aeeeabbbebe91e83538cf918:c19005a34b2c544cecc54998779af2fd"
+        ),
+        MpdEntry(
+            "Sky Sport Uno",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportuno)/master_2hr-aac.mpd",
+            "1115ca7bae09bbf4364eba27291b88a1:a38624a3b373a79e810f3b20cc295096",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportuno)/master_2hr-aac.mpd",
+            "1118b95f9878e87a0176a2a663bf8fb6:518c6f17f6e37f2d3a0e407a180bf01a"
+        ),
+        MpdEntry(
+            "Sky Sport Calcio",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportcalcio)/master_2hr-aac.mpd",
+            "11158d8e6031888c16efac25c601f64b:0f3bfab5a64037ac8711e58aac24a292",
+            "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportcalcio)/master_2hr-all.mpd",
+            "11185d4276f70e6931dd5809956345ca:2c11ba43fab9050c1226b2f96a660f77"
+        ),
+        MpdEntry(
+            "Sky Sport F1",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportf1)/master_2hr-aac.mpd",
+            "11155522b79e825f8cdfd7967a31da4c:549190d194a655561f5099427a809812",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportf1)/master_2hr-aac.mpd",
+            "111897d510ac0fed0d5d050ef54b5bd6:7da85f724587b9d8a85095653421ee10"
+        ),
+        MpdEntry(
+            "Sky Sport MotoGP",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportmotogp)/master_2hr-aac.mpd",
+            "11153aff5496be1a206a178ab3c1c078:806eb5923c951bd205257282de834740",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportmotogp)/master_2hr-aac.mpd",
+            "1118a7ba746ae114cee71040247fc26b:d67e3a575afe81ab04733890537e8ab9"
+        ),
+        MpdEntry(
+            "Sky Sport Tennis",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysporttennis)/master_2hr-aac.mpd",
+            "111587fedaf11c03f2140b3e53ff5a5b:4192c4108bb887cbd33dc69afabc8096",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysporttennis)/master_2hr-aac.mpd",
+            "111862d27c1073698d6ec5bbc328fc4c:777ec90fc3cdc6cec1b963ef14760ef1"
+        ),
+        MpdEntry(
+            "Sky Sport Arena",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportarena)/master_2hr-aac.mpd",
+            "1115f90a6831fa7ca058a30383cb0652:6c086c2a0a8de8c1f413e4128246abdd",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportarena)/master_2hr-aac.mpd",
+            "111894dfaecfc64acf114b026b1b06ff:d1a149879a17f13f2d58b7ade5d8a066"
+        ),
+        MpdEntry(
+            "Sky Sport Max",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportmax)/master_2hr-aac.mpd",
+            "11155656191f1c60af13deb6a20f0354:95448b624c83d9a9719342cf1ab3e157",
+            "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportmax)/master_2hr-all.mpd",
+            "111821aee8a222fc0fe61a76d62e219d:cf75ce47142284bd131c9c00ba686a7a"
+        ),
+        MpdEntry(
+            "Sky Sport Basket",
+            "https://g003-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysportnba)/master_2hr-aac.mpd",
+            "111509ad5d16918190d8ceb1afa3c2c2:5369df3ee38ad965da555846bfa61a37",
+            "https://g006-lin-it-cmaf-prd-ak.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportnba)/master_2hr-all.mpd",
+            "111841df5d2386a96b8647e865ee9ed9:e265fe7a61d5e658e62a5b26b37358b9"
+        ),
+        MpdEntry(
+            "Sky Sport Golf",
+            "https://g006-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysportgolf)/master_2hr-all.mpd",
+            "1118a5b39b61b26e1b5fea40e5b719ad:139dea5a427cecf6ec9d0e989c7c66ac"
+        ),
+        MpdEntry(
+            "Sky Sport 24",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_S1/Live/channel(skysport24)/master_2hr-aac.mpd",
+            "11151447a65b31d6cb78dd022cb67e8d:1d6be453be1e607c133a28826d509a86",
+            "https://g003-lin-it-cmaf-prd-cf.pcdn07.cssott02.com/nowitlin1/Content/CMAF_CTR_H1/Live/channel(skysport24)/master_2hr-all.mpd",
+            "1118a5e9911b2b299d939e0d5c0f43b2:11273954891470cedcb840783171dcc1"
+        ),
+        MpdEntry(
+            "Eurosport 1",
+            "https://timlivetu0.cb.ticdn.it/Content/DASH/Live/channel%28eurosport1%29/manifest.mpd",
+            "46e559c2f9f645ce8d80c7fa20446bdb:597d214d66342ee042bccffeb165e750",
+            referer = "https://www.timvision.it/",
+            origin = "https://www.timvision.it"
+        ),
+        MpdEntry(
+            "Eurosport 2",
+            "https://timlivetu0.cb.ticdn.it/Content/DASH/Live/channel%28eurosport2%29/manifest.mpd",
+            "e8372283a523444c84646c4172b1bc0f:969a90e1a1a6424a68fe4b5d776368ec",
+            referer = "https://www.timvision.it/",
+            origin = "https://www.timvision.it"
+        )
+    )
 
     // Canali sportivi e nazionali DaddyLive di riserva, subito disponibili anche senza rete
     private val DADDY_CHANNELS = listOf(
@@ -70,6 +243,8 @@ object MandraStreams {
         "Sky Sport 252" to "872",
         "Sky Sport 253" to "873",
         "Sky Sport 254" to "874",
+        "Sky Sport 255" to "875",
+        "Sky Sport 256" to "876",
         "DAZN 1" to "877",
         "Eurosport 1" to "878",
         "Eurosport 2" to "879",
@@ -94,6 +269,10 @@ object MandraStreams {
 
     private val serverSuffixRe = Regex("""\s*\.[a-z0-9]{1,3}$""", RegexOption.IGNORE_CASE)
     private val trailingItRe = Regex("""\s+\b(IT|ITALY)\b$""", RegexOption.IGNORE_CASE)
+    private val kodiTagRe = Regex("""\[/?(?:COLOR[^\]]*|B|I|LIGHT|UPPERCASE|LOWERCASE)]""", RegexOption.IGNORE_CASE)
+    private val parenTagRe = Regex("""\s*\((?:MPD|D|V|K|BKP|BACKUP|TEST|NEW|2)\)\s*""", RegexOption.IGNORE_CASE)
+    private val skyCalcioNumRe = Regex("""\bSKY\s+CALCIO\s+(25[1-9]|[1-9])\b""", RegexOption.IGNORE_CASE)
+    private val skyCalcioPlainRe = Regex("""^SKY\s+CALCIO$""", RegexOption.IGNORE_CASE)
     private val plusShiftRe = Regex("""\+(\d{1,2})\b""")
     private val nonAlnumRe = Regex("""[^a-z0-9]+""")
     private val tokRe = Regex("""\d+|\D+""")
@@ -131,7 +310,7 @@ object MandraStreams {
             } catch (_: Exception) {
             }
         }
-        return mergeByChannel(builtinFreeDtt() + builtinDaddy())
+        return mergeByChannel(builtinFreeDtt() + builtinNowMpd() + builtinDaddy())
     }
 
     /** Scarica e unisce i cataloghi automatici (al massimo ogni 15 minuti). Da chiamare fuori dal thread UI. */
@@ -142,21 +321,28 @@ object MandraStreams {
             val now2 = System.currentTimeMillis()
             memCatalog?.let { if (now2 - memFetchedAt < REFRESH_MS) return it }
 
-            val pool = Executors.newFixedThreadPool(3)
+            val pool = Executors.newFixedThreadPool(4)
             val fDtt = pool.submit(Callable { fetchFreeDtt() })
+            val fAmstaff = pool.submit(Callable { fetchAmstaffItaly() })
             val fVavoo = pool.submit(Callable { fetchVavooItaly() })
             val fKool = pool.submit(Callable { fetchKoolItaly() })
             val dtt = try { fDtt.get() } catch (_: Exception) { emptyList() }
+            val amstaff = try { fAmstaff.get() } catch (_: Exception) { emptyList() }
             val vavoo = try { fVavoo.get() } catch (_: Exception) { emptyList() }
             val kool = try { fKool.get() } catch (_: Exception) { emptyList() }
             pool.shutdown()
 
-            Log.d(TAG, "Catalogo automatico: DTT=${dtt.size}, Vavoo=${vavoo.size}, Kool=${kool.size}")
-            val remoteOk = dtt.isNotEmpty() || vavoo.isNotEmpty() || kool.isNotEmpty()
+            Log.d(
+                TAG,
+                "Catalogo automatico: DTT=${dtt.size}, Amstaff=${amstaff.size}, Vavoo=${vavoo.size}, Kool=${kool.size}"
+            )
+            val remoteOk = dtt.isNotEmpty() || amstaff.isNotEmpty() || vavoo.isNotEmpty() || kool.isNotEmpty()
             if (!remoteOk) {
                 return cached(cacheDir)
             }
-            val merged = mergeByChannel(builtinFreeDtt() + dtt + vavoo + kool + builtinDaddy())
+            val merged = mergeByChannel(
+                builtinFreeDtt() + dtt + amstaff + vavoo + kool + builtinNowMpd() + builtinDaddy()
+            )
             memCatalog = merged
             memFetchedAt = System.currentTimeMillis()
             try {
@@ -189,6 +375,56 @@ object MandraStreams {
         )
     )
 
+    private fun swapNowCdnMirror(url: String): String? {
+        return when {
+            "-cf.pcdn07.cssott02.com" in url -> url.replace("-cf.pcdn07.cssott02.com", "-ak.pcdn07.cssott02.com")
+            "-ak.pcdn07.cssott02.com" in url -> url.replace("-ak.pcdn07.cssott02.com", "-cf.pcdn07.cssott02.com")
+            else -> null
+        }
+    }
+
+    private fun encodeMpdStream(url: String, clearKey: String, referer: String, origin: String): String {
+        return if (clearKey.isNotEmpty()) {
+            withHeaders(
+                url,
+                "User-Agent" to NOW_UA,
+                "Referer" to referer,
+                "Origin" to origin,
+                "X-ClearKey" to clearKey
+            )
+        } else {
+            withHeaders(
+                url,
+                "User-Agent" to NOW_UA,
+                "Referer" to referer,
+                "Origin" to origin
+            )
+        }
+    }
+
+    private fun builtinNowMpd(): List<Channel> {
+        val out = ArrayList<Channel>(NOW_MPD_CHANNELS.size)
+        for (e in NOW_MPD_CHANNELS) {
+            val combinedKey = listOfNotNull(e.s1Key.takeIf { it.isNotEmpty() }, e.h1Key?.takeIf { it.isNotEmpty() })
+                .distinct()
+                .joinToString(",")
+            val urls = ArrayList<String>(4)
+            urls.add(encodeMpdStream(e.s1Url, combinedKey, e.referer, e.origin))
+            swapNowCdnMirror(e.s1Url)?.let { mirror ->
+                urls.add(encodeMpdStream(mirror, combinedKey, e.referer, e.origin))
+            }
+            if (!e.h1Url.isNullOrEmpty() && !e.h1Key.isNullOrEmpty()) {
+                urls.add(encodeMpdStream(e.h1Url, combinedKey, e.referer, e.origin))
+                swapNowCdnMirror(e.h1Url)?.let { mirror ->
+                    urls.add(encodeMpdStream(mirror, combinedKey, e.referer, e.origin))
+                }
+            }
+            val ch = Categorizer.build("${e.name} FHD", "Sport", "", urls.first(), sourceRank = 2)
+            out.add(ch.copy(fallbacks = urls.drop(1)))
+        }
+        return out
+    }
+
     private fun builtinDaddy(): List<Channel> =
         DADDY_CHANNELS.map { (name, code) ->
             Categorizer.build("$name HD", "Sport", "", "${SCHEME}daddy/$code", sourceRank = 2)
@@ -204,11 +440,73 @@ object MandraStreams {
     }
 
     private fun cleanCatalogName(raw: String): String {
-        var s = serverSuffixRe.replace(raw.trim(), "").trim()
+        var s = kodiTagRe.replace(raw, " ")
+        s = parenTagRe.replace(s, " ")
+        s = serverSuffixRe.replace(s.trim(), "").trim()
         if (!s.startsWith("BBC", ignoreCase = true)) {
             s = trailingItRe.replace(s, "").trim()
         }
-        return s
+        s = skyCalcioNumRe.replace(s) { m ->
+            val n = m.groupValues[1]
+            "Sky Sport " + if (n.length == 1) "25$n" else n
+        }
+        if (skyCalcioPlainRe.matches(s)) {
+            s = "Sky Sport Calcio"
+        }
+        return s.replace(Regex("""\s+"""), " ").trim()
+    }
+
+    private fun fetchAmstaffItaly(): List<Channel> {
+        val resp = httpGet(URL_AMSTAFF_FEED, mapOf("User-Agent" to MANDRA_FEED_UA), 10_000) ?: return emptyList()
+        val out = ArrayList<Channel>()
+        try {
+            val trimmed = resp.trim()
+            if (trimmed.startsWith("{")) collectAmstaffNodes(JSONObject(trimmed), out)
+            else if (trimmed.startsWith("[")) collectAmstaffArray(JSONArray(trimmed), out)
+        } catch (_: Exception) {
+        }
+        return out
+    }
+
+    private fun collectAmstaffNodes(obj: JSONObject, out: MutableList<Channel>) {
+        val title = obj.optString("title", "").trim()
+        val myRes = obj.optString("myresolve", "").trim()
+        if (title.isNotEmpty() && myRes.startsWith("amstaff@@")) {
+            val payload = myRes.removePrefix("amstaff@@").trim()
+            val cleaned = cleanCatalogName(title)
+            if (
+                payload.isNotEmpty() && cleaned.isNotEmpty() &&
+                !cleaned.contains("===") && !cleaned.contains("---") &&
+                !cleaned.startsWith("INFO", ignoreCase = true) &&
+                !cleaned.startsWith("AGGIORNA", ignoreCase = true)
+            ) {
+                val logo = obj.optString("thumbnail", "").trim().takeIf { it.startsWith("http") }.orEmpty()
+                val enc = Base64.encodeToString(
+                    payload.toByteArray(Charsets.UTF_8),
+                    Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+                )
+                out.add(Categorizer.build(cleaned, "", logo, "${SCHEME}amstaff/$enc", sourceRank = 2))
+            }
+        }
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            val v = obj.opt(k)
+            when (v) {
+                is JSONObject -> collectAmstaffNodes(v, out)
+                is JSONArray -> collectAmstaffArray(v, out)
+            }
+        }
+    }
+
+    private fun collectAmstaffArray(arr: JSONArray, out: MutableList<Channel>) {
+        for (i in 0 until arr.length()) {
+            val v = arr.opt(i)
+            when (v) {
+                is JSONObject -> collectAmstaffNodes(v, out)
+                is JSONArray -> collectAmstaffArray(v, out)
+            }
+        }
     }
 
     private fun fetchVavooItaly(): List<Channel> {
@@ -390,6 +688,7 @@ object MandraStreams {
         return try {
             when (kind) {
                 "skytv" -> resolveSkyTv(arg)
+                "amstaff" -> resolveAmstaff(arg)
                 "vavoo" -> {
                     val rawUrl = String(
                         Base64.decode(arg, Base64.URL_SAFE),
@@ -413,6 +712,66 @@ object MandraStreams {
             "$k=" + URLEncoder.encode(v, "UTF-8")
         }
         return "$baseUrl|$encoded"
+    }
+
+    // --- 0) Amstaff Resolver (port di amstaff / amstaffTest da myResolver.py di MandraKodi per MPD ClearKey) ---
+
+    private fun padBase64(s: String): String {
+        val clean = s.trim()
+        val rem = clean.length % 4
+        return if (rem == 0) clean else clean + "=".repeat(4 - rem)
+    }
+
+    private fun parseAmstaffClearKey(rawKey: String): String {
+        val k = rawKey.trim()
+        if (k.isEmpty() || k == "0000" || k == "0:0") return ""
+        if (':' in k) {
+            return k.replace("{", "").replace("}", "").replace("\"", "").replace(" ", "")
+        }
+        return try {
+            val dec = String(Base64.decode(padBase64(k), Base64.DEFAULT), Charsets.UTF_8)
+                .replace("{", "").replace("}", "").replace("\"", "").replace(" ", "").trim()
+            if (':' in dec) dec else ""
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    private fun resolveAmstaff(arg: String): List<String> {
+        val payload = String(Base64.decode(arg, Base64.URL_SAFE), Charsets.UTF_8).trim()
+        val decoded = if (payload.startsWith("http", ignoreCase = true)) {
+            payload
+        } else {
+            try {
+                String(Base64.decode(padBase64(payload), Base64.DEFAULT), Charsets.UTF_8).trim()
+            } catch (_: Exception) {
+                ""
+            }
+        }
+        if (!decoded.startsWith("http", ignoreCase = true)) return emptyList()
+        val parts = decoded.split('|')
+        val mpdUrl = parts[0].trim()
+        if (!mpdUrl.startsWith("http", ignoreCase = true)) return emptyList()
+        val clearKey = parseAmstaffClearKey(parts.getOrNull(1).orEmpty())
+        val lower = mpdUrl.lowercase()
+        val (referer, origin) = when {
+            "ticdn.it" in lower || "timvision" in lower ->
+                "https://www.timvision.it/" to "https://www.timvision.it"
+            "dazn" in lower ->
+                "https://www.dazn.com/" to "https://www.dazn.com"
+            "lbatv" in lower || "endeavor" in lower ->
+                "https://www.lbatv.com/" to "https://www.lbatv.com"
+            "discovery" in lower || "eurosport" in lower ->
+                "https://www.discoveryplus.com/" to "https://www.discoveryplus.com"
+            else ->
+                "https://www.nowtv.it/" to "https://www.nowtv.it"
+        }
+        val out = ArrayList<String>(2)
+        out.add(encodeMpdStream(mpdUrl, clearKey, referer, origin))
+        swapNowCdnMirror(mpdUrl)?.let { mirror ->
+            out.add(encodeMpdStream(mirror, clearKey, referer, origin))
+        }
+        return out
     }
 
     // --- 1) Sky Free API (TV8 = 7, Cielo = 2, Sky TG24 = 1) ---

@@ -160,11 +160,16 @@ object MandraCalendar {
 
     private val f1Re = Regex("""\b(formula ?[123]|f[123]|porsche)\b""", RegexOption.IGNORE_CASE)
     private val motoRe = Regex("""\b(moto ?gp|moto ?[23e]|superbike|wsbk|supersport)\b""", RegexOption.IGNORE_CASE)
+    private val skyCalcioNumRe = Regex("""\bsky\s+calcio\s+(25[1-9]|[1-9])\b""")
 
     /** "SKY SPORT MOTOGP FHD" -> [sky, sport, motogp]; "DAZN1" e "DAZN 1" diventano entrambi [dazn, 1]. */
     private fun chanKey(s: String): List<String> {
         val shifted = plusShiftRe.replace(s) { " plus${it.groupValues[1]} " }
-        return nonAlnumRe.replace(FixtureParsers.fold(shifted), " ").trim().split(' ')
+        val folded = skyCalcioNumRe.replace(FixtureParsers.fold(shifted)) { m ->
+            val n = m.groupValues[1]
+            "sky sport " + if (n.length == 1) "25$n" else n
+        }
+        return nonAlnumRe.replace(folded, " ").trim().split(' ')
             .filter { it.isNotEmpty() && it !in qualityTok }              // via la qualità ("FHD", "4K", ...)
             .flatMap { w -> tok.findAll(w).map { it.value }.toList() }    // "dazn1" -> [dazn, 1]
             .filter { it.isNotEmpty() }

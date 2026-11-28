@@ -333,12 +333,19 @@ object LiveFixtures {
         return emptyList()
     }
 
+    private val skyCalcioNumRe = Regex("""\bsky\s+calcio\s+(25[1-9]|[1-9])\b""")
+
     /** Nome del canale senza qualita'/lingua e con "Uno" = "1", per confrontare "Sky Sport 251" con "SKY SPORT 251 FHD". */
-    private fun skyKey(s: String): String =
-        FixtureParsers.fold(s).replace(nonAlnumRe, " ").trim().split(' ')
+    private fun skyKey(s: String): String {
+        val folded = skyCalcioNumRe.replace(FixtureParsers.fold(s)) { m ->
+            val n = m.groupValues[1]
+            "sky sport " + if (n.length == 1) "25$n" else n
+        }
+        return folded.replace(nonAlnumRe, " ").trim().split(' ')
             .filter { it.isNotEmpty() && it !in qualityTok }
             .map { if (it == "uno") "1" else it }
             .joinToString(" ")
+    }
 
     /** Canali Sky della playlist per nome, ordinati per priorità fonte e poi qualità. */
     private fun skyIndex(playlist: List<Channel>): Map<String, List<Channel>> =
