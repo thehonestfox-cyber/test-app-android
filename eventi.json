@@ -2910,7 +2910,7 @@
   "venezia|bologna|13": "dNPKJDcBhWg"
  },
  "sport": {
-  "aggiornato": "2026-11-28T02:14:00+01:00",
+  "aggiornato": "2026-11-28T11:01:32+01:00",
   "stato": "ok",
   "eventi": [
    {
@@ -3081,9 +3081,12 @@
     "i": 1795874400000,
     "d": 150,
     "tv": [
+     "Paramount+",
+     "Peacock",
+     "ESPN Mexico",
+     "Disney+ Premium Caribbean",
      "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN Canada"
     ]
    },
    {
@@ -3254,9 +3257,12 @@
     "i": 1795885200000,
     "d": 150,
     "tv": [
+     "Paramount+",
+     "Peacock",
+     "Disney+ Premium Caribbean",
+     "fuboTV Canada",
      "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN Canada"
     ]
    },
    {
@@ -3334,14 +3340,14 @@
     "i": 1795895100000,
     "d": 150,
     "tv": [
-     "Sky Sport 251",
-     "Sky Sport Uno",
-     "Sky Sport Calcio",
+     "Paramount+",
+     "fuboTV",
+     "Peacock",
+     "Telemundo",
+     "Telemundo Deportes En Vivo",
      "DAZN",
      "Sky Sport 1",
-     "DAZN Italia",
-     "SKY Go Italia",
-     "NOW TV"
+     "Sky Sport Calcio"
     ]
    },
    {
@@ -3429,9 +3435,12 @@
     "i": 1795951800000,
     "d": 150,
     "tv": [
+     "CBS Sports Network",
+     "Paramount+",
+     "fuboTV",
+     "Peacock",
      "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN Canada"
     ]
    },
    {
@@ -3531,9 +3540,12 @@
     "i": 1795960800000,
     "d": 150,
     "tv": [
+     "CBS Sports Network",
+     "Paramount+",
+     "fuboTV",
+     "Peacock",
      "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "DAZN Canada"
     ]
    },
    {
@@ -3763,9 +3775,8 @@
     "i": 1796005800000,
     "d": 150,
     "tv": [
-     "Fox Soccer Plus",
-     "fuboTV",
-     "FOX One"
+     "LAB Channel",
+     "DAZN Italia"
     ]
    },
    {
@@ -3857,9 +3868,8 @@
     "i": 1796070600000,
     "d": 150,
     "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "TeleXitos",
+     "DAZN"
     ]
    },
    {
@@ -3869,9 +3879,8 @@
     "i": 1796077800000,
     "d": 150,
     "tv": [
-     "DAZN",
-     "DAZN Italia",
-     "DAZN1"
+     "TeleXitos",
+     "DAZN"
     ]
    },
    {
@@ -4292,6 +4301,14 @@
      "TV8",
      "NOW"
     ]
+   },
+   {
+    "t": "Formula 2 e Formula 3: F2 - Abu Dhabi GP - Feature Race",
+    "c": "Motori",
+    "s": "Formula 2 e Formula 3",
+    "i": 1796549100000,
+    "d": 150,
+    "tv": []
    }
   ]
  }
