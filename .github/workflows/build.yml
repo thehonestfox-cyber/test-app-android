@@ -17,10 +17,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.13
-      - run: gradle assembleDebug --no-daemon
+      - name: Compila APK
         env:
           BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -o pipefail
+          if ! gradle assembleDebug --no-daemon 2>&1 | tee build.log; then
+            grep -E "^e:|error:|What went wrong" -A 2 build.log | head -n 9 | while IFS= read -r l; do
+              echo "::error::$l"
+            done
+            exit 1
+          fi
       - name: Pubblica release
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
