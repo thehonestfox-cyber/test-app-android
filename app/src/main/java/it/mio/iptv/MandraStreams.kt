@@ -633,26 +633,28 @@ object MandraStreams {
     private val iframeRe = Regex("""<iframe[^>]*\bsrc=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
     private val premiumEdgeRe = Regex("""^(https?://[^/]+)/(premium\d+)/index\.m3u8$""")
 
-    private fun decodeBarecropEconfig(enc: String): String? = try {
-        val s = String(Base64.decode(enc, Base64.DEFAULT), Charsets.ISO_8859_1)
-        val n = 4
-        val order = intArrayOf(2, 0, 3, 1)
-        val chunkLen = (s.length + n - 1) / n
-        val arr = Array(n) { "" }
-        for (i in 0 until n) {
-            val start = minOf(i * chunkLen, s.length)
-            val end = minOf((i + 1) * chunkLen, s.length)
-            val part = s.substring(start, end)
-            if (part.length < 4) return null
-            val stripped = part.substring(0, 3) + part.substring(4)
-            arr[order[i]] = String(Base64.decode(stripped, Base64.DEFAULT), Charsets.ISO_8859_1)
+    private fun decodeBarecropEconfig(enc: String): String? {
+        return try {
+            val s = String(Base64.decode(enc, Base64.DEFAULT), Charsets.ISO_8859_1)
+            val n = 4
+            val order = intArrayOf(2, 0, 3, 1)
+            val chunkLen = (s.length + n - 1) / n
+            val arr = Array(n) { "" }
+            for (i in 0 until n) {
+                val start = minOf(i * chunkLen, s.length)
+                val end = minOf((i + 1) * chunkLen, s.length)
+                val part = s.substring(start, end)
+                if (part.length < 4) return null
+                val stripped = part.substring(0, 3) + part.substring(4)
+                arr[order[i]] = String(Base64.decode(stripped, Base64.DEFAULT), Charsets.ISO_8859_1)
+            }
+            val finalJson = String(Base64.decode(arr.joinToString(""), Base64.DEFAULT), Charsets.UTF_8)
+            val cfg = JSONObject(finalJson)
+            cfg.optString("stream_url", "").ifEmpty { cfg.optString("stream_url_nop2p", "") }
+                .trim().takeIf { it.startsWith("http") }
+        } catch (_: Exception) {
+            null
         }
-        val finalJson = String(Base64.decode(arr.joinToString(""), Base64.DEFAULT), Charsets.UTF_8)
-        val cfg = JSONObject(finalJson)
-        cfg.optString("stream_url", "").ifEmpty { cfg.optString("stream_url_nop2p", "") }
-            .trim().takeIf { it.startsWith("http") }
-    } catch (_: Exception) {
-        null
     }
 
     private fun decodeDaddyPlayerPage(html: String): String? {
