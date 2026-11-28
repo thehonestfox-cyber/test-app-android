@@ -19,9 +19,8 @@ Sezione "MandraKodi" (tutti gli sport)
 - Categorie: una per sport (Motori, Calcio, Tennis, Basket, Volley, Altri sport).
 - Canali completamente automatici (come su MandraKodi): anche senza conoscere o aggiungere liste M3U, l'app
   scarica e aggiorna da sola il catalogo dei canali italiani (digitale terrestre gratuito ufficiale Rai/Mediaset/
-  TV8/Sportitalia/SuperTennis + flussi DASH ClearKey per tutta la numerazione Sky Sport 251-259 + risolutori live
-  Amstaff, Vavoo, Kool.to e DaddyLive), li abbina da sola agli eventi ("Sky Sport MotoGP", "Sky Sport F1",
-  "Sky Sport Calcio", "Sky Sport 255"..."259", "DAZN 1", "TV8", "Rai 2"...) e al tocco risolve il flusso
-  funzionante passando in automatico ai server di riserva se uno cade.
+  TV8/Sportitalia/SuperTennis + risolutori live Vavoo, Kool.to e DaddyLive), li abbina da sola agli eventi
+  ("Sky Sport MotoGP", "Sky Sport F1", "Sky Sport Calcio", "DAZN 1", "TV8", "Rai 2"...) e al tocco risolve il
+  flusso funzionante passando in automatico ai server di riserva se uno cade.
 - Se in piu' aggiungi una tua playlist M3U da Impostazioni > Admin > Aggiungi playlist, i suoi canali hanno
   priorita' sui flussi automatici; l'interruttore "Canali automatici MandraKodi" e' in Impostazioni > Generali.

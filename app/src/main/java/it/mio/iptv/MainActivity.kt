@@ -55,7 +55,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -66,10 +65,6 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
-import androidx.media3.exoplayer.drm.DrmSessionManager
-import androidx.media3.exoplayer.drm.FrameworkMediaDrm
-import androidx.media3.exoplayer.drm.LocalMediaDrmCallback
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -1013,90 +1008,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val hexPairRe = Regex("""^([0-9a-fA-F]{32}):([0-9a-fA-F]{32})$""")
-    private val inlineKeyIdRe = Regex("""[?&]key_id=([0-9a-fA-F]{32})\b""", RegexOption.IGNORE_CASE)
-    private val inlineKeyValRe = Regex("""[?&]key=([0-9a-fA-F]{32})\b""", RegexOption.IGNORE_CASE)
-    private val stripInlineKeyParamsRe = Regex("""[?&](key_id|key)=[0-9a-fA-F]+\b""", RegexOption.IGNORE_CASE)
-
-    private fun hexToBytes(hex: String): ByteArray {
-        val clean = hex.trim()
-        val out = ByteArray(clean.length / 2)
-        for (i in out.indices) {
-            out[i] = clean.substring(i * 2, i * 2 + 2).toInt(16).toByte()
-        }
-        return out
-    }
-
-    // Costruisce il gestore DRM W3C ClearKey per i flussi DASH (.mpd) protetti da chiave statica (es. Sky Sport 251..259)
-    private fun buildClearKeyDrmManager(rawSpec: String): DrmSessionManager? {
-        val spec = rawSpec.trim()
-        if (spec.isEmpty()) return null
-        return try {
-            val jwkBytes = if (spec.startsWith("{")) {
-                spec.toByteArray(Charsets.UTF_8)
-            } else {
-                val keysArr = JSONArray()
-                val b64Flags =
-                    android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
-                for (part in spec.split(',', ';')) {
-                    val m = hexPairRe.matchEntire(part.trim()) ?: continue
-                    val kid = android.util.Base64.encodeToString(hexToBytes(m.groupValues[1]), b64Flags)
-                    val k = android.util.Base64.encodeToString(hexToBytes(m.groupValues[2]), b64Flags)
-                    keysArr.put(
-                        org.json.JSONObject()
-                            .put("kty", "oct")
-                            .put("kid", kid)
-                            .put("k", k)
-                    )
-                }
-                if (keysArr.length() == 0) return null
-                org.json.JSONObject()
-                    .put("keys", keysArr)
-                    .put("type", "temporary")
-                    .toString()
-                    .toByteArray(Charsets.UTF_8)
-            }
-            DefaultDrmSessionManager.Builder()
-                .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
-                .setMultiSession(true)
-                .build(LocalMediaDrmCallback(jwkBytes))
-        } catch (_: Throwable) {
-            null
-        }
-    }
-
     private fun startNow(fullUrl: String, asHls: Boolean) {
         val bar = fullUrl.indexOf('|')
         val url = if (bar > 0) fullUrl.substring(0, bar) else fullUrl
         val headers = LinkedHashMap<String, String>()
         var ua = "VLC/3.0.20 LibVLC/3.0.20"
-        var clearKey = ""
         if (bar > 0) fullUrl.substring(bar + 1).split('&').forEach { kv ->
             val eq = kv.indexOf('=')
             if (eq > 0) {
                 val k = kv.substring(0, eq).trim()
                 val raw = kv.substring(eq + 1)
                 val v = try { java.net.URLDecoder.decode(raw, "UTF-8") } catch (_: Exception) { raw }
-                when {
-                    k.equals("user-agent", ignoreCase = true) -> ua = v
-                    k.equals("x-clearkey", ignoreCase = true) -> clearKey = v
-                    else -> headers[k] = v
-                }
-            }
-        }
-        // Supporto anche per playlist MPD con parametri inline "&key_id=...&key=..." (vanno estratti e rimossi dall'URL)
-        var playUrl = url
-        val inlineKid = inlineKeyIdRe.find(playUrl)?.groupValues?.get(1)
-        val inlineKey = inlineKeyValRe.find(playUrl)?.groupValues?.get(1)
-        if (!inlineKid.isNullOrEmpty() && !inlineKey.isNullOrEmpty()) {
-            if (clearKey.isEmpty()) clearKey = "$inlineKid:$inlineKey"
-            playUrl = stripInlineKeyParamsRe.replace(playUrl, "")
-            if ('?' !in playUrl && '&' in playUrl) {
-                playUrl = playUrl.replaceFirst('&', '?')
+                if (k.equals("user-agent", ignoreCase = true)) ua = v else headers[k] = v
             }
         }
         // "http://utente:password@host/...": il sistema ignora le credenziali nell'URL (e il server risponde 401),
         // quindi vanno mandate come intestazione Authorization
+        var playUrl = url
         try {
             val ui = java.net.URI(playUrl).rawUserInfo
             if (!ui.isNullOrEmpty() && !headers.keys.any { it.equals("Authorization", ignoreCase = true) }) {
@@ -1124,15 +1052,7 @@ class MainActivity : AppCompatActivity() {
                 asHls -> setMimeType(MimeTypes.APPLICATION_M3U8)
             }
         }.build()
-        val drmManager = buildClearKeyDrmManager(clearKey)
-        if (drmManager != null) {
-            val src = DefaultMediaSourceFactory(DefaultDataSource.Factory(this, httpFactory))
-                .setDrmSessionManagerProvider { drmManager }
-                .createMediaSource(item)
-            player.setMediaSource(src)
-        } else {
-            player.setMediaItem(item)
-        }
+        player.setMediaItem(item)
         player.prepare()
         player.playWhenReady = true
         if (keepAliveOn()) startKeepAlive()
@@ -1141,8 +1061,7 @@ class MainActivity : AppCompatActivity() {
     // Se il formato non si capisce dall'URL, riprova una volta come HLS; se fallisce ancora, prova il server successivo.
     private fun onError(e: PlaybackException) {
         if (currentUrl.isEmpty()) return
-        val cleanErrPath = currentUrl.substringBefore('|').substringBefore('?').substringBefore('&')
-        val isDash = cleanErrPath.endsWith(".mpd", ignoreCase = true)
+        val isDash = currentUrl.substringBefore('|').substringBefore('?').endsWith(".mpd", ignoreCase = true)
         // Riprova come HLS solo se il problema può essere il formato (non per errori del decoder o flussi DASH)
         if (!triedHls && !isDash && !Playback.isDecoderError(e)) {
             triedHls = true
@@ -1151,15 +1070,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val shown = Playback.pickError(firstPlayError, e)
-        if (fallbackQueue.isNotEmpty()) {
-            tryNextCandidate(playGen, shown)
-            return
-        }
-        // mostra l'errore vero, non quello (fuorviante) del secondo tentativo
-        val http = (shown.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode
-        val msg = "Impossibile riprodurre questo canale (${shown.errorCodeName}${if (http != null) ", HTTP $http" else ""})."
-        setError(msg)
-        if (fullscreen) toast(msg)
+        tryNextCandidate(playGen, shown)
     }
 
     private fun setFullscreen(on: Boolean) {
@@ -1810,11 +1721,12 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     private var sortKey: List<List<Channel>> = emptyList()
     private var sortVal: List<Channel> = emptyList()
 
-    // Ordinamento fatto una sola volta finché le playlist non cambiano (rientrare in "Completa" è istantaneo)
+    // Ordinamento e unione doppioni fatti una sola volta finché le playlist non cambiano (rientrare in "Completa" è istantaneo)
     @Synchronized
     private fun sortedAll(lists: List<List<Channel>>): List<Channel> {
         if (lists.size == sortKey.size && lists.indices.all { lists[it] === sortKey[it] }) return sortVal
-        val r = Categorizer.sortChannels(lists.flatten())
+        val flat = lists.flatten()
+        val r = if (mandraAutoOn()) MandraStreams.mergeChannels(flat) else Categorizer.sortChannels(flat)
         sortKey = lists
         sortVal = r
         return r
@@ -2054,13 +1966,24 @@ events:{onError:function(e){Native.onError(e.data)}}});}
         liveSelect(ch.url)
     }
 
+    private val triedUrls = HashSet<String>()
+    private var mandraRescueDone = false
+
     private fun playChannel(ch: Channel) {
         val gen = ++playGen
         currentChannel = ch
         currentUrl = ""
+        triedUrls.clear()
+        mandraRescueDone = false
         fallbackQueue.clear()
-        fallbackQueue.add(ch.url)
-        ch.fallbacks.forEach { if (it.isNotEmpty() && it != ch.url) fallbackQueue.add(it) }
+        if ("pcdn07.cssott02.com" !in ch.url && !ch.url.startsWith("mandra://amstaff/")) {
+            fallbackQueue.add(ch.url)
+        }
+        ch.fallbacks.forEach {
+            if (it.isNotEmpty() && it != ch.url && "pcdn07.cssott02.com" !in it && !it.startsWith("mandra://amstaff/")) {
+                fallbackQueue.add(it)
+            }
+        }
         player.stop()
         player.clearMediaItems()
         showNowPlaying(ch)
@@ -2073,8 +1996,35 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     // Prova il prossimo flusso disponibile: se è un indirizzo dinamico Mandra (mandra://...) lo risolve in background
     private fun tryNextCandidate(gen: Int, lastErr: PlaybackException?) {
         if (gen != playGen) return
-        val next = fallbackQueue.removeFirstOrNull()
+        var next: String? = null
+        while (fallbackQueue.isNotEmpty()) {
+            val cand = fallbackQueue.removeFirst()
+            if (cand.isNotEmpty() && triedUrls.add(cand)) {
+                next = cand
+                break
+            }
+        }
         if (next == null) {
+            val chName = currentChannel?.name.orEmpty()
+            if (!mandraRescueDone && chName.isNotEmpty() && mandraAutoOn()) {
+                mandraRescueDone = true
+                spinner.visibility = View.VISIBLE
+                playBtn.visibility = View.INVISIBLE
+                bg {
+                    if (!MandraStreams.isFresh()) {
+                        try { MandraStreams.refresh(cacheDir) } catch (_: Exception) {}
+                    }
+                    val extra = MandraStreams.fallbacksForName(cacheDir, chName)
+                    uiSafe {
+                        if (gen != playGen) return@uiSafe
+                        for (u in extra) {
+                            if (u !in triedUrls && u !in fallbackQueue) fallbackQueue.add(u)
+                        }
+                        tryNextCandidate(gen, lastErr)
+                    }
+                }
+                return
+            }
             spinner.visibility = View.GONE
             playBtn.visibility = View.VISIBLE
             val msg = if (lastErr != null) {
@@ -2097,14 +2047,16 @@ events:{onError:function(e){Native.onError(e.data)}}});}
             val resolved = MandraStreams.resolve(next)
             uiSafe {
                 if (gen != playGen) return@uiSafe
-                if (resolved.isEmpty()) {
+                val fresh = resolved.filter { it !in triedUrls }
+                if (fresh.isEmpty()) {
                     tryNextCandidate(gen, lastErr)
                 } else {
-                    for (i in resolved.lastIndex downTo 1) {
-                        val r = resolved[i]
+                    for (i in fresh.lastIndex downTo 1) {
+                        val r = fresh[i]
                         if (r !in fallbackQueue) fallbackQueue.addFirst(r)
                     }
-                    launchDirectUrl(gen, resolved[0])
+                    triedUrls.add(fresh[0])
+                    launchDirectUrl(gen, fresh[0])
                 }
             }
         }
@@ -3463,7 +3415,7 @@ events:{onError:function(e){Native.onError(e.data)}}});}
     private fun cacheFile(url: String) =
         java.io.File(cacheDir, "pl_" + Integer.toHexString(url.hashCode()) + ".m3u")
 
-    private fun playlistRank(url: String) = if (url == defaultPlaylist) 3 else 1
+    private fun playlistRank(url: String) = if (url == defaultPlaylist) 4 else 1
 
     // Dalla memoria o dal disco (nessuna rete). Da chiamare fuori dal thread UI.
     private fun cachedPlaylist(url: String): List<Channel>? {
