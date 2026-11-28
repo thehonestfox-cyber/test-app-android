@@ -2314,6 +2314,18 @@
     "h": "Latina",
     "a": "Livorno",
     "s": 1797277500000
+   },
+   {
+    "r": 19,
+    "h": "Altamura",
+    "a": "Salernitana",
+    "s": 1797622200000
+   },
+   {
+    "r": 19,
+    "h": "Monopoli",
+    "a": "Picerno",
+    "s": 1797622200000
    }
   ]
  },
@@ -2892,158 +2904,15 @@
    ]
   }
  ],
- "sky_at": 1795734000000,
+ "sky_at": 1795820400000,
  "hl": {
-  "monza|fiorentina|12": "10B18PMOwK0"
+  "monza|fiorentina|12": "10B18PMOwK0",
+  "venezia|bologna|13": "dNPKJDcBhWg"
  },
  "sport": {
-  "aggiornato": "2026-11-27T19:01:50+01:00",
+  "aggiornato": "2026-11-28T02:14:00+01:00",
   "stato": "ok",
   "eventi": [
-   {
-    "t": "Primavera 1: Atalanta-Monza",
-    "c": "Calcio",
-    "s": "Primavera 1",
-    "i": 1795795200000,
-    "d": 150,
-    "tv": [
-     "Sportitalia"
-    ]
-   },
-   {
-    "t": "Formula 2 e Formula 3: F2 - Qatar GP - Quali",
-    "c": "Motori",
-    "s": "Formula 2 e Formula 3",
-    "i": 1795795800000,
-    "d": 75,
-    "tv": []
-   },
-   {
-    "t": "Nations Championship: Italia-Fiji",
-    "c": "Altri sport",
-    "s": "Rugby",
-    "i": 1795797600000,
-    "d": 150,
-    "tv": [
-     "TV8",
-     "Sky Sport Arena"
-    ]
-   },
-   {
-    "t": "Formula 1: Qatar Grand Prix - FP2",
-    "c": "Motori",
-    "s": "Formula 1",
-    "i": 1795798800000,
-    "d": 75,
-    "tv": [
-     "Sky Sport F1",
-     "Sky Sport 1",
-     "Sky Sport 4K",
-     "NOW"
-    ]
-   },
-   {
-    "t": "Bundesliga 2: Heidenheim-Norimberga",
-    "c": "Calcio",
-    "s": "Bundesliga 2",
-    "i": 1795800600000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Max"
-    ]
-   },
-   {
-    "t": "Qualificazioni FIBA Mondiali: Slovenia-Finlandia",
-    "c": "Basket",
-    "s": "Qualificazioni FIBA Mondiali",
-    "i": 1795806000000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Basket"
-    ]
-   },
-   {
-    "t": "Serie C: Cavese vs Scafatese",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795807800000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 253",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Serie C: Foggia vs Casertana",
-    "c": "Calcio",
-    "s": "Serie C",
-    "i": 1795807800000,
-    "d": 150,
-    "tv": [
-     "Sky Sport 252",
-     "Sky Sport Uno",
-     "Sky Sport 1",
-     "SKY Go Italia",
-     "NOW TV"
-    ]
-   },
-   {
-    "t": "Qualificazioni FIBA Mondiali: Polonia-Croazia",
-    "c": "Basket",
-    "s": "Qualificazioni FIBA Mondiali",
-    "i": 1795808700000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Mix"
-    ]
-   },
-   {
-    "t": "Serie A2: Rimini-Pesaro",
-    "c": "Basket",
-    "s": "Serie A2",
-    "i": 1795808700000,
-    "d": 150,
-    "tv": [
-     "Rai Sport"
-    ]
-   },
-   {
-    "t": "Serie A: Venezia vs Bologna",
-    "c": "Calcio",
-    "s": "Serie A",
-    "i": 1795808700000,
-    "d": 150,
-    "tv": [
-     "Paramount+",
-     "Peacock",
-     "Disney+ Premium Caribbean",
-     "fuboTV Canada",
-     "DAZN",
-     "Sky Sport Calcio",
-     "DAZN Canada"
-    ]
-   },
-   {
-    "t": "Premier League: Nottingham Forest-Chelsea",
-    "c": "Calcio",
-    "s": "Premier League",
-    "i": 1795809600000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Max"
-    ]
-   },
-   {
-    "t": "Nations Championship: Irlanda-Australia",
-    "c": "Altri sport",
-    "s": "Rugby",
-    "i": 1795810200000,
-    "d": 150,
-    "tv": [
-     "Sky Sport Arena"
-    ]
-   },
    {
     "t": "MotoGP: Valencian Community Grand Prix - FP2",
     "c": "Motori",
@@ -3126,6 +2995,16 @@
     "tv": []
    },
    {
+    "t": "Nations Championship: Galles-Giappone",
+    "c": "Altri sport",
+    "s": "Rugby",
+    "i": 1795871400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
     "t": "Serie C: Athletic Carpi vs Lecco",
     "c": "Calcio",
     "s": "Serie C",
@@ -3162,18 +3041,49 @@
     ]
    },
    {
+    "t": "Serie C: Novara vs Alcione",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795872600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 256",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Serie C: Nuova Monterosi vs Campobasso",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795872600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 252",
+     "SKY Go Italia",
+     "NOW TV"
+    ]
+   },
+   {
+    "t": "Serie C: Pescara-Pianese",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795872600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
     "t": "Serie A: Frosinone vs Parma",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795874400000,
     "d": 150,
     "tv": [
-     "Paramount+",
-     "Peacock",
-     "ESPN Mexico",
-     "Disney+ Premium Caribbean",
      "DAZN",
-     "DAZN Canada"
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -3318,18 +3228,35 @@
     "tv": []
    },
    {
+    "t": "Serie C: Salernitana-Monopoli",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795883400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Nations Championship: Inghilterra-Nuova Zelanda",
+    "c": "Altri sport",
+    "s": "Rugby",
+    "i": 1795884000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
     "t": "Serie A: Torino vs Lazio",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795885200000,
     "d": 150,
     "tv": [
-     "Paramount+",
-     "Peacock",
-     "Disney+ Premium Caribbean",
-     "fuboTV Canada",
      "DAZN",
-     "DAZN Canada"
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -3407,14 +3334,14 @@
     "i": 1795895100000,
     "d": 150,
     "tv": [
-     "Paramount+",
-     "fuboTV",
-     "Peacock",
-     "Telemundo",
-     "Telemundo Deportes En Vivo",
+     "Sky Sport 251",
+     "Sky Sport Uno",
+     "Sky Sport Calcio",
      "DAZN",
      "Sky Sport 1",
-     "Sky Sport Calcio"
+     "DAZN Italia",
+     "SKY Go Italia",
+     "NOW TV"
     ]
    },
    {
@@ -3502,12 +3429,19 @@
     "i": 1795951800000,
     "d": 150,
     "tv": [
-     "CBS Sports Network",
-     "Paramount+",
-     "fuboTV",
-     "Peacock",
      "DAZN",
-     "DAZN Canada"
+     "DAZN Italia",
+     "DAZN1"
+    ]
+   },
+   {
+    "t": "Serie C: Barletta-Inter U23",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795951800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
     ]
    },
    {
@@ -3518,6 +3452,16 @@
     "d": 150,
     "tv": [
      "Sky Sport Mix"
+    ]
+   },
+   {
+    "t": "Premier League: Everton-Liverpool",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795953600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
     ]
    },
    {
@@ -3551,6 +3495,16 @@
     ]
    },
    {
+    "t": "Nations Championship: Scozia-Argentina",
+    "c": "Altri sport",
+    "s": "Rugby",
+    "i": 1795957800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
+    ]
+   },
+   {
     "t": "Serie A Elite: Vicenza-Roma",
     "c": "Altri sport",
     "s": "Rugby",
@@ -3561,13 +3515,25 @@
     ]
    },
    {
-    "t": "Serie A: Sassuolo-Napoli",
+    "t": "Serie C: Casarano-Catania",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1795959000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Serie A: Sassuolo vs Napoli",
     "c": "Calcio",
     "s": "Serie A",
     "i": 1795960800000,
     "d": 150,
     "tv": [
-     "DAZN"
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -3598,6 +3564,16 @@
     "d": 150,
     "tv": [
      "Rai 2"
+    ]
+   },
+   {
+    "t": "Premier League: Sunderland-Tottenham",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795961100000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
     ]
    },
    {
@@ -3642,6 +3618,26 @@
     "d": 150,
     "tv": [
      "DAZN"
+    ]
+   },
+   {
+    "t": "Premier League: Arsenal-Manchester City",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1795969800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
+    "t": "Nations Championship: Francia-Sudafrica",
+    "c": "Altri sport",
+    "s": "Rugby",
+    "i": 1795970400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
     ]
    },
    {
@@ -3700,6 +3696,16 @@
     ]
    },
    {
+    "t": "Bundesliga: Borussia Dortmund-Bayer Leverkusen",
+    "c": "Calcio",
+    "s": "Bundesliga",
+    "i": 1795977000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
     "t": "Serie B: Arezzo-Pisa",
     "c": "Calcio",
     "s": "Serie B",
@@ -3741,14 +3747,25 @@
     ]
    },
    {
+    "t": "NBA: Houston Rockets-Los Angeles Lakers",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1795998600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
     "t": "Serie B: Sampdoria vs Cremonese",
     "c": "Calcio",
     "s": "Serie B",
     "i": 1796005800000,
     "d": 150,
     "tv": [
-     "LAB Channel",
-     "DAZN Italia"
+     "Fox Soccer Plus",
+     "fuboTV",
+     "FOX One"
     ]
    },
    {
@@ -3760,6 +3777,26 @@
     "tv": [
      "LAB Channel",
      "DAZN Italia"
+    ]
+   },
+   {
+    "t": "Amichevole U23: Italia-Portogallo",
+    "c": "Calcio",
+    "s": "Amichevole U23 femminile",
+    "i": 1796045400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "FIBA World Cup European Qualifiers: Ungheria-Slovenia",
+    "c": "Basket",
+    "s": "FIBA World Cup European Qualifiers",
+    "i": 1796058000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
     ]
    },
    {
@@ -3793,13 +3830,24 @@
     ]
    },
    {
+    "t": "Serie C: Latina-Grosseto",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1796067000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
     "t": "Serie C: Reggiana-Ostiamare",
     "c": "Calcio",
     "s": "Serie C",
     "i": 1796067900000,
     "d": 150,
     "tv": [
-     "Rai Sport"
+     "Rai Sport",
+     "Sky Sport 1"
     ]
    },
    {
@@ -3809,8 +3857,9 @@
     "i": 1796070600000,
     "d": 150,
     "tv": [
-     "TeleXitos",
-     "DAZN"
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -3820,8 +3869,9 @@
     "i": 1796077800000,
     "d": 150,
     "tv": [
-     "TeleXitos",
-     "DAZN"
+     "DAZN",
+     "DAZN Italia",
+     "DAZN1"
     ]
    },
    {
@@ -3835,6 +3885,16 @@
     ]
    },
    {
+    "t": "NBA: Chicago Bulls-New York Knicks",
+    "c": "Basket",
+    "s": "NBA",
+    "i": 1796086800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
     "t": "Qualificazioni Mondiali Brasile: Finlandia-Italia",
     "c": "Calcio",
     "s": "Qualificazioni Mondiali Brasile femminile",
@@ -3845,14 +3905,65 @@
     ]
    },
    {
+    "t": "CEV Champions League: Budapest-Milano",
+    "c": "Volley",
+    "s": "CEV Champions League femminile",
+    "i": 1796146200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1",
+     "Sky Sport Arena"
+    ]
+   },
+   {
     "t": "Coppa Italia: Inter-Genoa",
     "c": "Calcio",
     "s": "Coppa Italia",
     "i": 1796155200000,
     "d": 150,
     "tv": [
-     "Mediaset Infinity",
-     "Canale 5"
+     "Mediaset Infinity"
+    ]
+   },
+   {
+    "t": "Premier League: Coventry City-Ipswich Town",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1796155200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio",
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "CEV Champions League: Dresdner SC-Conegliano",
+    "c": "Volley",
+    "s": "CEV Champions League femminile",
+    "i": 1796234400000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
+    "t": "Premier League: Manchester City-Leeds United",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1796239800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "CEV Champions League: Novara-Rzeszow",
+    "c": "Volley",
+    "s": "CEV Champions League femminile",
+    "i": 1796239800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max"
     ]
    },
    {
@@ -3864,6 +3975,16 @@
     "tv": [
      "Mediaset Infinity",
      "Italia 1"
+    ]
+   },
+   {
+    "t": "Premier League: Brentford-Arsenal",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1796242500000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
     ]
    },
    {
@@ -3941,6 +4062,26 @@
     ]
    },
    {
+    "t": "CEV Champions League: Tent Obrenovac-Scandicci",
+    "c": "Volley",
+    "s": "CEV Champions League femminile",
+    "i": 1796320800000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Arena"
+    ]
+   },
+   {
+    "t": "Eurolega: Hapoel Tel Aviv-Olimpia Milano",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1796323500000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
     "t": "Eurolega: Virtus Bologna-Partizan",
     "c": "Basket",
     "s": "Eurolega",
@@ -3959,6 +4100,26 @@
     "tv": [
      "Mediaset Infinity",
      "Italia 1"
+    ]
+   },
+   {
+    "t": "Premier League: Tottenham-Fulham",
+    "c": "Calcio",
+    "s": "Premier League",
+    "i": 1796328000000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Eurolega: Virtus Bologna-Partizan Belgrado",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1796330700000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
     ]
    },
    {
@@ -3983,6 +4144,16 @@
     "tv": []
    },
    {
+    "t": "Saudi League: Al Khaleej-Al Ittihad",
+    "c": "Calcio",
+    "s": "Saudi League",
+    "i": 1796388900000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
     "t": "Formula 1: Abu Dhabi Grand Prix - FP2",
     "c": "Motori",
     "s": "Formula 1",
@@ -3993,6 +4164,98 @@
      "Sky Sport 1",
      "Sky Sport 4K",
      "NOW"
+    ]
+   },
+   {
+    "t": "Primavera 1: Roma-Bologna",
+    "c": "Calcio",
+    "s": "Primavera 1",
+    "i": 1796396400000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Saudi League: Al Nassr-Al Qadsiah",
+    "c": "Calcio",
+    "s": "Saudi League",
+    "i": 1796405400000,
+    "d": 150,
+    "tv": [
+     "Sportitalia"
+    ]
+   },
+   {
+    "t": "Coppa del Mondo: Beaver Creek. Discesa Libera M",
+    "c": "Altri sport",
+    "s": "Sci alpino",
+    "i": 1796407200000,
+    "d": 150,
+    "tv": [
+     "Eurosport",
+     "Rai 2"
+    ]
+   },
+   {
+    "t": "Eurolega: Zalgiris-Dubai Basketball",
+    "c": "Basket",
+    "s": "Eurolega",
+    "i": 1796407200000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Basket"
+    ]
+   },
+   {
+    "t": "Bundesliga: Bayern Monaco-Paderborn",
+    "c": "Calcio",
+    "s": "Bundesliga",
+    "i": 1796412600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Calcio"
+    ]
+   },
+   {
+    "t": "Serie B: Pisa-Sampdoria",
+    "c": "Calcio",
+    "s": "Serie B",
+    "i": 1796412600000,
+    "d": 150,
+    "tv": [
+     "DAZN"
+    ]
+   },
+   {
+    "t": "Serie C: Audace Cerignola-Sorrento",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1796412600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport Max",
+     "Sky Sport Arena"
+    ]
+   },
+   {
+    "t": "Serie C: Livorno-Vis Pesaro",
+    "c": "Calcio",
+    "s": "Serie C",
+    "i": 1796412600000,
+    "d": 150,
+    "tv": [
+     "Sky Sport 1"
+    ]
+   },
+   {
+    "t": "Serie A: Bologna-Roma",
+    "c": "Calcio",
+    "s": "Serie A",
+    "i": 1796413500000,
+    "d": 150,
+    "tv": [
+     "DAZN"
     ]
    },
    {
