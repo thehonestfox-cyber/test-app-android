@@ -55,6 +55,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -65,6 +66,10 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
+import androidx.media3.exoplayer.drm.DrmSessionManager
+import androidx.media3.exoplayer.drm.FrameworkMediaDrm
+import androidx.media3.exoplayer.drm.LocalMediaDrmCallback
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -1008,30 +1013,97 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val hexPairRe = Regex("""^([0-9a-fA-F]{32}):([0-9a-fA-F]{32})$""")
+    private val inlineKeyIdRe = Regex("""[?&]key_id=([0-9a-fA-F]{32})\b""", RegexOption.IGNORE_CASE)
+    private val inlineKeyValRe = Regex("""[?&]key=([0-9a-fA-F]{32})\b""", RegexOption.IGNORE_CASE)
+    private val stripInlineKeyParamsRe = Regex("""[?&](key_id|key)=[0-9a-fA-F]+\b""", RegexOption.IGNORE_CASE)
+
+    private fun hexToBytes(hex: String): ByteArray {
+        val clean = hex.trim()
+        val out = ByteArray(clean.length / 2)
+        for (i in out.indices) {
+            out[i] = clean.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+        }
+        return out
+    }
+
+    // Costruisce il gestore DRM W3C ClearKey per i flussi DASH (.mpd) protetti da chiave statica (es. Sky Sport 251..259)
+    private fun buildClearKeyDrmManager(rawSpec: String): DrmSessionManager? {
+        val spec = rawSpec.trim()
+        if (spec.isEmpty()) return null
+        return try {
+            val jwkBytes = if (spec.startsWith("{")) {
+                spec.toByteArray(Charsets.UTF_8)
+            } else {
+                val keysArr = JSONArray()
+                val b64Flags =
+                    android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
+                for (part in spec.split(',', ';')) {
+                    val m = hexPairRe.matchEntire(part.trim()) ?: continue
+                    val kid = android.util.Base64.encodeToString(hexToBytes(m.groupValues[1]), b64Flags)
+                    val k = android.util.Base64.encodeToString(hexToBytes(m.groupValues[2]), b64Flags)
+                    keysArr.put(
+                        org.json.JSONObject()
+                            .put("kty", "oct")
+                            .put("kid", kid)
+                            .put("k", k)
+                    )
+                }
+                if (keysArr.length() == 0) return null
+                org.json.JSONObject()
+                    .put("keys", keysArr)
+                    .put("type", "temporary")
+                    .toString()
+                    .toByteArray(Charsets.UTF_8)
+            }
+            DefaultDrmSessionManager.Builder()
+                .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
+                .setMultiSession(true)
+                .build(LocalMediaDrmCallback(jwkBytes))
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
     private fun startNow(fullUrl: String, asHls: Boolean) {
         val bar = fullUrl.indexOf('|')
         val url = if (bar > 0) fullUrl.substring(0, bar) else fullUrl
         val headers = LinkedHashMap<String, String>()
         var ua = "VLC/3.0.20 LibVLC/3.0.20"
+        var clearKey = ""
         if (bar > 0) fullUrl.substring(bar + 1).split('&').forEach { kv ->
             val eq = kv.indexOf('=')
             if (eq > 0) {
                 val k = kv.substring(0, eq).trim()
                 val raw = kv.substring(eq + 1)
                 val v = try { java.net.URLDecoder.decode(raw, "UTF-8") } catch (_: Exception) { raw }
-                if (k.equals("user-agent", ignoreCase = true)) ua = v else headers[k] = v
+                when {
+                    k.equals("user-agent", ignoreCase = true) -> ua = v
+                    k.equals("x-clearkey", ignoreCase = true) -> clearKey = v
+                    else -> headers[k] = v
+                }
+            }
+        }
+        // Supporto anche per playlist MPD con parametri inline "&key_id=...&key=..." (vanno estratti e rimossi dall'URL)
+        var playUrl = url
+        val inlineKid = inlineKeyIdRe.find(playUrl)?.groupValues?.get(1)
+        val inlineKey = inlineKeyValRe.find(playUrl)?.groupValues?.get(1)
+        if (!inlineKid.isNullOrEmpty() && !inlineKey.isNullOrEmpty()) {
+            if (clearKey.isEmpty()) clearKey = "$inlineKid:$inlineKey"
+            playUrl = stripInlineKeyParamsRe.replace(playUrl, "")
+            if ('?' !in playUrl && '&' in playUrl) {
+                playUrl = playUrl.replaceFirst('&', '?')
             }
         }
         // "http://utente:password@host/...": il sistema ignora le credenziali nell'URL (e il server risponde 401),
         // quindi vanno mandate come intestazione Authorization
-        var playUrl = url
         try {
-            val ui = java.net.URI(url).rawUserInfo
+            val ui = java.net.URI(playUrl).rawUserInfo
             if (!ui.isNullOrEmpty() && !headers.keys.any { it.equals("Authorization", ignoreCase = true) }) {
                 val dec = java.net.URLDecoder.decode(ui.replace("+", "%2B"), "UTF-8")
                 headers["Authorization"] = "Basic " +
                     android.util.Base64.encodeToString(dec.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP)
-                playUrl = url.replaceFirst("$ui@", "")
+                playUrl = playUrl.replaceFirst("$ui@", "")
             }
         } catch (_: Exception) {
         }
@@ -1052,7 +1124,15 @@ class MainActivity : AppCompatActivity() {
                 asHls -> setMimeType(MimeTypes.APPLICATION_M3U8)
             }
         }.build()
-        player.setMediaItem(item)
+        val drmManager = buildClearKeyDrmManager(clearKey)
+        if (drmManager != null) {
+            val src = DefaultMediaSourceFactory(DefaultDataSource.Factory(this, httpFactory))
+                .setDrmSessionManagerProvider { drmManager }
+                .createMediaSource(item)
+            player.setMediaSource(src)
+        } else {
+            player.setMediaItem(item)
+        }
         player.prepare()
         player.playWhenReady = true
         if (keepAliveOn()) startKeepAlive()
@@ -1061,7 +1141,8 @@ class MainActivity : AppCompatActivity() {
     // Se il formato non si capisce dall'URL, riprova una volta come HLS; se fallisce ancora, prova il server successivo.
     private fun onError(e: PlaybackException) {
         if (currentUrl.isEmpty()) return
-        val isDash = currentUrl.substringBefore('|').substringBefore('?').endsWith(".mpd", ignoreCase = true)
+        val cleanErrPath = currentUrl.substringBefore('|').substringBefore('?').substringBefore('&')
+        val isDash = cleanErrPath.endsWith(".mpd", ignoreCase = true)
         // Riprova come HLS solo se il problema può essere il formato (non per errori del decoder o flussi DASH)
         if (!triedHls && !isDash && !Playback.isDecoderError(e)) {
             triedHls = true
